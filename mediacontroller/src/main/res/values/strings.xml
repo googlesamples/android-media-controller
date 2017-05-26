@@ -1,0 +1,61 @@
+<!--
+  ~ Copyright 2017 Google Inc. All rights reserved.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<resources>
+    <string name="app_name">Media Controller Tester</string>
+    <string name="monkey_buttons_txt">PUSH BUTTONS!</string>
+    <string name="default_pkg">com.example.android.uamp</string>
+    <string name="default_cls">com.example.android.uamp.MusicService</string>
+    <string name="reconnect">Reconnect</string>
+    <string name="package_name_hint">Media app package name</string>
+    <string name="class_name_hint">Class name of MediaBrowserService</string>
+    <string name="connection_failed_msg">MediaBrowser connection failed</string>
+    <string name="connection_suspended_msg">MediaBrowser connection suspended</string>
+    <string name="media_controller_failed_msg">Failed to create a MediaController with session token</string>
+    <string name="id_hint">URI, Media ID, or Query</string>
+    <string name="update_media_info">Update Media Info</string>
+    <string name="media_info_default">Empty Media Info</string>
+    <string name="default_uri" />
+
+    <string name="info_state_string">PlaybackState</string>
+    <string name="info_title_string">Title</string>
+    <string name="info_artist_string">Artist</string>
+    <string name="info_album_string">Album</string>
+
+    <string name="action_prepare">Prepare</string>
+    <string name="action_prepare_uri">Prepare URI</string>
+    <string name="action_prepare_id">Prepare media ID</string>
+    <string name="action_prepare_search">Prepare from search</string>
+
+    <string name="action_play">Play</string>
+    <string name="action_play_uri">Play URI</string>
+    <string name="action_play_id">Play media ID</string>
+    <string name="action_play_search">Play from search</string>
+
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_previous">Previous</string>
+    <string name="action_next">Next</string>
+    <string name="action_fast_forward">Fast forward</string>
+    <string name="action_rewind">Rewind</string>
+
+    <string name="action_thumbs_up">Thumbs up</string>
+    <string name="action_thumbs_down">Thumbs down</string>
+
+    <string name="action_skip_30s_forward">Skip 30s</string>
+    <string name="action_skip_30s_backward">Skip back 30s</string>
+</resources>
