@@ -16,6 +16,10 @@
 
 <resources>
     <string name="app_name">Media Controller Tester</string>
+    <string name="app_icon_desc">App icon for %1$s.</string>
+    <string name="no_apps_found">No Media Apps Found</string>
+    <string name="no_apps_details">Could not locate any apps implementing a MediaBrowser.</string>
+
     <string name="monkey_buttons_txt">PUSH BUTTONS!</string>
     <string name="default_pkg">com.example.android.uamp</string>
     <string name="default_cls">com.example.android.uamp.MusicService</string>

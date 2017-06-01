@@ -15,6 +15,7 @@
  */
 package com.example.android.mediacontroller;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
@@ -73,6 +74,23 @@ public class MainActivity extends AppCompatActivity {
     private EditText mClassInput;
     private EditText mUriInput;
     private TextView mMediaInfoText;
+
+    /**
+     * Builds an {@link Intent} to launch this Activity with a set of extras.
+     *
+     * @param activity The Activity building the Intent.
+     * @param packageName Value for the package extra.
+     * @param className Value for the class extra.
+     * @return An Intent that can be used to start the Activity.
+     */
+    public static Intent buildIntent(final Activity activity,
+                                     final String packageName,
+                                     final String className) {
+        final Intent intent = new Intent(activity, MainActivity.class);
+        intent.putExtra(PACKAGE_EXTRA, packageName);
+        intent.putExtra(CLASS_EXTRA, className);
+        return intent;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
