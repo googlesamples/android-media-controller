@@ -16,8 +16,8 @@
 package com.example.android.mediacontroller;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Intent;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
@@ -25,7 +25,9 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -43,7 +45,7 @@ import java.util.Map;
  * Buttons are displayed on screen so that the user can exercise
  * the {@link android.support.v4.media.session.MediaSessionCompat.Callback}
  * methods of the media app.
- *
+ * <p>
  * Example: If you install the UAMP app and this Monkey Test app, you will be able
  * to test UAMP media controls.
  */
@@ -51,24 +53,18 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     // Key names used for saving/restoring instance state.
-    private static final String STATE_COMPONENT_KEY =
-            "com.example.android.mediacontroller.STATE_COMPONENT_KEY";
+    private static final String STATE_APP_DETAILS_KEY =
+            "com.example.android.mediacontroller.STATE_APP_DETAILS_KEY";
     private static final String STATE_URI_KEY =
             "com.example.android.mediacontroller.STATE_URI_KEY";
 
     /**
-     * Key names for {@link Intent} extras.
-     *
-     * The names of these extras are deliberately short to ease the passing of their values
-     * via {@code adb}. In a real application all extras should start with the package name of
-     * the app, be in all caps, and use full words.
-     * (i.e.: com.example.android.mediacontroller.PACKAGE_EXTRA)
+     * Key name for {@link Intent} extras.
      */
-    private static final String PACKAGE_EXTRA = "p";
-    private static final String CLASS_EXTRA = "c";
-    private static final String URI_EXTRA = "i";
+    private static final String APP_DETAILS_EXTRA =
+            "com.example.android.mediacontroller.APP_DETAILS_EXTRA";
 
-    private ComponentName mMediaBrowserComponent;
+    private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
     private MediaBrowserCompat mBrowser;
 
@@ -78,17 +74,14 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Builds an {@link Intent} to launch this Activity with a set of extras.
      *
-     * @param activity The Activity building the Intent.
-     * @param packageName Value for the package extra.
-     * @param className Value for the class extra.
+     * @param activity   The Activity building the Intent.
+     * @param appDetails The app details about the media app to connect to.
      * @return An Intent that can be used to start the Activity.
      */
     public static Intent buildIntent(final Activity activity,
-                                     final String packageName,
-                                     final String className) {
+                                     final MediaAppDetails appDetails) {
         final Intent intent = new Intent(activity, MainActivity.class);
-        intent.putExtra(PACKAGE_EXTRA, packageName);
-        intent.putExtra(CLASS_EXTRA, className);
+        intent.putExtra(APP_DETAILS_EXTRA, appDetails);
         return intent;
     }
 
@@ -96,12 +89,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         mUriInput = (EditText) findViewById(R.id.uri_id_query);
         mMediaInfoText = (TextView) findViewById(R.id.media_info);
 
         if (savedInstanceState != null) {
-            mMediaBrowserComponent = savedInstanceState.getParcelable(STATE_COMPONENT_KEY);
+            mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
             mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
         }
 
@@ -124,6 +119,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        final ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setIcon(new BitmapDrawable(getResources(), mMediaAppDetails.icon));
+            actionBar.setTitle(mMediaAppDetails.appName);
+        }
     }
 
     @Override
@@ -144,18 +145,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         final Bundle extras = intent.getExtras();
-        if (extras != null) {
-            if (extras.containsKey(PACKAGE_EXTRA) && extras.containsKey(CLASS_EXTRA)) {
-                final String packageName = extras.getString(PACKAGE_EXTRA, null);
-                final String className = extras.getString(CLASS_EXTRA, null);
-
-                mMediaBrowserComponent = new ComponentName(packageName, className);
-            }
-
-            if (extras.containsKey(URI_EXTRA)) {
-                String uri = extras.getString(URI_EXTRA, mUriInput.getText().toString());
-                mUriInput.setText(uri);
-            }
+        if (extras != null && extras.containsKey(APP_DETAILS_EXTRA)) {
+            mMediaAppDetails = extras.getParcelable(APP_DETAILS_EXTRA);
         }
     }
 
@@ -163,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
     public void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
 
-        out.putParcelable(STATE_COMPONENT_KEY, mMediaBrowserComponent);
+        out.putParcelable(STATE_APP_DETAILS_KEY, mMediaAppDetails);
         out.putString(STATE_URI_KEY, mUriInput.getText().toString());
     }
 
@@ -171,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
 
-        mMediaBrowserComponent = savedInstanceState.getParcelable(STATE_COMPONENT_KEY);
+        mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
         mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
     }
 
@@ -182,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
             mController = null;
         }
 
-        mBrowser = new MediaBrowserCompat(this, mMediaBrowserComponent,
+        mBrowser = new MediaBrowserCompat(this, mMediaAppDetails.mediaServiceComponentName,
                 new MyConnectionCallback(), null);
         mBrowser.connect();
     }

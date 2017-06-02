@@ -15,6 +15,7 @@
  */
 package com.example.android.mediacontroller;
 
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -92,9 +93,7 @@ public class LaunchActivity extends AppCompatActivity {
             public void onMediaAppClicked(@NonNull MediaAppDetails appDetails) {
                 final Intent intent = MainActivity.buildIntent(
                         LaunchActivity.this,
-                        appDetails.packageName,
-                        appDetails.mediaReceiverClassName
-                );
+                        appDetails);
                 startActivity(intent);
             }
         });
@@ -114,26 +113,6 @@ public class LaunchActivity extends AppCompatActivity {
         // Update the list of apps in onStart so if a new app is installed it will appear
         // on the list when the user comes back to it.
         new FindMediaAppsTask(mAppListUpdatedCallback).execute();
-    }
-
-    /**
-     * Convenience class to hold the details of a media app.
-     */
-    private class MediaAppDetails {
-        private final String name;
-        private final String packageName;
-        private final String mediaReceiverClassName;
-        private final Drawable icon;
-
-        private MediaAppDetails(String name,
-                                String packageName,
-                                String mediaReceiverName,
-                                Drawable icon) {
-            this.name = name;
-            this.packageName = packageName;
-            this.mediaReceiverClassName = mediaReceiverName;
-            this.icon = icon;
-        }
     }
 
     private class FindMediaAppsTask extends AsyncTask<Void, Void, List<MediaAppDetails>> {
@@ -171,13 +150,13 @@ public class LaunchActivity extends AppCompatActivity {
                     final Drawable icon = info.loadIcon(packageManager);
                     final String name = info.loadLabel(packageManager).toString();
                     final String packageName = info.serviceInfo.packageName;
-                    final String receiverName = info.serviceInfo.name;
+                    final String serviceName = info.serviceInfo.name;
+                    final ComponentName serviceComponentName =
+                            new ComponentName(packageName, serviceName);
                     mediaApps.add(new MediaAppDetails(
                             name,
-                            packageName,
-                            receiverName,
-                            icon
-                    ));
+                            serviceComponentName,
+                            icon));
                 }
             }
 
@@ -185,7 +164,7 @@ public class LaunchActivity extends AppCompatActivity {
             Collections.sort(mediaApps, new Comparator<MediaAppDetails>() {
                 @Override
                 public int compare(MediaAppDetails left, MediaAppDetails right) {
-                    return left.name.compareToIgnoreCase(right.name);
+                    return left.appName.compareToIgnoreCase(right.appName);
                 }
             });
 
@@ -237,8 +216,11 @@ public class LaunchActivity extends AppCompatActivity {
 
                 @Override
                 public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                    final String oldPackage = mMediaAppDetailsList.get(oldItemPosition).packageName;
-                    final String newPackage = newList.get(oldItemPosition).packageName;
+                    final String oldPackage = mMediaAppDetailsList.get(oldItemPosition)
+                            .mediaServiceComponentName.getPackageName();
+                    final String newPackage = newList.get(oldItemPosition)
+                            .mediaServiceComponentName.getPackageName();
+
                     return oldPackage.equals(newPackage);
                 }
 
@@ -266,11 +248,11 @@ public class LaunchActivity extends AppCompatActivity {
         public void onBindViewHolder(ViewHolder holder, int position) {
             final MediaAppDetails appDetails = mMediaAppDetailsList.get(position);
 
-            holder.appIconView.setImageDrawable(appDetails.icon);
+            holder.appIconView.setImageBitmap(appDetails.icon);
             holder.appIconView.setContentDescription(
-                    getString(R.string.app_icon_desc, appDetails.name));
-            holder.appNameView.setText(appDetails.name);
-            holder.appPackageView.setText(appDetails.packageName);
+                    getString(R.string.app_icon_desc, appDetails.appName));
+            holder.appNameView.setText(appDetails.appName);
+            holder.appPackageView.setText(appDetails.mediaServiceComponentName.getPackageName());
 
             holder.rootView.setOnClickListener(new View.OnClickListener() {
                 @Override
