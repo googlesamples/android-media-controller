@@ -43,21 +43,6 @@
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:text="@string/reconnect" />
-        <AutoCompleteTextView
-            android:id="@+id/package_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/package_name_hint"
-            android:text="@string/default_pkg"
-            android:inputType="textUri" />
-        <EditText
-            android:id="@+id/class_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/class_name_hint"
-            android:text="@string/default_cls"
-            android:layout_marginBottom="@dimen/activity_vertical_margin"
-            android:inputType="textUri" />
         <EditText
             android:id="@+id/uri_id_query"
             android:layout_width="match_parent"

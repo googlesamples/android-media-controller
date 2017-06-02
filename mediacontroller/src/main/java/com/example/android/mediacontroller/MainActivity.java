@@ -29,7 +29,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -52,9 +51,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     // Key names used for saving/restoring instance state.
-    private static final String STATE_PACKAGE_KEY = "STATE_PACKAGE_KEY";
-    private static final String STATE_CLASS_KEY = "STATE_CLASS_KEY";
-    private static final String STATE_URI_KEY = "STATE_URI_KEY";
+    private static final String STATE_COMPONENT_KEY =
+            "com.example.android.mediacontroller.STATE_COMPONENT_KEY";
+    private static final String STATE_URI_KEY =
+            "com.example.android.mediacontroller.STATE_URI_KEY";
 
     /**
      * Key names for {@link Intent} extras.
@@ -68,10 +68,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String CLASS_EXTRA = "c";
     private static final String URI_EXTRA = "i";
 
+    private ComponentName mMediaBrowserComponent;
     private MediaControllerCompat mController;
     private MediaBrowserCompat mBrowser;
-    private AutoCompleteTextView mPackageInput;
-    private EditText mClassInput;
+
     private EditText mUriInput;
     private TextView mMediaInfoText;
 
@@ -97,14 +97,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mPackageInput = (AutoCompleteTextView) findViewById(R.id.package_name);
-        mClassInput = (EditText) findViewById(R.id.class_name);
         mUriInput = (EditText) findViewById(R.id.uri_id_query);
         mMediaInfoText = (TextView) findViewById(R.id.media_info);
 
         if (savedInstanceState != null) {
-            mPackageInput.setText(savedInstanceState.getString(STATE_PACKAGE_KEY));
-            mClassInput.setText(savedInstanceState.getString(STATE_CLASS_KEY));
+            mMediaBrowserComponent = savedInstanceState.getParcelable(STATE_COMPONENT_KEY);
             mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
         }
 
@@ -148,15 +145,13 @@ public class MainActivity extends AppCompatActivity {
 
         final Bundle extras = intent.getExtras();
         if (extras != null) {
-            if (extras.containsKey(PACKAGE_EXTRA)) {
-                String packageName = extras.getString(
-                        PACKAGE_EXTRA, mPackageInput.getText().toString());
-                mPackageInput.setText(packageName);
+            if (extras.containsKey(PACKAGE_EXTRA) && extras.containsKey(CLASS_EXTRA)) {
+                final String packageName = extras.getString(PACKAGE_EXTRA, null);
+                final String className = extras.getString(CLASS_EXTRA, null);
+
+                mMediaBrowserComponent = new ComponentName(packageName, className);
             }
-            if (extras.containsKey(CLASS_EXTRA)) {
-                String className = extras.getString(CLASS_EXTRA, mClassInput.getText().toString());
-                mClassInput.setText(className);
-            }
+
             if (extras.containsKey(URI_EXTRA)) {
                 String uri = extras.getString(URI_EXTRA, mUriInput.getText().toString());
                 mUriInput.setText(uri);
@@ -166,9 +161,18 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onSaveInstanceState(Bundle out) {
-        out.putString(STATE_PACKAGE_KEY, mPackageInput.getText().toString());
-        out.putString(STATE_CLASS_KEY, mClassInput.getText().toString());
+        super.onSaveInstanceState(out);
+
+        out.putParcelable(STATE_COMPONENT_KEY, mMediaBrowserComponent);
         out.putString(STATE_URI_KEY, mUriInput.getText().toString());
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+        mMediaBrowserComponent = savedInstanceState.getParcelable(STATE_COMPONENT_KEY);
+        mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
     }
 
     private void setupMediaController() {
@@ -177,9 +181,8 @@ public class MainActivity extends AppCompatActivity {
             mBrowser = null;
             mController = null;
         }
-        String packageName = mPackageInput.getText().toString();
-        String className = mClassInput.getText().toString();
-        mBrowser = new MediaBrowserCompat(this, new ComponentName(packageName, className),
+
+        mBrowser = new MediaBrowserCompat(this, mMediaBrowserComponent,
                 new MyConnectionCallback(), null);
         mBrowser.connect();
     }
