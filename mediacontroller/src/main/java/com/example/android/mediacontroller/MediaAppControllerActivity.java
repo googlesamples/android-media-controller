@@ -49,8 +49,8 @@ import java.util.Map;
  * Example: If you install the UAMP app and this Monkey Test app, you will be able
  * to test UAMP media controls.
  */
-public class MainActivity extends AppCompatActivity {
-    private static final String TAG = MainActivity.class.getSimpleName();
+public class MediaAppControllerActivity extends AppCompatActivity {
+    private static final String TAG = MediaAppControllerActivity.class.getSimpleName();
 
     // Key names used for saving/restoring instance state.
     private static final String STATE_APP_DETAILS_KEY =
@@ -58,9 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String STATE_URI_KEY =
             "com.example.android.mediacontroller.STATE_URI_KEY";
 
-    /**
-     * Key name for {@link Intent} extras.
-     */
+    // Key name for Intent extras.
     private static final String APP_DETAILS_EXTRA =
             "com.example.android.mediacontroller.APP_DETAILS_EXTRA";
 
@@ -80,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public static Intent buildIntent(final Activity activity,
                                      final MediaAppDetails appDetails) {
-        final Intent intent = new Intent(activity, MainActivity.class);
+        final Intent intent = new Intent(activity, MediaAppControllerActivity.class);
         intent.putExtra(APP_DETAILS_EXTRA, appDetails);
         return intent;
     }
@@ -88,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_media_app_controller);
         final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -243,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
         public void onConnected() {
             try {
                 mController = new MediaControllerCompat(
-                        MainActivity.this,
+                        MediaAppControllerActivity.this,
                         mBrowser.getSessionToken());
 
                 mController.registerCallback(new MediaControllerCompat.Callback() {

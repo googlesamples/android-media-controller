@@ -91,7 +91,7 @@ public class LaunchActivity extends AppCompatActivity {
         mMediaAppsAdapter = new MediaListAdapter(new MediaAppSelectedListener() {
             @Override
             public void onMediaAppClicked(@NonNull MediaAppDetails appDetails) {
-                final Intent intent = MainActivity.buildIntent(
+                final Intent intent = MediaAppControllerActivity.buildIntent(
                         LaunchActivity.this,
                         appDetails);
                 startActivity(intent);

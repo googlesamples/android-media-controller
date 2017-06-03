@@ -19,7 +19,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.example.android.mediacontroller.LaunchActivity">
+    tools:context="com.example.android.mediacontroller.MediaAppControllerActivity">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -35,12 +35,11 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/tools"
+        <LinearLayout
             android:id="@+id/activity_main"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -48,8 +47,7 @@
             android:paddingBottom="@dimen/activity_vertical_margin"
             android:paddingLeft="@dimen/activity_horizontal_margin"
             android:paddingRight="@dimen/activity_horizontal_margin"
-            android:paddingTop="@dimen/activity_vertical_margin"
-            tools:context="com.example.android.mediacontroller.MainActivity">
+            android:paddingTop="@dimen/activity_vertical_margin">
 
             <TextView
                 android:id="@+id/status_info"
