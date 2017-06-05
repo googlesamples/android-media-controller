@@ -20,6 +20,7 @@
     <dimen name="activity_vertical_margin">16dp</dimen>
 
     <dimen name="margin_small">8dp</dimen>
+    <dimen name="toolbar_icon_size">24dp</dimen>
 
     <dimen name="app_icon_size">48dp</dimen>
     <dimen name="app_name_text_size">18sp</dimen>

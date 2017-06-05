@@ -156,7 +156,7 @@ public class LaunchActivity extends AppCompatActivity {
                     mediaApps.add(new MediaAppDetails(
                             name,
                             serviceComponentName,
-                            icon));
+                            BitmapUtils.convertDrawable(getResources(), icon)));
                 }
             }
 

@@ -17,9 +17,14 @@ package com.example.android.mediacontroller;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -120,7 +125,9 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         final ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
-            actionBar.setIcon(new BitmapDrawable(getResources(), mMediaAppDetails.icon));
+            final Bitmap toolbarIcon =
+                    BitmapUtils.createToolbarIcon(getResources(), mMediaAppDetails.icon);
+            actionBar.setIcon(new BitmapDrawable(getResources(), toolbarIcon));
             actionBar.setTitle(mMediaAppDetails.appName);
         }
     }

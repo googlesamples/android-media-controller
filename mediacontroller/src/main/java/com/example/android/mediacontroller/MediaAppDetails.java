@@ -17,12 +17,8 @@ package com.example.android.mediacontroller;
 
 import android.content.ComponentName;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
 
 /**
  * Stores details about a media app.
@@ -33,11 +29,11 @@ public class MediaAppDetails implements Parcelable {
     public final Bitmap icon;
 
     public MediaAppDetails(String name,
-                            ComponentName mediaServiceName,
-                            Drawable appIcon) {
+                           ComponentName mediaServiceName,
+                           Bitmap appIcon) {
         appName = name;
         mediaServiceComponentName = mediaServiceName;
-        icon = convertDrawable(appIcon);
+        icon = appIcon;
     }
 
     private MediaAppDetails(final Parcel parcel) {
@@ -69,18 +65,4 @@ public class MediaAppDetails implements Parcelable {
                     return new MediaAppDetails[size];
                 }
             };
-
-    private Bitmap convertDrawable(@NonNull final Drawable drawable) {
-        if (drawable instanceof BitmapDrawable) {
-            return ((BitmapDrawable) drawable).getBitmap();
-        }
-
-        final Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
-                drawable.getIntrinsicHeight(),
-                Bitmap.Config.ARGB_8888);
-        final Canvas canvas = new Canvas(bitmap);
-        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-        drawable.draw(canvas);
-        return bitmap;
-    }
 }
