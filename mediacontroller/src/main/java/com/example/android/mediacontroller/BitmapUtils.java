@@ -103,6 +103,6 @@ public final class BitmapUtils {
         final Bitmap scaledIcon = Bitmap.createScaledBitmap(icon, iconSize, iconSize, false);
         canvas.drawBitmap(scaledIcon, padding, padding, null);
 
-        return scaledIcon;
+        return toolbarIcon;
     }
 }

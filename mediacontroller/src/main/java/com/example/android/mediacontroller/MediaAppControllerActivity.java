@@ -18,14 +18,12 @@ package com.example.android.mediacontroller;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.os.RemoteException;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.StringRes;
+import android.support.design.widget.Snackbar;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -71,6 +69,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaControllerCompat mController;
     private MediaBrowserCompat mBrowser;
 
+    private View mRootView;
     private EditText mUriInput;
     private TextView mMediaInfoText;
 
@@ -95,6 +94,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        mRootView = findViewById(R.id.root_view);
         mUriInput = (EditText) findViewById(R.id.uri_id_query);
         mMediaInfoText = (TextView) findViewById(R.id.media_info);
 
@@ -107,12 +107,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         setupButtons();
         setupMediaController();
 
-        findViewById(R.id.reconnect).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                setupMediaController();
-            }
-        });
         findViewById(R.id.update_media_info_btn).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -262,29 +256,34 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                     }
                 });
                 Log.d(TAG, "MediaControllerCompat created");
-                findViewById(R.id.status_info).setVisibility(View.GONE);
-            } catch (RemoteException e) {
-                Log.e(TAG, "Failed to connect with session token: " + e);
-                String msg = getString(R.string.media_controller_failed_msg);
-                ((TextView) findViewById(R.id.status_info)).setText(msg);
-                findViewById(R.id.status_info).setVisibility(View.VISIBLE);
+            } catch (RemoteException remoteException) {
+                Log.e(TAG, "Failed to connect with session token: " + remoteException);
+                showDisconnected(R.string.media_controller_failed_msg);
             }
         }
 
         @Override
         public void onConnectionSuspended() {
             Log.d(TAG, "MediaBrowser connection suspended");
-            String msg = getString(R.string.connection_suspended_msg);
-            ((TextView) findViewById(R.id.status_info)).setText(msg);
-            findViewById(R.id.status_info).setVisibility(View.VISIBLE);
+            showDisconnected(R.string.connection_suspended_msg);
         }
 
         @Override
         public void onConnectionFailed() {
             Log.e(TAG, "MediaBrowser connection failed");
-            String msg = getString(R.string.connection_failed_msg);
-            ((TextView) findViewById(R.id.status_info)).setText(msg);
-            findViewById(R.id.status_info).setVisibility(View.VISIBLE);
+            showDisconnected(R.string.connection_failed_msg);
+        }
+
+        private void showDisconnected(@StringRes final int stringResource) {
+            final Snackbar snackbar =
+                    Snackbar.make(mRootView, stringResource, Snackbar.LENGTH_INDEFINITE);
+            snackbar.setAction(R.string.reconnect, new View.OnClickListener() {
+                @Override
+                public void onClick(final View view) {
+                    setupMediaController();
+                }
+            });
+            snackbar.show();
         }
     }
 }

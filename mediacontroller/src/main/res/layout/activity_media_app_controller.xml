@@ -14,12 +14,13 @@
   limitations under the License.
   -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context="com.example.android.mediacontroller.MediaAppControllerActivity">
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:id="@+id/root_view"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              tools:context="com.example.android.mediacontroller.MediaAppControllerActivity">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -31,7 +32,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            app:popupTheme="@style/AppTheme.PopupOverlay"/>
 
     </android.support.design.widget.AppBarLayout>
 
@@ -53,15 +54,7 @@
                 android:id="@+id/status_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:visibility="gone" />
-
-            <Button
-                android:id="@+id/reconnect"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:text="@string/reconnect" />
+                android:visibility="gone"/>
 
             <EditText
                 android:id="@+id/uri_id_query"
@@ -70,19 +63,19 @@
                 android:layout_marginBottom="@dimen/activity_vertical_margin"
                 android:hint="@string/id_hint"
                 android:inputType="textUri"
-                android:text="@string/default_uri" />
+                android:text="@string/default_uri"/>
 
             <Button
                 android:id="@+id/update_media_info_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/update_media_info" />
+                android:text="@string/update_media_info"/>
 
             <TextView
                 android:id="@+id/media_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/media_info_default" />
+                android:text="@string/media_info_default"/>
         </LinearLayout>
 
     </ScrollView>
