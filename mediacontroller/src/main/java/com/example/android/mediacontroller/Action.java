@@ -59,24 +59,46 @@ public class Action {
         return mControllerAction;
     }
 
-    public static List<Action> createActions(@NonNull final Context context) {
+    public static List<Action> createPreparePlayActions(@NonNull final Context context) {
         List<Action> actions = new ArrayList<>();
         Action action;
 
-        action = new Action(context.getString(R.string.action_prepare));
+        /*
+         * The order of these must match the order of the string-array, "input_options",
+         * contained in strings.xml.
+         */
+        action = new Action(context.getString(R.string.action_prepare_search));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().prepare();
+                controller.getTransportControls().prepareFromSearch(id, extras);
             }
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_play));
+        action = new Action(context.getString(R.string.action_play_search));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().play();
+                controller.getTransportControls().playFromSearch(id, extras);
+            }
+        });
+        actions.add(action);
+
+        action = new Action(context.getString(R.string.action_prepare_id));
+        action.setMediaControllerAction(new MediaControllerAction() {
+            @Override
+            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
+                controller.getTransportControls().prepareFromMediaId(id, extras);
+            }
+        });
+        actions.add(action);
+
+        action = new Action(context.getString(R.string.action_play_id));
+        action.setMediaControllerAction(new MediaControllerAction() {
+            @Override
+            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
+                controller.getTransportControls().playFromMediaId(id, extras);
             }
         });
         actions.add(action);
@@ -109,41 +131,30 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_prepare_id));
+        action = new Action(context.getString(R.string.action_prepare));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().prepareFromMediaId(id, extras);
+                controller.getTransportControls().prepare();
             }
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_play_id));
+        action = new Action(context.getString(R.string.action_play));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().playFromMediaId(id, extras);
+                controller.getTransportControls().play();
             }
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_prepare_search));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().prepareFromSearch(id, extras);
-            }
-        });
-        actions.add(action);
+        return actions;
+    }
 
-        action = new Action(context.getString(R.string.action_play_search));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().playFromSearch(id, extras);
-            }
-        });
-        actions.add(action);
+    public static List<Action> createActions(@NonNull final Context context) {
+        List<Action> actions = new ArrayList<>();
+        Action action;
 
         action = new Action(context.getString(R.string.action_resume));
         action.setMediaControllerAction(new MediaControllerAction() {

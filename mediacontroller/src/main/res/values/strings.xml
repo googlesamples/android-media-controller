@@ -39,6 +39,17 @@
     <string name="info_artist_string">Artist</string>
     <string name="info_album_string">Album</string>
 
+    <!--
+    The order of these must be reflected in the Actions list created by
+    createPreparePlayActions(Context) in Action.java.
+    -->
+    <string-array name="input_options">
+        <item>Search</item>
+        <item>Media ID</item>
+        <item>URI</item>
+        <item>No Input</item>
+    </string-array>
+
     <string name="action_prepare">Prepare</string>
     <string name="action_prepare_uri">Prepare URI</string>
     <string name="action_prepare_id">Prepare media ID</string>

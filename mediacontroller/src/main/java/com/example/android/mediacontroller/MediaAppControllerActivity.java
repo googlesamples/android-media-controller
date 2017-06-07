@@ -16,6 +16,7 @@
 package com.example.android.mediacontroller;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -37,9 +38,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -70,6 +73,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaBrowserCompat mBrowser;
 
     private View mRootView;
+    private Spinner mInputTypeView;
     private EditText mUriInput;
     private TextView mMediaInfoText;
 
@@ -95,6 +99,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         mRootView = findViewById(R.id.root_view);
+        mInputTypeView = (Spinner) findViewById(R.id.input_type);
         mUriInput = (EditText) findViewById(R.id.uri_id_query);
         mMediaInfoText = (TextView) findViewById(R.id.media_info);
 
@@ -106,16 +111,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         handleIntent(getIntent());
         setupButtons();
         setupMediaController();
-
-        findViewById(R.id.update_media_info_btn).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String mediaInfoStr = fetchMediaInfo();
-                if (mediaInfoStr != null) {
-                    mMediaInfoText.setText(mediaInfoStr);
-                }
-            }
-        });
 
         final ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
@@ -178,6 +173,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
+
+        final PreparePlayHandler preparePlayHandler = new PreparePlayHandler(this);
+        findViewById(R.id.action_prepare).setOnClickListener(preparePlayHandler);
+        findViewById(R.id.action_play).setOnClickListener(preparePlayHandler);
+
         LinearLayout buttonList = (LinearLayout) findViewById(R.id.activity_main);
         for (final Action action : Action.createActions(this)) {
             Button button = new Button(this);
@@ -236,6 +236,57 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
     }
 
+    private class PreparePlayHandler implements View.OnClickListener {
+        /*
+         * Indexes of the values in the "input_options" string array.
+         */
+        private static final int INDEX_SEARCH = 0;
+        private static final int INDEX_MEDIA_ID = 1;
+        private static final int INDEX_URI = 2;
+        private static final int INDEX_NO_PARAM = 3;
+
+        /*
+         * Indexes to the Actions returned by Action.createPreparePlayActions(Context).
+         */
+        private static final int ACTION_INDEX_SEARCH = INDEX_SEARCH * 2;
+        private static final int ACTION_INDEX_MEDIA_ID = INDEX_MEDIA_ID * 2;
+        private static final int ACTION_INDEX_URI = INDEX_URI * 2;
+        private static final int ACTION_INDEX_NO_PARAM = INDEX_NO_PARAM * 2;
+
+        private final List<Action> mPreparePlayActions;
+
+        private PreparePlayHandler(final Context context) {
+            mPreparePlayActions = Action.createPreparePlayActions(context);
+        }
+
+        @Override
+        public void onClick(final View button) {
+            final int prepareOrPlay = button.getId() == R.id.action_prepare ? 0 : 1;
+
+            final Action action;
+            switch (mInputTypeView.getSelectedItemPosition()) {
+                case INDEX_NO_PARAM:
+                    action = mPreparePlayActions.get(ACTION_INDEX_NO_PARAM + prepareOrPlay);
+                    break;
+                case INDEX_MEDIA_ID:
+                    action = mPreparePlayActions.get(ACTION_INDEX_MEDIA_ID + prepareOrPlay);
+                    break;
+                case INDEX_SEARCH:
+                    action = mPreparePlayActions.get(ACTION_INDEX_SEARCH + prepareOrPlay);
+                    break;
+                case INDEX_URI:
+                    action = mPreparePlayActions.get(ACTION_INDEX_URI + prepareOrPlay);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown input type: " +
+                            mInputTypeView.getSelectedItemPosition());
+            }
+
+            final String data = mUriInput.getText().toString();
+            action.getMediaControllerAction().run(mController, data, null);
+        }
+    }
+
     private class MyConnectionCallback extends MediaBrowserCompat.ConnectionCallback {
 
         @Override
@@ -248,6 +299,15 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 mController.registerCallback(new MediaControllerCompat.Callback() {
                     @Override
                     public void onPlaybackStateChanged(PlaybackStateCompat playbackState) {
+                        onUpdate();
+                    }
+
+                    @Override
+                    public void onMetadataChanged(MediaMetadataCompat metadata) {
+                        onUpdate();
+                    }
+
+                    private void onUpdate() {
                         String newText = "PlaybackState changed!";
                         String mediaInfoStr = fetchMediaInfo();
                         if (mediaInfoStr != null) {
