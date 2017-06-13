@@ -29,15 +29,17 @@ import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
+import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -77,6 +79,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private EditText mUriInput;
     private TextView mMediaInfoText;
 
+    private ImageView mMediaAlbumArtView;
+    private TextView mMediaTitleView;
+    private TextView mMediaArtistView;
+    private TextView mMediaAlbumView;
+
     /**
      * Builds an {@link Intent} to launch this Activity with a set of extras.
      *
@@ -85,7 +92,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
      * @return An Intent that can be used to start the Activity.
      */
     public static Intent buildIntent(final Activity activity,
-                                     final MediaAppDetails appDetails) {
+            final MediaAppDetails appDetails) {
         final Intent intent = new Intent(activity, MediaAppControllerActivity.class);
         intent.putExtra(APP_DETAILS_EXTRA, appDetails);
         return intent;
@@ -103,6 +110,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mUriInput = (EditText) findViewById(R.id.uri_id_query);
         mMediaInfoText = (TextView) findViewById(R.id.media_info);
 
+        mMediaAlbumArtView = (ImageView) findViewById(R.id.media_art);
+        mMediaTitleView = (TextView) findViewById(R.id.media_title);
+        mMediaArtistView = (TextView) findViewById(R.id.media_artist);
+        mMediaAlbumView = (TextView) findViewById(R.id.media_album);
+
         if (savedInstanceState != null) {
             mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
             mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
@@ -119,6 +131,29 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             actionBar.setIcon(new BitmapDrawable(getResources(), toolbarIcon));
             actionBar.setTitle(mMediaAppDetails.appName);
         }
+
+        final ViewPager viewPager = (ViewPager) findViewById(R.id.view_pager);
+        viewPager.setAdapter(new PagerAdapter() {
+            private final int[] pages = {
+                    R.id.activity_main,
+                    R.id.controls_page
+            };
+
+            @Override
+            public int getCount() {
+                return pages.length;
+            }
+
+            @Override
+            public boolean isViewFromObject(View view, Object object) {
+                return view == object;
+            }
+
+            @Override
+            public Object instantiateItem(ViewGroup container, int position) {
+                return findViewById(pages[position]);
+            }
+        });
     }
 
     @Override
@@ -178,10 +213,9 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         findViewById(R.id.action_prepare).setOnClickListener(preparePlayHandler);
         findViewById(R.id.action_play).setOnClickListener(preparePlayHandler);
 
-        LinearLayout buttonList = (LinearLayout) findViewById(R.id.activity_main);
-        for (final Action action : Action.createActions(this)) {
-            Button button = new Button(this);
-            button.setText(action.getName());
+        final List<Action> mediaActions = Action.createActions(this);
+        for (final Action action : mediaActions) {
+            final View button = findViewById(action.getId());
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -191,7 +225,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                     }
                 }
             });
-            buttonList.addView(button);
         }
     }
 
@@ -226,6 +259,16 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                     mediaInfos,
                     getString(R.string.info_album_string),
                     mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM));
+
+            mMediaTitleView.setText(
+                    mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
+            mMediaArtistView.setText(
+                    mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
+            mMediaAlbumView.setText(
+                    mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM));
+
+            final Bitmap art = mediaMetadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART);
+            mMediaAlbumArtView.setImageBitmap(art);
         }
         return mediaInfos.toString();
     }

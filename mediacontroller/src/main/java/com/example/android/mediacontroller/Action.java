@@ -40,15 +40,25 @@ public class Action {
 
     private static final String TAG = Action.class.getSimpleName();
 
+    private int mId;
     private String mName;
     private MediaControllerAction mControllerAction;
 
     public Action(String name) {
+        this(0, name);
+    }
+
+    public Action(int id, String name) {
+        mId = id;
         mName = name;
     }
 
     public String getName() {
         return mName;
+    }
+
+    public int getId() {
+        return mId;
     }
 
     public void setMediaControllerAction(MediaControllerAction controllerAction) {
@@ -156,7 +166,7 @@ public class Action {
         List<Action> actions = new ArrayList<>();
         Action action;
 
-        action = new Action(context.getString(R.string.action_resume));
+        action = new Action(R.id.action_resume, context.getString(R.string.action_resume));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -165,7 +175,7 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_pause));
+        action = new Action(R.id.action_pause, context.getString(R.string.action_pause));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -174,7 +184,7 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_stop));
+        action = new Action(R.id.action_stop, context.getString(R.string.action_stop));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -183,7 +193,7 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_next));
+        action = new Action(R.id.action_skip_next, context.getString(R.string.action_skip_next));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -192,7 +202,8 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_previous));
+        action = new Action(R.id.action_skip_previous,
+                context.getString(R.string.action_skip_previous));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -201,7 +212,7 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_thumbs_up));
+        action = new Action(R.id.action_thumbs_up, context.getString(R.string.action_thumbs_up));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -210,7 +221,8 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_thumbs_down));
+        action = new Action(R.id.action_thumbs_down,
+                context.getString(R.string.action_thumbs_down));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -219,7 +231,8 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_skip_30s_backward));
+        action = new Action(R.id.action_skip_30s_backward,
+                context.getString(R.string.action_skip_30s_backward));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -229,7 +242,8 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_skip_30s_forward));
+        action = new Action(R.id.action_skip_30s_forward,
+                context.getString(R.string.action_skip_30s_forward));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -239,7 +253,8 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_fast_forward));
+        action = new Action(R.id.action_fast_forward,
+                context.getString(R.string.action_fast_forward));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
@@ -248,7 +263,8 @@ public class Action {
         });
         actions.add(action);
 
-        action = new Action(context.getString(R.string.action_rewind));
+        action = new Action(R.id.action_fast_rewind,
+                context.getString(R.string.action_fast_rewind));
         action.setMediaControllerAction(new MediaControllerAction() {
             @Override
             public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {

@@ -22,7 +22,8 @@
     <dimen name="margin_small">8dp</dimen>
     <dimen name="toolbar_icon_size">24dp</dimen>
 
-    <dimen name="control_padding">4dp</dimen>
+    <dimen name="control_padding">8dp</dimen>
+    <dimen name="thumbs_spacing">64dp</dimen>
 
     <dimen name="app_icon_size">48dp</dimen>
     <dimen name="app_name_text_size">18sp</dimen>
@@ -30,4 +31,6 @@
 
     <dimen name="error_text_size">18sp</dimen>
     <dimen name="error_details_text_size">12sp</dimen>
+
+    <dimen name="text_shadow_size">2dp</dimen>
 </resources>

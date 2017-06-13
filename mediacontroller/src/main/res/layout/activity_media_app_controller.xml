@@ -14,13 +14,13 @@
   limitations under the License.
   -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:id="@+id/root_view"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical"
-              tools:context="com.example.android.mediacontroller.MediaAppControllerActivity">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.android.mediacontroller.MediaAppControllerActivity">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -32,11 +32,12 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay"/>
+            app:popupTheme="@style/AppTheme.PopupOverlay" />
 
     </android.support.design.widget.AppBarLayout>
 
-    <ScrollView
+    <android.support.v4.view.ViewPager
+        android:id="@+id/view_pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -54,7 +55,7 @@
                 android:id="@+id/status_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -64,7 +65,7 @@
                     android:id="@+id/input_type"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:entries="@array/input_options"/>
+                    android:entries="@array/input_options" />
 
                 <EditText
                     android:id="@+id/uri_id_query"
@@ -73,7 +74,7 @@
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
                     android:hint="@string/id_hint"
                     android:inputType="textUri"
-                    android:text="@string/default_uri"/>
+                    android:text="@string/default_uri" />
 
             </LinearLayout>
 
@@ -90,7 +91,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/action_prepare"/>
+                    android:text="@string/action_prepare" />
 
                 <Button
                     android:id="@+id/action_play"
@@ -98,7 +99,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/action_play"/>
+                    android:text="@string/action_play" />
 
             </LinearLayout>
 
@@ -106,9 +107,14 @@
                 android:id="@+id/media_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/media_info_default"/>
+                android:text="@string/media_info_default" />
         </LinearLayout>
 
-    </ScrollView>
+        <include
+            android:id="@+id/controls_page"
+            layout="@layout/media_controls" />
+
+    </android.support.v4.view.ViewPager>
+
 </LinearLayout>
 
