@@ -36,6 +36,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -243,7 +244,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         Map<String, String> mediaInfos = new HashMap<>();
         mediaInfos.put(getString(R.string.info_state_string),
-                String.valueOf(playbackState.getState()));
+                playbackStateToName(playbackState.getState()));
 
         MediaMetadataCompat mediaMetadata = mController.getMetadata();
         if (mediaMetadata != null) {
@@ -271,6 +272,37 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             mMediaAlbumArtView.setImageBitmap(art);
         }
         return mediaInfos.toString();
+    }
+
+    private String playbackStateToName(final int playbackState) {
+        switch (playbackState) {
+            case PlaybackStateCompat.STATE_NONE:
+                return "STATE_NONE";
+            case PlaybackStateCompat.STATE_STOPPED:
+                return "STATE_STOPPED";
+            case PlaybackStateCompat.STATE_PAUSED:
+                return "STATE_PAUSED";
+            case PlaybackStateCompat.STATE_PLAYING:
+                return "STATE_PLAYING";
+            case PlaybackStateCompat.STATE_FAST_FORWARDING:
+                return "STATE_FAST_FORWARDING";
+            case PlaybackStateCompat.STATE_REWINDING:
+                return "STATE_REWINDING";
+            case PlaybackStateCompat.STATE_BUFFERING:
+                return "STATE_BUFFERING";
+            case PlaybackStateCompat.STATE_ERROR:
+                return "STATE_ERROR";
+            case PlaybackStateCompat.STATE_CONNECTING:
+                return "STATE_CONNECTING";
+            case PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS:
+                return "STATE_SKIPPING_TO_PREVIOUS";
+            case PlaybackStateCompat.STATE_SKIPPING_TO_NEXT:
+                return "STATE_SKIPPING_TO_NEXT";
+            case PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM:
+                return "STATE_SKIPPING_TO_QUEUE_ITEM";
+            default:
+                return "!Unknown State!";
+        }
     }
 
     private void addMediaInfo(Map<String, String> mediaInfos, String key, String value) {
