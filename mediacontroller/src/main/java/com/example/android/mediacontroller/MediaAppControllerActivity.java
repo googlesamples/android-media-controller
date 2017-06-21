@@ -25,6 +25,7 @@ import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TabLayout;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -155,6 +156,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 return findViewById(pages[position]);
             }
         });
+        final TabLayout pageIndicator = (TabLayout) findViewById(R.id.page_indicator);
+        pageIndicator.setupWithViewPager(viewPager);
     }
 
     @Override
@@ -357,8 +360,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                             mInputTypeView.getSelectedItemPosition());
             }
 
-            final String data = mUriInput.getText().toString();
-            action.getMediaControllerAction().run(mController, data, null);
+            if (mController != null) {
+                final String data = mUriInput.getText().toString();
+                action.getMediaControllerAction().run(mController, data, null);
+            }
         }
     }
 
