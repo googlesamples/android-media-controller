@@ -11,13 +11,23 @@ https://github.com/googlesamples/android-UniversalMusicPlayer
 Usage
 =====
 
-    adb shell am start -n com.example.android.mediacontroller/.MainActivity --es p PACKAGE_NAME --es c MEDIA_BROWSER_SERVICE_NAME --es i MEDIA_URI_MEDIA_ID_OR_QUERY
-
-
-UAMP Example
-============
-
-    adb shell am start -n com.example.android.mediacontroller/.MainActivity --es p com.example.android.uamp --es c com.example.android.uamp.MusicService --es i "https://www.example.com"
+1. Select an app from the list of those presented.
+   * Only apps that register a service with an intent filter action of
+   "android.media.browse.MediaBrowserService" will be shown.
+2. Select the type of action to perform to start the player. Options are:
+   * Search: Sends the text provided as a search via _prepareFromSearch()_ or
+   _playFromSearch()_.
+   * Media ID: Sends the text provided as a media ID via _prepareFromMediaId()_ or
+   _playFromMediaId()_.
+   * URI: Sends the text provided as a URI via _prepareFromUri()_ or
+   _playFromUri()_.
+   * No Input: Calls the methods _prepare()_ or _play()_ directly.
+3. Text below the ```PREPARE``` and ```PLAY``` buttons updates based on changes to
+   the media player state via _onPlaybackStateChanged_ and _onMetadataChanged_ and
+   includes the current player state reported via _PlaybackStateCompat.getState()_.
+4. Swipe to the left to see typical media controls with the media's art as a
+   background, if provided.
+5. Press ```back``` to return to the list of media apps.
 
 
 Screenshots
