@@ -19,6 +19,7 @@
     <string name="app_icon_desc">App icon for %1$s.</string>
     <string name="no_apps_found">No Media Apps Found</string>
     <string name="no_apps_details">Could not locate any apps implementing a MediaBrowser.</string>
+    <string name="no_app_for_package">Could not find a media browser for package "%1$s".</string>
 
     <string name="monkey_buttons_txt">PUSH BUTTONS!</string>
     <string name="default_pkg">com.example.android.uamp</string>

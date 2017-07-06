@@ -29,9 +29,34 @@ Usage
    background, if provided.
 5. Press ```back``` to return to the list of media apps.
 
+Via ADB
+-------
+
+It's also possible to launch the app via ADB and the Activity manager (am).
+
+Usage: ```adb shell am start mediacontroller://<package name>?[search|id|uri=<value>]```
+
+For example, to set up to play "Awakening" by _Silent Partner_ in UAMP, the following command
+could be used:
+
+```adb shell am start "mediacontroller://com.example.android.uamp?id=__BY_GENRE__/Rock\|-1679589699"```
+
+Alternatively, it's possible to use extras to pass parameters, which is recommended when passing
+parameters that include URI-like components:
+
+Extra names:
+
+- Package name : ```com.example.android.mediacontroller.PACKAGE_NAME```
+- Search term : ```com.example.android.mediacontroller.SEARCH```
+- Media ID : ```com.example.android.mediacontroller.MEDIA_ID```
+- URI : ```com.example.android.mediacontroller.URI```
+
+Another example with UAMP is to perform a search with the term "jazz?" one would use:
+
+```adb shell am start -n com.example.android.mediacontroller/.MediaAppControllerActivity --es com.example.android.mediacontroller.PACKAGE_NAME "com.example.android.uamp" --es com.example.android.mediacontroller.SEARCH "jazz?"```
 
 Screenshots
------------
+===========
 
 ![](screenshots/screenshots.png "Controls, URIs, Playback")
 

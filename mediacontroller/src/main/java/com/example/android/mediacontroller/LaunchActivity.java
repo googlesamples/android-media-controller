@@ -23,6 +23,7 @@ import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
@@ -44,7 +45,6 @@ import java.util.List;
  * (via a receiver that responds to the action "android.media.browse.MediaBrowserService").
  */
 public class LaunchActivity extends AppCompatActivity {
-
     /**
      * Callback used by {@link FindMediaAppsTask}.
      */
@@ -116,9 +116,6 @@ public class LaunchActivity extends AppCompatActivity {
     }
 
     private class FindMediaAppsTask extends AsyncTask<Void, Void, List<MediaAppDetails>> {
-        private static final String MEDIA_BROWSER_ACTION =
-                "android.media.browse.MediaBrowserService";
-
         private final AppListUpdatedCallback mCallback;
 
         private FindMediaAppsTask(@NonNull AppListUpdatedCallback callback) {
@@ -140,7 +137,8 @@ public class LaunchActivity extends AppCompatActivity {
             // Build an Intent that only has the MediaBrowserService action and query
             // the PackageManager for apps that have services registered that can
             // receive it.
-            final Intent mediaBrowserIntent = new Intent(MEDIA_BROWSER_ACTION);
+            final Intent mediaBrowserIntent =
+                    new Intent(MediaBrowserServiceCompat.SERVICE_INTERFACE);
             final List<ResolveInfo> services =
                     packageManager.queryIntentServices(mediaBrowserIntent,
                             PackageManager.GET_RESOLVED_FILTER);

@@ -16,10 +16,15 @@
 package com.example.android.mediacontroller;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
@@ -27,6 +32,7 @@ import android.support.annotation.StringRes;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -37,17 +43,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class connects to a {@link android.support.v4.media.MediaBrowserServiceCompat}
@@ -68,9 +75,29 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private static final String STATE_URI_KEY =
             "com.example.android.mediacontroller.STATE_URI_KEY";
 
+    // Key names for external extras.
+    private static final String PACKAGE_NAME_EXTRA =
+            "com.example.android.mediacontroller.PACKAGE_NAME";
+    private static final String SEARCH_EXTRA = "com.example.android.mediacontroller.SEARCH";
+    private static final String URI_EXTRA ="com.example.android.mediacontroller.URI";
+    private static final String MEDIA_ID_EXTRA = "com.example.android.mediacontroller.MEDIA_ID";
+
+    // Hint to use the currently loaded app rather than specifying a package.
+    private static final String CURRENT_PACKAGE = "current";
+
+    // Parameters for deep link URI.
+    private static final String SEARCH_PARAM = "search";
+    private static final String MEDIA_ID_PARAM = "id";
+    private static final String URI_PARAM = "uri";
+
     // Key name for Intent extras.
     private static final String APP_DETAILS_EXTRA =
             "com.example.android.mediacontroller.APP_DETAILS_EXTRA";
+
+    // Index values for spinner.
+    private static final int SEARCH_INDEX = 0;
+    private static final int MEDIA_ID_INDEX = 1;
+    private static final int URI_INDEX = 2;
 
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
@@ -94,7 +121,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
      * @return An Intent that can be used to start the Activity.
      */
     public static Intent buildIntent(final Activity activity,
-            final MediaAppDetails appDetails) {
+                                     final MediaAppDetails appDetails) {
         final Intent intent = new Intent(activity, MediaAppControllerActivity.class);
         intent.putExtra(APP_DETAILS_EXTRA, appDetails);
         return intent;
@@ -172,14 +199,65 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             return;
         }
 
-        if (intent.getData() != null) {
-            String uri = intent.getData().toString();
-            mUriInput.setText(uri);
+        final Uri data = intent.getData();
+        final String appPackageName;
+        if (data != null) {
+            appPackageName = data.getHost();
+
+            final Set<String> params = data.getQueryParameterNames();
+            if (params.contains(SEARCH_PARAM)) {
+                mInputTypeView.setSelection(SEARCH_INDEX);
+                mUriInput.setText(data.getQueryParameter(SEARCH_PARAM));
+            } else if (params.contains(MEDIA_ID_PARAM)) {
+                mInputTypeView.setSelection(MEDIA_ID_INDEX);
+                mUriInput.setText(data.getQueryParameter(MEDIA_ID_PARAM));
+            } else if (params.contains(URI_PARAM)) {
+                mInputTypeView.setSelection(URI_INDEX);
+                mUriInput.setText(data.getQueryParameter(URI_PARAM));
+            }
+        } else if (intent.hasExtra(PACKAGE_NAME_EXTRA)) {
+            appPackageName = intent.getStringExtra(PACKAGE_NAME_EXTRA);
+        } else {
+            appPackageName = null;
+        }
+
+        // Create app details from URI, if one was present.
+        if (appPackageName != null) {
+            if (mMediaAppDetails == null || !appPackageName.equals(CURRENT_PACKAGE)) {
+                final MediaAppDetails appDetails = buildMediaDetailsFromPackage(appPackageName);
+
+                if (appDetails == null) {
+                    // Couldn't build the media app details so alert the user and exit.
+                    Toast.makeText(this,
+                            getString(R.string.no_app_for_package, appPackageName),
+                            Toast.LENGTH_LONG)
+                            .show();
+                    finish();
+                    return;
+                } else {
+                    mMediaAppDetails = appDetails;
+                }
+            }
         }
 
         final Bundle extras = intent.getExtras();
-        if (extras != null && extras.containsKey(APP_DETAILS_EXTRA)) {
-            mMediaAppDetails = extras.getParcelable(APP_DETAILS_EXTRA);
+        if (extras != null) {
+            // Pull data out of the extras, if they're there.
+            if (extras.containsKey(SEARCH_EXTRA)) {
+                mInputTypeView.setSelection(SEARCH_INDEX);
+                mUriInput.setText(extras.getString(SEARCH_EXTRA));
+            } else if (extras.containsKey(MEDIA_ID_EXTRA)) {
+                mInputTypeView.setSelection(MEDIA_ID_INDEX);
+                mUriInput.setText(extras.getString(MEDIA_ID_EXTRA));
+            } else if (extras.containsKey(URI_EXTRA)) {
+                mInputTypeView.setSelection(URI_INDEX);
+                mUriInput.setText(extras.getString(URI_EXTRA));
+            }
+
+            // It's also possible we're here from LaunchActivity, which did all this work for us.
+            if (extras.containsKey(APP_DETAILS_EXTRA)) {
+                mMediaAppDetails = extras.getParcelable(APP_DETAILS_EXTRA);
+            }
         }
     }
 
@@ -209,6 +287,31 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mBrowser = new MediaBrowserCompat(this, mMediaAppDetails.mediaServiceComponentName,
                 new MyConnectionCallback(), null);
         mBrowser.connect();
+    }
+
+    private MediaAppDetails buildMediaDetailsFromPackage(final String packageName) {
+        final PackageManager packageManager = getPackageManager();
+
+        final Intent mediaBrowserIntent = new Intent(MediaBrowserServiceCompat.SERVICE_INTERFACE);
+        final List<ResolveInfo> services =
+                packageManager.queryIntentServices(mediaBrowserIntent,
+                        PackageManager.GET_RESOLVED_FILTER);
+        for (ResolveInfo info : services) {
+            if (info.serviceInfo.packageName.equals(packageName)) {
+                final Drawable icon = info.loadIcon(packageManager);
+                final String name = info.loadLabel(packageManager).toString();
+                final String serviceName = info.serviceInfo.name;
+                final ComponentName serviceComponentName =
+                        new ComponentName(packageName, serviceName);
+                return new MediaAppDetails(
+                        name,
+                        serviceComponentName,
+                        BitmapUtils.convertDrawable(getResources(), icon));
+            }
+        }
+
+        // Failed to find package.
+        return null;
     }
 
     private void setupButtons() {
