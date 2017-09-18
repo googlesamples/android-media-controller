@@ -22,15 +22,18 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -43,16 +46,23 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -79,7 +89,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private static final String PACKAGE_NAME_EXTRA =
             "com.example.android.mediacontroller.PACKAGE_NAME";
     private static final String SEARCH_EXTRA = "com.example.android.mediacontroller.SEARCH";
-    private static final String URI_EXTRA ="com.example.android.mediacontroller.URI";
+    private static final String URI_EXTRA = "com.example.android.mediacontroller.URI";
     private static final String MEDIA_ID_EXTRA = "com.example.android.mediacontroller.MEDIA_ID";
 
     // Hint to use the currently loaded app rather than specifying a package.
@@ -112,6 +122,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private TextView mMediaTitleView;
     private TextView mMediaArtistView;
     private TextView mMediaAlbumView;
+
+    private final SparseArray<ImageButton> mActionButtonMap = new SparseArray<>();
 
     /**
      * Builds an {@link Intent} to launch this Activity with a set of extras.
@@ -320,6 +332,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         findViewById(R.id.action_prepare).setOnClickListener(preparePlayHandler);
         findViewById(R.id.action_play).setOnClickListener(preparePlayHandler);
 
+        mActionButtonMap.clear();
         final List<Action> mediaActions = Action.createActions(this);
         for (final Action action : mediaActions) {
             final View button = findViewById(action.getId());
@@ -332,6 +345,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                     }
                 }
             });
+            mActionButtonMap.put(action.getId(), (ImageButton) button);
         }
     }
 
@@ -377,7 +391,47 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             final Bitmap art = mediaMetadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART);
             mMediaAlbumArtView.setImageBitmap(art);
         }
-        return mediaInfos.toString();
+
+        final long actions = playbackState.getActions();
+
+        if ((actions & PlaybackStateCompat.ACTION_PREPARE_FROM_SEARCH) != 0) {
+            addMediaInfo(mediaInfos, "ACTION_PREPARE_FROM_SEARCH", "Supported");
+        }
+        if ((actions & PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH) != 0) {
+            addMediaInfo(mediaInfos, "ACTION_PLAY_FROM_SEARCH", "Supported");
+        }
+
+        if ((actions & PlaybackStateCompat.ACTION_PREPARE_FROM_MEDIA_ID) != 0) {
+            addMediaInfo(mediaInfos, "ACTION_PREPARE_FROM_MEDIA_ID", "Supported");
+        }
+        if ((actions & PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID) != 0) {
+            addMediaInfo(mediaInfos, "ACTION_PLAY_FROM_MEDIA_ID", "Supported");
+        }
+
+        if ((actions & PlaybackStateCompat.ACTION_PREPARE_FROM_URI) != 0) {
+            addMediaInfo(mediaInfos, "ACTION_PREPARE_FROM_URI", "Supported");
+        }
+        if ((actions & PlaybackStateCompat.ACTION_PLAY_FROM_URI) != 0) {
+            addMediaInfo(mediaInfos, "ACTION_PLAY_FROM_URI", "Supported");
+        }
+
+        if ((actions & PlaybackStateCompat.ACTION_PREPARE) != 0) {
+            addMediaInfo(mediaInfos, "ACTION_PREPARE", "Supported");
+        }
+        if ((actions & PlaybackStateCompat.ACTION_PLAY) != 0) {
+            addMediaInfo(mediaInfos, "ACTION_PLAY", "Supported");
+        }
+
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        final List<String> sortedKeys = new ArrayList<>();
+        sortedKeys.addAll(mediaInfos.keySet());
+        Collections.sort(sortedKeys, new KeyComparator());
+
+        for (final String key : sortedKeys) {
+            stringBuilder.append(key).append(" = ").append(mediaInfos.get(key)).append('\n');
+        }
+        return stringBuilder.toString();
     }
 
     private String playbackStateToName(final int playbackState) {
@@ -471,6 +525,23 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     }
 
     private class MyConnectionCallback extends MediaBrowserCompat.ConnectionCallback {
+        private final SparseArray<Long> mActionViewIdMap;
+
+        MyConnectionCallback() {
+            mActionViewIdMap = new SparseArray<>();
+            mActionViewIdMap.put(R.id.action_skip_previous,
+                    PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
+            mActionViewIdMap.put(R.id.action_fast_rewind, PlaybackStateCompat.ACTION_REWIND);
+            mActionViewIdMap.put(R.id.action_resume, PlaybackStateCompat.ACTION_PLAY);
+            mActionViewIdMap.put(R.id.action_pause, PlaybackStateCompat.ACTION_PAUSE);
+            mActionViewIdMap.put(R.id.action_stop, PlaybackStateCompat.ACTION_STOP);
+            mActionViewIdMap.put(R.id.action_fast_forward, PlaybackStateCompat.ACTION_FAST_FORWARD);
+            mActionViewIdMap.put(R.id.action_skip_next, PlaybackStateCompat.ACTION_SKIP_TO_NEXT);
+
+            // They're the same action, but each of the buttons should be colored anyway.
+            mActionViewIdMap.put(R.id.action_skip_30s_backward, PlaybackStateCompat.ACTION_SEEK_TO);
+            mActionViewIdMap.put(R.id.action_skip_30s_forward, PlaybackStateCompat.ACTION_SEEK_TO);
+        }
 
         @Override
         public void onConnected() {
@@ -479,25 +550,36 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                         MediaAppControllerActivity.this,
                         mBrowser.getSessionToken());
 
-                mController.registerCallback(new MediaControllerCompat.Callback() {
-                    @Override
-                    public void onPlaybackStateChanged(PlaybackStateCompat playbackState) {
-                        onUpdate();
-                    }
+                final MediaControllerCompat.Callback callback =
+                        new MediaControllerCompat.Callback() {
 
-                    @Override
-                    public void onMetadataChanged(MediaMetadataCompat metadata) {
-                        onUpdate();
-                    }
+                            @Override
+                            public void onPlaybackStateChanged(PlaybackStateCompat playbackState) {
+                                onUpdate();
 
-                    private void onUpdate() {
-                        String newText = "PlaybackState changed!";
-                        String mediaInfoStr = fetchMediaInfo();
-                        if (mediaInfoStr != null) {
-                            mMediaInfoText.setText(newText + "\n" + mediaInfoStr);
-                        }
-                    }
-                });
+                                if (playbackState != null) {
+                                    showActions(playbackState.getActions());
+                                }
+                            }
+
+                            @Override
+                            public void onMetadataChanged(MediaMetadataCompat metadata) {
+                                onUpdate();
+                            }
+
+                            private void onUpdate() {
+                                String mediaInfoStr = fetchMediaInfo();
+                                if (mediaInfoStr != null) {
+                                    mMediaInfoText.setText(mediaInfoStr);
+                                }
+                            }
+                        };
+                mController.registerCallback(callback);
+
+                // Force update on connect
+                callback.onPlaybackStateChanged(mController.getPlaybackState());
+                callback.onMetadataChanged(mController.getMetadata());
+
                 Log.d(TAG, "MediaControllerCompat created");
             } catch (RemoteException remoteException) {
                 Log.e(TAG, "Failed to connect with session token: " + remoteException);
@@ -527,6 +609,61 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 }
             });
             snackbar.show();
+        }
+
+        /**
+         * This updates the buttons on the controller view to show actions that
+         * aren't included in the declared supported actions in red to more easily
+         * detect potential bugs.
+         *
+         * @param actions The mask of currently supported actions from
+         *                {@see PlaybackStateCompat.getActions()}.
+         */
+        private void showActions(@PlaybackStateCompat.Actions long actions) {
+            final int count = mActionViewIdMap.size();
+            for (int i = 0; i < count; ++i) {
+                final int viewId = mActionViewIdMap.keyAt(i);
+                final long action = mActionViewIdMap.valueAt(i);
+
+                final ImageButton button = mActionButtonMap.get(viewId);
+                DrawableCompat.setTint(button.getDrawable(), getTint(actions, action));
+            }
+        }
+
+        private int getTint(@PlaybackStateCompat.Actions long actions,
+                            @PlaybackStateCompat.Actions long checkAction) {
+            return ((actions & checkAction) != 0)
+                    ? Color.WHITE
+                    : Color.RED;
+        }
+    }
+
+    private static class KeyComparator implements Comparator<String> {
+        private final Set<String> mCapKeys = new HashSet<>();
+
+        @Override
+        public int compare(String leftSide, String rightSide) {
+            final boolean leftCaps = isAllCaps(leftSide);
+            final boolean rightCaps = isAllCaps(rightSide);
+
+            if (leftCaps && rightCaps) {
+                return leftSide.compareTo(rightSide);
+            } else if (leftCaps) {
+                return 1;
+            } else if (rightCaps) {
+                return -1;
+            }
+            return leftSide.compareTo(rightSide);
+        }
+
+        private boolean isAllCaps(@NonNull final String stringToCheck) {
+            if (mCapKeys.contains(stringToCheck)) {
+                return true;
+            } else if (stringToCheck.equals(stringToCheck.toUpperCase(Locale.US))) {
+                mCapKeys.add(stringToCheck);
+                return true;
+            }
+            return false;
         }
     }
 }

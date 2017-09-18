@@ -55,6 +55,16 @@ Another example with UAMP is to perform a search with the term "jazz?" one would
 
 ```adb shell am start -n com.example.android.mediacontroller/.MediaAppControllerActivity --es com.example.android.mediacontroller.PACKAGE_NAME "com.example.android.uamp" --es com.example.android.mediacontroller.SEARCH "jazz?"```
 
+Verification
+============
+
+This tool displays the supported actions as reported by the MediaSession in the call to
+[MediaSessionCompat.setPlaybackState()](https://developer.android.com/reference/android/support/v4/media/session/MediaSessionCompat.html#setPlaybackState(android.support.v4.media.session.PlaybackStateCompat))
+as a list of prepare and play actions on the main screen, and by coloring the buttons for actions
+that aren't declared as supported red on the controller screen.
+
+See the screenshots below for examples.
+
 Screenshots
 ===========
 
@@ -62,7 +72,7 @@ Screenshots
 
 
 License
--------
+=======
 
 Copyright 2017 Google Inc. All rights reserved.
 
