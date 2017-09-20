@@ -176,7 +176,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         final ViewPager viewPager = (ViewPager) findViewById(R.id.view_pager);
         viewPager.setAdapter(new PagerAdapter() {
             private final int[] pages = {
-                    R.id.activity_main,
+                    R.id.prepare_play_page,
                     R.id.controls_page
             };
 
