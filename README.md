@@ -58,6 +58,23 @@ Another example with UAMP is to perform a search with the term "jazz?" one would
 Verification
 ============
 
+Audio Focus
+-----------
+
+This app allows for testing how media apps respond to audio focus changes.
+
+The app allows requesting and abandoning the following types of audio focus:
+
+* AUDIOFOCUS_GAIN
+* AUDIOFOCUS_GAIN_TRANSIENT
+* AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+
+For more information on audio focus please see
+[Managing Audio Focus](https://developer.android.com/guide/topics/media-apps/audio-focus.html).
+
+Supported Actions
+-----------------
+
 This tool displays the supported actions as reported by the MediaSession in the call to
 [MediaSessionCompat.setPlaybackState()](https://developer.android.com/reference/android/support/v4/media/session/MediaSessionCompat.html#setPlaybackState(android.support.v4.media.session.PlaybackStateCompat))
 as a list of prepare and play actions on the main screen. For actions that are not declared as

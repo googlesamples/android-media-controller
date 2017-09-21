@@ -74,4 +74,18 @@
 
     <string name="action_skip_30s_forward">Skip 30s</string>
     <string name="action_skip_30s_backward">Skip back 30s</string>
+
+    <string name="audio_focus_title">Audio Focus</string>
+    <string name="audio_focus_gain_focus">Gain</string>
+    <string name="audio_focus_abandon_focus">Abandon</string>
+
+    <!--
+    The order of these strings must match the order of the constants
+    declared in MediaAppControllerActivity.AudioFocusHelper (FOCUS_TYPES).
+    -->
+    <string-array name="audio_focus_types">
+        <item>GAIN</item>
+        <item>GAIN_TRANSIENT</item>
+        <item>GAIN_TRANSIENT_MAY_DUCK</item>
+    </string-array>
 </resources>

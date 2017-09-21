@@ -25,6 +25,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -49,12 +50,14 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -112,6 +115,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
     private MediaBrowserCompat mBrowser;
+    private AudioFocusHelper mAudioFocusHelper;
 
     private View mRootView;
     private Spinner mInputTypeView;
@@ -331,6 +335,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         final PreparePlayHandler preparePlayHandler = new PreparePlayHandler(this);
         findViewById(R.id.action_prepare).setOnClickListener(preparePlayHandler);
         findViewById(R.id.action_play).setOnClickListener(preparePlayHandler);
+
+        mAudioFocusHelper = new AudioFocusHelper(this,
+                (ToggleButton) findViewById(R.id.audio_focus_button),
+                (Spinner) findViewById(R.id.audio_focus_type));
 
         mActionButtonMap.clear();
         final List<Action> mediaActions = Action.createActions(this);
@@ -635,6 +643,85 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             return ((actions & checkAction) != 0)
                     ? Color.WHITE
                     : Color.RED;
+        }
+    }
+
+    /**
+     * Helper class to manage audio focus requests and the UI surrounding this feature.
+     */
+    private static class AudioFocusHelper
+            implements View.OnClickListener,
+            AudioManager.OnAudioFocusChangeListener,
+            AdapterView.OnItemSelectedListener {
+
+        /**
+         * This list MUST match the order of the string-array
+         * {@see R.array.audio_focus_types}.
+         */
+        private static final int[] FOCUS_TYPES = {
+                AudioManager.AUDIOFOCUS_GAIN,
+                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT,
+                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+        };
+
+        private final AudioManager mAudioManager;
+        private final ToggleButton mToggleButton;
+        private final Spinner mFocusTypeSpinner;
+
+        private AudioFocusHelper(@NonNull Context context,
+                                 @NonNull ToggleButton focusToggleButton,
+                                 @NonNull Spinner focusTypeSpinner) {
+
+            mAudioManager = (AudioManager) context.getSystemService(AUDIO_SERVICE);
+            mToggleButton = focusToggleButton;
+            mFocusTypeSpinner = focusTypeSpinner;
+
+            mToggleButton.setOnClickListener(this);
+            mFocusTypeSpinner.setOnItemSelectedListener(this);
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (mToggleButton.isChecked()) {
+                requestAudioFocus(getSelectedFocusType());
+            } else {
+                mAudioManager.abandonAudioFocus(this);
+            }
+        }
+
+        @Override
+        public void onAudioFocusChange(int focusChange) {
+            switch (focusChange) {
+                case AudioManager.AUDIOFOCUS_GAIN:
+                case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT:
+                case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK:
+                    mToggleButton.setChecked(true);
+                    break;
+                default:
+                    mToggleButton.setChecked(false);
+            }
+        }
+
+        private int getSelectedFocusType() {
+            return FOCUS_TYPES[mFocusTypeSpinner.getSelectedItemPosition()];
+        }
+
+        private void requestAudioFocus(final int hint) {
+            mAudioManager.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, hint);
+        }
+
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            // If we're holding audio focus and the type should change, automatically
+            // request the new type of focus.
+            if (mToggleButton.isChecked()) {
+                requestAudioFocus(getSelectedFocusType());
+            }
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> parent) {
+            // Nothing to do.
         }
     }
 
