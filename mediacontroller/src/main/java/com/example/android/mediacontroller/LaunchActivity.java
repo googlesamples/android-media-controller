@@ -15,10 +15,13 @@
  */
 package com.example.android.mediacontroller;
 
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -36,7 +39,6 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -85,20 +87,17 @@ public class LaunchActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_launch);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mMediaAppsAdapter = new MediaListAdapter(new MediaAppSelectedListener() {
-            @Override
-            public void onMediaAppClicked(@NonNull MediaAppDetails appDetails) {
-                final Intent intent = MediaAppControllerActivity.buildIntent(
-                        LaunchActivity.this,
-                        appDetails);
-                startActivity(intent);
-            }
+        mMediaAppsAdapter = new MediaListAdapter(appDetails -> {
+            final Intent intent = MediaAppControllerActivity.buildIntent(
+                    LaunchActivity.this,
+                    appDetails);
+            startActivity(intent);
         });
 
-        mMediaAppsList = (RecyclerView) findViewById(R.id.app_list);
+        mMediaAppsList = findViewById(R.id.app_list);
         mMediaAppsList.setLayoutManager(new LinearLayoutManager(this));
         mMediaAppsList.setHasFixedSize(true);
         mMediaAppsList.setAdapter(mMediaAppsAdapter);
@@ -112,13 +111,18 @@ public class LaunchActivity extends AppCompatActivity {
 
         // Update the list of apps in onStart so if a new app is installed it will appear
         // on the list when the user comes back to it.
-        new FindMediaAppsTask(mAppListUpdatedCallback).execute();
+        new FindMediaAppsTask(this, mAppListUpdatedCallback).execute();
     }
 
-    private class FindMediaAppsTask extends AsyncTask<Void, Void, List<MediaAppDetails>> {
+    private static class FindMediaAppsTask extends AsyncTask<Void, Void, List<MediaAppDetails>> {
         private final AppListUpdatedCallback mCallback;
+        private final PackageManager mPackageManager;
+        private final Resources mResources;
 
-        private FindMediaAppsTask(@NonNull AppListUpdatedCallback callback) {
+        private FindMediaAppsTask(@NonNull Context context,
+                                  @NonNull AppListUpdatedCallback callback) {
+            mPackageManager = context.getPackageManager();
+            mResources = context.getResources();
             mCallback = callback;
         }
 
@@ -131,7 +135,6 @@ public class LaunchActivity extends AppCompatActivity {
          */
         @Override
         protected List<MediaAppDetails> doInBackground(Void... params) {
-            final PackageManager packageManager = getPackageManager();
             final List<MediaAppDetails> mediaApps = new LinkedList<>();
 
             // Build an Intent that only has the MediaBrowserService action and query
@@ -140,13 +143,13 @@ public class LaunchActivity extends AppCompatActivity {
             final Intent mediaBrowserIntent =
                     new Intent(MediaBrowserServiceCompat.SERVICE_INTERFACE);
             final List<ResolveInfo> services =
-                    packageManager.queryIntentServices(mediaBrowserIntent,
+                    mPackageManager.queryIntentServices(mediaBrowserIntent,
                             PackageManager.GET_RESOLVED_FILTER);
 
             if (services != null && !services.isEmpty()) {
                 for (final ResolveInfo info : services) {
-                    final Drawable icon = info.loadIcon(packageManager);
-                    final String name = info.loadLabel(packageManager).toString();
+                    final Drawable icon = info.loadIcon(mPackageManager);
+                    final String name = info.loadLabel(mPackageManager).toString();
                     final String packageName = info.serviceInfo.packageName;
                     final String serviceName = info.serviceInfo.name;
                     final ComponentName serviceComponentName =
@@ -154,17 +157,13 @@ public class LaunchActivity extends AppCompatActivity {
                     mediaApps.add(new MediaAppDetails(
                             name,
                             serviceComponentName,
-                            BitmapUtils.convertDrawable(getResources(), icon)));
+                            BitmapUtils.convertDrawable(mResources, icon)));
                 }
             }
 
             // Sort the list by localized app name for convenience.
-            Collections.sort(mediaApps, new Comparator<MediaAppDetails>() {
-                @Override
-                public int compare(MediaAppDetails left, MediaAppDetails right) {
-                    return left.appName.compareToIgnoreCase(right.appName);
-                }
-            });
+            Collections.sort(mediaApps, (left, right) ->
+                    left.appName.compareToIgnoreCase(right.appName));
 
             return mediaApps;
         }
@@ -185,9 +184,9 @@ public class LaunchActivity extends AppCompatActivity {
             super(itemView);
 
             rootView = (ViewGroup) itemView;
-            appIconView = (ImageView) itemView.findViewById(R.id.app_icon);
-            appNameView = (TextView) itemView.findViewById(R.id.app_name);
-            appPackageView = (TextView) itemView.findViewById(R.id.package_name);
+            appIconView = itemView.findViewById(R.id.app_icon);
+            appNameView = itemView.findViewById(R.id.app_name);
+            appPackageView = itemView.findViewById(R.id.package_name);
         }
     }
 
@@ -252,12 +251,8 @@ public class LaunchActivity extends AppCompatActivity {
             holder.appNameView.setText(appDetails.appName);
             holder.appPackageView.setText(appDetails.mediaServiceComponentName.getPackageName());
 
-            holder.rootView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mMediaAppSelectedListener.onMediaAppClicked(appDetails);
-                }
-            });
+            holder.rootView.setOnClickListener(view ->
+                    mMediaAppSelectedListener.onMediaAppClicked(appDetails));
         }
 
         @Override

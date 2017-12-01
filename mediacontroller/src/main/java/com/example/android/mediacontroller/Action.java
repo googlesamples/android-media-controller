@@ -78,85 +78,55 @@ public class Action {
          * contained in strings.xml.
          */
         action = new Action(context.getString(R.string.action_prepare_search));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().prepareFromSearch(id, extras);
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().prepareFromSearch(id, extras));
         actions.add(action);
 
         action = new Action(context.getString(R.string.action_play_search));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().playFromSearch(id, extras);
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().playFromSearch(id, extras));
         actions.add(action);
 
         action = new Action(context.getString(R.string.action_prepare_id));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().prepareFromMediaId(id, extras);
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().prepareFromMediaId(id, extras));
         actions.add(action);
 
         action = new Action(context.getString(R.string.action_play_id));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().playFromMediaId(id, extras);
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().playFromMediaId(id, extras));
         actions.add(action);
 
         action = new Action(context.getString(R.string.action_prepare_uri));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                if (TextUtils.isEmpty(id)) {
-                    Log.w(TAG, "Must set URI");
-                    return;
-                }
-                Uri uri = Uri.parse(id);
-                controller.getTransportControls().prepareFromUri(uri, extras);
+        action.setMediaControllerAction((controller, id, extras) -> {
+            if (TextUtils.isEmpty(id)) {
+                Log.w(TAG, "Must set URI");
+                return;
             }
+            Uri uri = Uri.parse(id);
+            controller.getTransportControls().prepareFromUri(uri, extras);
         });
         actions.add(action);
 
         action = new Action(context.getString(R.string.action_play_uri));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                if (TextUtils.isEmpty(id)) {
-                    Log.w(TAG, "Must set URI");
-                    return;
-                }
-                Uri uri = Uri.parse(id);
-                controller.getTransportControls().playFromUri(uri, extras);
+        action.setMediaControllerAction((controller, id, extras) -> {
+            if (TextUtils.isEmpty(id)) {
+                Log.w(TAG, "Must set URI");
+                return;
             }
+            Uri uri = Uri.parse(id);
+            controller.getTransportControls().playFromUri(uri, extras);
         });
         actions.add(action);
 
         action = new Action(context.getString(R.string.action_prepare));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().prepare();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().prepare());
         actions.add(action);
 
         action = new Action(context.getString(R.string.action_play));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().play();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().play());
         actions.add(action);
 
         return actions;
@@ -167,110 +137,68 @@ public class Action {
         Action action;
 
         action = new Action(R.id.action_resume, context.getString(R.string.action_resume));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().play();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().play());
         actions.add(action);
 
         action = new Action(R.id.action_pause, context.getString(R.string.action_pause));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().pause();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().pause());
         actions.add(action);
 
         action = new Action(R.id.action_stop, context.getString(R.string.action_stop));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().stop();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().stop());
         actions.add(action);
 
         action = new Action(R.id.action_skip_next, context.getString(R.string.action_skip_next));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().skipToNext();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().skipToNext());
         actions.add(action);
 
         action = new Action(R.id.action_skip_previous,
                 context.getString(R.string.action_skip_previous));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().skipToPrevious();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().skipToPrevious());
         actions.add(action);
 
         action = new Action(R.id.action_thumbs_up, context.getString(R.string.action_thumbs_up));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().setRating(RatingCompat.newThumbRating(true));
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().setRating(RatingCompat.newThumbRating(true)));
         actions.add(action);
 
         action = new Action(R.id.action_thumbs_down,
                 context.getString(R.string.action_thumbs_down));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().setRating(RatingCompat.newThumbRating(false));
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().setRating(RatingCompat.newThumbRating(false)));
         actions.add(action);
 
         action = new Action(R.id.action_skip_30s_backward,
                 context.getString(R.string.action_skip_30s_backward));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                long positionMs = controller.getPlaybackState().getPosition();
-                controller.getTransportControls().seekTo(positionMs - 1000*30);
-            }
+        action.setMediaControllerAction((controller, id, extras) -> {
+            long positionMs = controller.getPlaybackState().getPosition();
+            controller.getTransportControls().seekTo(positionMs - 1000*30);
         });
         actions.add(action);
 
         action = new Action(R.id.action_skip_30s_forward,
                 context.getString(R.string.action_skip_30s_forward));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                long positionMs = controller.getPlaybackState().getPosition();
-                controller.getTransportControls().seekTo(positionMs + 1000*30);
-            }
+        action.setMediaControllerAction((controller, id, extras) -> {
+            long positionMs = controller.getPlaybackState().getPosition();
+            controller.getTransportControls().seekTo(positionMs + 1000*30);
         });
         actions.add(action);
 
         action = new Action(R.id.action_fast_forward,
                 context.getString(R.string.action_fast_forward));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().fastForward();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().fastForward());
         actions.add(action);
 
         action = new Action(R.id.action_fast_rewind,
                 context.getString(R.string.action_fast_rewind));
-        action.setMediaControllerAction(new MediaControllerAction() {
-            @Override
-            public void run(@NonNull MediaControllerCompat controller, String id, Bundle extras) {
-                controller.getTransportControls().rewind();
-            }
-        });
+        action.setMediaControllerAction((controller, id, extras) ->
+                controller.getTransportControls().rewind());
         actions.add(action);
 
         return actions;
