@@ -23,6 +23,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -32,7 +33,7 @@ import java.util.List;
 /**
  * Executes various {@link Action} objects on a {@link MediaControllerCompat}
  * based on user input.
- *
+ * <p>
  * Example: A "Play" action, triggered by "Play" UI button, will call
  * {@link MediaControllerCompat.TransportControls#play()}.
  */
@@ -177,7 +178,7 @@ public class Action {
                 context.getString(R.string.action_skip_30s_backward));
         action.setMediaControllerAction((controller, id, extras) -> {
             long positionMs = controller.getPlaybackState().getPosition();
-            controller.getTransportControls().seekTo(positionMs - 1000*30);
+            controller.getTransportControls().seekTo(positionMs - 1000 * 30);
         });
         actions.add(action);
 
@@ -185,7 +186,7 @@ public class Action {
                 context.getString(R.string.action_skip_30s_forward));
         action.setMediaControllerAction((controller, id, extras) -> {
             long positionMs = controller.getPlaybackState().getPosition();
-            controller.getTransportControls().seekTo(positionMs + 1000*30);
+            controller.getTransportControls().seekTo(positionMs + 1000 * 30);
         });
         actions.add(action);
 
@@ -199,6 +200,17 @@ public class Action {
                 context.getString(R.string.action_fast_rewind));
         action.setMediaControllerAction((controller, id, extras) ->
                 controller.getTransportControls().rewind());
+        actions.add(action);
+
+        action = new Action(R.id.action_toggle_shuffle,
+                context.getString(R.string.action_toggle_shuffle));
+        action.setMediaControllerAction((controller, id, extras) -> {
+            final int shuffleMode =
+                    controller.getShuffleMode() != PlaybackStateCompat.SHUFFLE_MODE_ALL
+                            ? PlaybackStateCompat.SHUFFLE_MODE_ALL
+                            : PlaybackStateCompat.SHUFFLE_MODE_NONE;
+            controller.getTransportControls().setShuffleMode(shuffleMode);
+        });
         actions.add(action);
 
         return actions;

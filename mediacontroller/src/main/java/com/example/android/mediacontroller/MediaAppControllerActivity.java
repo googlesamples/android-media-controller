@@ -34,6 +34,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaBrowserServiceCompat;
@@ -302,7 +303,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
 
         mBrowser = new MediaBrowserCompat(this, mMediaAppDetails.mediaServiceComponentName,
-                new MyConnectionCallback(), null);
+                new MyConnectionCallback(this), null);
         mBrowser.connect();
     }
 
@@ -395,7 +396,14 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                     mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM));
 
             final Bitmap art = mediaMetadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART);
-            mMediaAlbumArtView.setImageBitmap(art);
+            if (art != null) {
+                mMediaAlbumArtView.setImageBitmap(art);
+            } else {
+                mMediaAlbumArtView.setImageResource(R.drawable.ic_album_black_24dp);
+            }
+        } else {
+            mMediaArtistView.setText(R.string.media_info_default);
+            mMediaAlbumArtView.setImageResource(R.drawable.ic_album_black_24dp);
         }
 
         final long actions = playbackState.getActions();
@@ -531,9 +539,13 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     }
 
     private class MyConnectionCallback extends MediaBrowserCompat.ConnectionCallback {
+        private final Context mContext;
         private final SparseArray<Long> mActionViewIdMap;
+        private final ImageButton mShuffleToggle;
 
-        MyConnectionCallback() {
+        MyConnectionCallback(@NonNull Context context) {
+            mContext = context;
+
             mActionViewIdMap = new SparseArray<>();
             mActionViewIdMap.put(R.id.action_skip_previous,
                     PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
@@ -547,6 +559,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             // They're the same action, but each of the buttons should be colored anyway.
             mActionViewIdMap.put(R.id.action_skip_30s_backward, PlaybackStateCompat.ACTION_SEEK_TO);
             mActionViewIdMap.put(R.id.action_skip_30s_forward, PlaybackStateCompat.ACTION_SEEK_TO);
+
+            mActionViewIdMap.put(R.id.action_toggle_shuffle,
+                    PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE);
+
+            mShuffleToggle = findViewById(R.id.action_toggle_shuffle);
         }
 
         @Override
@@ -627,15 +644,25 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 final long action = mActionViewIdMap.valueAt(i);
 
                 final ImageButton button = mActionButtonMap.get(viewId);
-                DrawableCompat.setTint(button.getDrawable(), getTint(actions, action));
+                if (actionSupported(actions, action)) {
+                    button.setBackground(null);
+                } else {
+                    button.setBackgroundResource(R.drawable.bg_unsuported_action);
+                }
             }
+
+            final boolean shuffleEnabled =
+                    mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_ALL ||
+                            mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_GROUP;
+            final int shuffleTint = shuffleEnabled
+                    ? ContextCompat.getColor(mContext, R.color.colorPrimary)
+                    : ContextCompat.getColor(mContext, R.color.colorInactive);
+            DrawableCompat.setTint(mShuffleToggle.getDrawable(), shuffleTint);
         }
 
-        private int getTint(@PlaybackStateCompat.Actions long actions,
+        private boolean actionSupported(@PlaybackStateCompat.Actions long actions,
                             @PlaybackStateCompat.Actions long checkAction) {
-            return ((actions & checkAction) != 0)
-                    ? Color.WHITE
-                    : Color.RED;
+            return ((actions & checkAction) != 0);
         }
     }
 

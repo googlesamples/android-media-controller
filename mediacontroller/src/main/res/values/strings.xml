@@ -75,6 +75,8 @@
     <string name="action_skip_30s_forward">Skip 30s</string>
     <string name="action_skip_30s_backward">Skip back 30s</string>
 
+    <string name="action_toggle_shuffle">Toggle shuffle mode</string>
+
     <string name="audio_focus_title">Audio Focus</string>
     <string name="audio_focus_gain_focus">Gain</string>
     <string name="audio_focus_abandon_focus">Abandon</string>
