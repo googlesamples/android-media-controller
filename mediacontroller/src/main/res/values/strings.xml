@@ -80,6 +80,7 @@
     <string name="audio_focus_title">Audio Focus</string>
     <string name="audio_focus_gain_focus">Gain</string>
     <string name="audio_focus_abandon_focus">Abandon</string>
+    <string name="start_session_activity">Start Session Activity</string>
 
     <!--
     The order of these strings must match the order of the constants

@@ -16,13 +16,13 @@
 package com.example.android.mediacontroller;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
@@ -52,6 +52,7 @@ import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -122,6 +123,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private Spinner mInputTypeView;
     private EditText mUriInput;
     private TextView mMediaInfoText;
+    private Button mStartSessionActivityButton;
 
     private ImageView mMediaAlbumArtView;
     private TextView mMediaTitleView;
@@ -338,6 +340,18 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         findViewById(R.id.action_prepare).setOnClickListener(preparePlayHandler);
         findViewById(R.id.action_play).setOnClickListener(preparePlayHandler);
 
+        mStartSessionActivityButton = findViewById(R.id.start_session_activity_button);
+        mStartSessionActivityButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mController != null) {
+                    startSessionActivity(mController);
+                } else {
+                    Log.w(TAG, "Media session does not contain an Activity to start");
+                }
+            }
+        });
+
         mAudioFocusHelper = new AudioFocusHelper(this,
                 findViewById(R.id.audio_focus_button),
                 findViewById(R.id.audio_focus_type));
@@ -483,6 +497,20 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         if (!TextUtils.isEmpty(value)) {
             mediaInfos.put(key, value);
         }
+    }
+
+    private void startSessionActivity(MediaControllerCompat mediaController) {
+        PendingIntent intent = mediaController.getSessionActivity();
+        if (intent != null) {
+            try {
+                intent.send();
+                return;
+            } catch (PendingIntent.CanceledException e) {
+                e.printStackTrace();
+                Log.e(TAG, e.toString());
+            }
+        }
+        Log.w(TAG, "Failed to open app by session activity.");
     }
 
     private class PreparePlayHandler implements View.OnClickListener {
