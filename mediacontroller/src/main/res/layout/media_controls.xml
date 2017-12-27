@@ -28,12 +28,13 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="24dp"
-        android:background="#e0e0e0"
+        android:background="@color/background_grey"
         android:scaleType="centerCrop"
+        app:layout_constraintBottom_toTopOf="@+id/media_title"
         app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintLeft_toLeftOf="@+id/albumArtLeft"
-        app:layout_constraintRight_toRightOf="@+id/albumArtRight"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
         tools:ignore="contentDescription"
         tools:src="@drawable/ic_album_black_24dp"
         tools:visibility="visible" />
@@ -49,7 +50,7 @@
         android:textStyle="bold"
         app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
         app:layout_constraintRight_toLeftOf="@+id/primaryGuidelineEnd"
-        app:layout_constraintTop_toBottomOf="@+id/media_art"
+        app:layout_constraintBottom_toTopOf="@+id/media_artist"
         tools:text="Title" />
 
     <TextView
@@ -61,7 +62,7 @@
         android:gravity="center"
         app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
         app:layout_constraintRight_toLeftOf="@+id/primaryGuidelineEnd"
-        app:layout_constraintTop_toBottomOf="@+id/media_title"
+        app:layout_constraintBottom_toTopOf="@+id/media_album"
         tools:text="Artist" />
 
     <TextView
@@ -74,7 +75,7 @@
         android:paddingBottom="16dp"
         app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
         app:layout_constraintRight_toLeftOf="@+id/primaryGuidelineEnd"
-        app:layout_constraintTop_toBottomOf="@+id/media_artist"
+        app:layout_constraintBottom_toTopOf="@+id/action_thumbs_up"
         tools:text="Album" />
 
     <ImageButton
@@ -90,7 +91,7 @@
         android:contentDescription="@string/action_thumbs_down"
         app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
         app:layout_constraintRight_toLeftOf="@+id/centerGuideline"
-        app:layout_constraintTop_toBottomOf="@+id/media_album"
+        app:layout_constraintBottom_toTopOf="@+id/action_skip_30s_backward"
         app:srcCompat="@drawable/ic_thumb_down_black_32dp" />
 
     <ImageButton
@@ -106,7 +107,7 @@
         android:contentDescription="@string/action_thumbs_up"
         app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
         app:layout_constraintRight_toLeftOf="@+id/primaryGuidelineEnd"
-        app:layout_constraintTop_toBottomOf="@+id/media_album"
+        app:layout_constraintBottom_toTopOf="@+id/action_skip_30s_forward"
         app:srcCompat="@drawable/ic_thumb_up_black_32dp" />
 
     <ImageButton
@@ -116,7 +117,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:contentDescription="@string/action_skip_30s_backward"
-        app:layout_constraintBottom_toTopOf="@+id/action_pause"
+        app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
         app:layout_constraintEnd_toStartOf="@id/centerGuideline"
         app:srcCompat="@drawable/ic_replay_30_black_32dp" />
 
@@ -128,7 +129,7 @@
         android:layout_marginBottom="8dp"
         android:layout_marginStart="8dp"
         android:contentDescription="@string/action_skip_30s_forward"
-        app:layout_constraintBottom_toTopOf="@+id/action_pause"
+        app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
         app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
         app:layout_constraintStart_toStartOf="@id/centerGuideline"
         app:srcCompat="@drawable/ic_forward_30_black_32dp" />
@@ -140,7 +141,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:contentDescription="@string/action_toggle_shuffle"
-        app:layout_constraintBottom_toTopOf="@+id/action_pause"
+        app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
         app:layout_constraintEnd_toStartOf="@+id/primaryGuidelineEnd"
         app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
         app:layout_constraintStart_toEndOf="@+id/action_skip_30s_forward"
@@ -153,7 +154,7 @@
         android:layout_height="wrap_content"
         android:contentDescription="@string/action_skip_previous"
         android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
         app:layout_constraintRight_toLeftOf="@+id/action_fast_rewind"
         app:srcCompat="@drawable/ic_skip_previous_black_32dp" />
 
@@ -163,7 +164,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/action_fast_rewind"
-        app:layout_constraintBottom_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
         app:layout_constraintRight_toLeftOf="@+id/action_resume"
         app:srcCompat="@drawable/ic_fast_rewind_black_32dp" />
 
@@ -173,7 +174,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/action_resume"
-        app:layout_constraintBottom_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
         app:layout_constraintRight_toLeftOf="@+id/action_pause"
         app:srcCompat="@drawable/ic_play_arrow_black_32dp" />
 
@@ -183,7 +184,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/action_pause"
-        app:layout_constraintBottom_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
         app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
         app:layout_constraintRight_toLeftOf="@+id/centerGuideline"
         app:srcCompat="@drawable/ic_pause_black_32dp" />
@@ -195,7 +196,7 @@
         android:layout_height="wrap_content"
         android:contentDescription="@string/action_stop"
         android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
         app:layout_constraintLeft_toRightOf="@+id/action_pause"
         app:srcCompat="@drawable/ic_stop_black_32dp"
         tools:background="@drawable/bg_unsuported_action" />
@@ -206,7 +207,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/action_fast_forward"
-        app:layout_constraintBottom_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
         app:layout_constraintLeft_toRightOf="@+id/action_stop"
         app:srcCompat="@drawable/ic_fast_forward_black_32dp" />
 
@@ -216,7 +217,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@string/action_skip_next"
-        app:layout_constraintBottom_toBottomOf="@+id/mediaControlsGuideline"
+        app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
         app:layout_constraintLeft_toRightOf="@+id/action_fast_forward"
         app:srcCompat="@drawable/ic_skip_next_black_32dp" />
 
@@ -233,21 +234,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.9" />
-
-    <android.support.constraint.Guideline
-        android:id="@+id/albumArtLeft"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.25" />
-
-    <android.support.constraint.Guideline
-        android:id="@+id/albumArtRight"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.75" />
+        app:layout_constraintGuide_percent="0.8" />
 
     <android.support.constraint.Guideline
         android:id="@+id/primaryGuidelineStart"
