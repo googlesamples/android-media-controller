@@ -15,26 +15,28 @@
   limitations under the License.
   -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:layout_width="match_parent"
-              android:layout_height="72dp"
-              android:paddingBottom="@dimen/margin_small"
-              android:paddingTop="@dimen/margin_small">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="@dimen/margin_small"
+    android:paddingTop="@dimen/margin_small">
 
     <ImageView
         android:id="@+id/app_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="@dimen/app_icon_size"
+        android:layout_height="@dimen/app_icon_size"
         android:layout_marginEnd="@dimen/margin_small"
         android:layout_marginStart="@dimen/activity_vertical_margin"
         android:contentDescription="@string/app_icon_desc"
-        android:scaleType="centerInside"
+        android:layout_gravity="center_vertical"
+        android:scaleType="fitCenter"
         app:srcCompat="@mipmap/ic_launcher"/>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/activity_vertical_margin"
         android:orientation="vertical">
 
         <TextView
@@ -51,7 +53,6 @@
             android:id="@+id/package_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/margin_small"
             android:layout_marginTop="@dimen/margin_small"
             android:ellipsize="middle"
             android:textColor="@color/text_light"

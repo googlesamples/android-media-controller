@@ -17,29 +17,25 @@ package com.example.android.mediacontroller;
 
 import android.app.Activity;
 import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.StringRes;
-import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -52,7 +48,6 @@ import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -116,19 +111,18 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
-    private MediaBrowserCompat mBrowser;
     private AudioFocusHelper mAudioFocusHelper;
 
-    private View mRootView;
     private Spinner mInputTypeView;
     private EditText mUriInput;
     private TextView mMediaInfoText;
-    private Button mStartSessionActivityButton;
 
     private ImageView mMediaAlbumArtView;
     private TextView mMediaTitleView;
     private TextView mMediaArtistView;
     private TextView mMediaAlbumView;
+
+    private ImageButton mShuffleToggle;
 
     private final SparseArray<ImageButton> mActionButtonMap = new SparseArray<>();
 
@@ -153,7 +147,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mRootView = findViewById(R.id.root_view);
         mInputTypeView = findViewById(R.id.input_type);
         mUriInput = findViewById(R.id.uri_id_query);
         mMediaInfoText = findViewById(R.id.media_info);
@@ -163,6 +156,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mMediaArtistView = findViewById(R.id.media_artist);
         mMediaAlbumView = findViewById(R.id.media_album);
 
+        mShuffleToggle = findViewById(R.id.action_toggle_shuffle);
+
         if (savedInstanceState != null) {
             mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
             mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
@@ -170,14 +165,14 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         handleIntent(getIntent());
         setupButtons();
-        setupMediaController();
 
-        final ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            final Bitmap toolbarIcon =
-                    BitmapUtils.createToolbarIcon(getResources(), mMediaAppDetails.icon);
-            actionBar.setIcon(new BitmapDrawable(getResources(), toolbarIcon));
-            actionBar.setTitle(mMediaAppDetails.appName);
+        if (mMediaAppDetails != null) {
+            // mMediaAppDetails == null means that we received just a package name in the starting
+            // intent, (e.g. triggered through the URL scheme). If that happens, we need to wait
+            // for a media browser connection before we can set up the controller or toolbar, and
+            // that will be taken care of by #connectToMediaBrowserPackage in handleIntent.
+            setupMediaController();
+            setupToolbar(mMediaAppDetails.appName, mMediaAppDetails.icon);
         }
 
         final ViewPager viewPager = findViewById(R.id.view_pager);
@@ -205,6 +200,15 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         });
         final TabLayout pageIndicator = findViewById(R.id.page_indicator);
         pageIndicator.setupWithViewPager(viewPager);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mController != null) {
+            mController.unregisterCallback(mCallback);
+            mController = null;
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -244,19 +248,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         // Create app details from URI, if one was present.
         if (appPackageName != null) {
             if (mMediaAppDetails == null || !appPackageName.equals(CURRENT_PACKAGE)) {
-                final MediaAppDetails appDetails = buildMediaDetailsFromPackage(appPackageName);
-
-                if (appDetails == null) {
-                    // Couldn't build the media app details so alert the user and exit.
-                    Toast.makeText(this,
-                            getString(R.string.no_app_for_package, appPackageName),
-                            Toast.LENGTH_LONG)
-                            .show();
-                    finish();
-                    return;
-                } else {
-                    mMediaAppDetails = appDetails;
-                }
+                connectToMediaBrowserPackage(appPackageName);
             }
         }
 
@@ -297,19 +289,32 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
     }
 
-    private void setupMediaController() {
-        if (mBrowser != null) {
-            mBrowser.disconnect();
-            mBrowser = null;
-            mController = null;
+    private void setupToolbar(String name, Bitmap icon) {
+        final ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            final Bitmap toolbarIcon = BitmapUtils.createToolbarIcon(getResources(), icon);
+            actionBar.setIcon(new BitmapDrawable(getResources(), toolbarIcon));
+            actionBar.setTitle(name);
         }
-
-        mBrowser = new MediaBrowserCompat(this, mMediaAppDetails.mediaServiceComponentName,
-                new MyConnectionCallback(this), null);
-        mBrowser.connect();
     }
 
-    private MediaAppDetails buildMediaDetailsFromPackage(final String packageName) {
+    private void setupMediaController() {
+        try {
+            mController = new MediaControllerCompat(this, mMediaAppDetails.sessionToken);
+            mController.registerCallback(mCallback);
+
+            // Force update on connect.
+            mCallback.onPlaybackStateChanged(mController.getPlaybackState());
+            mCallback.onMetadataChanged(mController.getMetadata());
+
+            Log.d(TAG, "MediaControllerCompat created");
+        } catch (RemoteException remoteException) {
+            Log.e(TAG, "Failed to create MediaController from session token", remoteException);
+            showToastAndFinish(getString(R.string.media_controller_failed_msg));
+        }
+    }
+
+    private void connectToMediaBrowserPackage(final String packageName) {
         final PackageManager packageManager = getPackageManager();
 
         final Intent mediaBrowserIntent = new Intent(MediaBrowserServiceCompat.SERVICE_INTERFACE);
@@ -318,20 +323,30 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                         PackageManager.GET_RESOLVED_FILTER);
         for (ResolveInfo info : services) {
             if (info.serviceInfo.packageName.equals(packageName)) {
-                final Drawable icon = info.loadIcon(packageManager);
+                final Bitmap icon = BitmapUtils.convertDrawable(
+                        getResources(), info.loadIcon(packageManager));
                 final String name = info.loadLabel(packageManager).toString();
-                final String serviceName = info.serviceInfo.name;
-                final ComponentName serviceComponentName =
-                        new ComponentName(packageName, serviceName);
-                return new MediaAppDetails(
-                        name,
-                        serviceComponentName,
-                        BitmapUtils.convertDrawable(getResources(), icon));
+
+                setupToolbar(name, icon);
+                MediaAppEntry appEntry = MediaAppEntry.fromBrowseService(
+                        info.serviceInfo, packageManager);
+                appEntry.getSessionToken(this, new MediaAppEntry.SessionTokenAvailableCallback() {
+                    @Override
+                    public void onSuccess(MediaSessionCompat.Token sessionToken) {
+                        mMediaAppDetails = new MediaAppDetails(name, icon, sessionToken);
+                        setupMediaController();
+                    }
+
+                    @Override
+                    public void onFailure() {
+                        showToastAndFinish(getString(R.string.connection_failed_msg, packageName));
+                    }
+                });
+                return;
             }
         }
-
         // Failed to find package.
-        return null;
+        showToastAndFinish(getString(R.string.no_app_for_package, packageName));
     }
 
     private void setupButtons() {
@@ -340,15 +355,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         findViewById(R.id.action_prepare).setOnClickListener(preparePlayHandler);
         findViewById(R.id.action_play).setOnClickListener(preparePlayHandler);
 
-        mStartSessionActivityButton = findViewById(R.id.start_session_activity_button);
-        mStartSessionActivityButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mController != null) {
-                    startSessionActivity(mController);
-                } else {
-                    Log.w(TAG, "Media session does not contain an Activity to start");
-                }
+        findViewById(R.id.start_session_activity_button).setOnClickListener(v -> {
+            if (mController != null) {
+                startSessionActivity(mController);
+            } else {
+                Log.w(TAG, "Media session does not contain an Activity to start");
             }
         });
 
@@ -566,132 +577,87 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
     }
 
-    private class MyConnectionCallback extends MediaBrowserCompat.ConnectionCallback {
-        private final Context mContext;
-        private final SparseArray<Long> mActionViewIdMap;
-        private final ImageButton mShuffleToggle;
+    private final SparseArray<Long> mActionViewIdMap = new SparseArray<>();
 
-        MyConnectionCallback(@NonNull Context context) {
-            mContext = context;
+    {
+        mActionViewIdMap.put(R.id.action_skip_previous,
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
+        mActionViewIdMap.put(R.id.action_fast_rewind, PlaybackStateCompat.ACTION_REWIND);
+        mActionViewIdMap.put(R.id.action_resume, PlaybackStateCompat.ACTION_PLAY);
+        mActionViewIdMap.put(R.id.action_pause, PlaybackStateCompat.ACTION_PAUSE);
+        mActionViewIdMap.put(R.id.action_stop, PlaybackStateCompat.ACTION_STOP);
+        mActionViewIdMap.put(R.id.action_fast_forward, PlaybackStateCompat.ACTION_FAST_FORWARD);
+        mActionViewIdMap.put(R.id.action_skip_next, PlaybackStateCompat.ACTION_SKIP_TO_NEXT);
 
-            mActionViewIdMap = new SparseArray<>();
-            mActionViewIdMap.put(R.id.action_skip_previous,
-                    PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
-            mActionViewIdMap.put(R.id.action_fast_rewind, PlaybackStateCompat.ACTION_REWIND);
-            mActionViewIdMap.put(R.id.action_resume, PlaybackStateCompat.ACTION_PLAY);
-            mActionViewIdMap.put(R.id.action_pause, PlaybackStateCompat.ACTION_PAUSE);
-            mActionViewIdMap.put(R.id.action_stop, PlaybackStateCompat.ACTION_STOP);
-            mActionViewIdMap.put(R.id.action_fast_forward, PlaybackStateCompat.ACTION_FAST_FORWARD);
-            mActionViewIdMap.put(R.id.action_skip_next, PlaybackStateCompat.ACTION_SKIP_TO_NEXT);
+        // They're the same action, but each of the buttons should be colored anyway.
+        mActionViewIdMap.put(R.id.action_skip_30s_backward, PlaybackStateCompat.ACTION_SEEK_TO);
+        mActionViewIdMap.put(R.id.action_skip_30s_forward, PlaybackStateCompat.ACTION_SEEK_TO);
 
-            // They're the same action, but each of the buttons should be colored anyway.
-            mActionViewIdMap.put(R.id.action_skip_30s_backward, PlaybackStateCompat.ACTION_SEEK_TO);
-            mActionViewIdMap.put(R.id.action_skip_30s_forward, PlaybackStateCompat.ACTION_SEEK_TO);
+        mActionViewIdMap.put(R.id.action_toggle_shuffle,
+                PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE);
+    }
 
-            mActionViewIdMap.put(R.id.action_toggle_shuffle,
-                    PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE);
-
-            mShuffleToggle = findViewById(R.id.action_toggle_shuffle);
-        }
-
+    final MediaControllerCompat.Callback mCallback = new MediaControllerCompat.Callback() {
         @Override
-        public void onConnected() {
-            try {
-                mController = new MediaControllerCompat(
-                        MediaAppControllerActivity.this,
-                        mBrowser.getSessionToken());
-
-                final MediaControllerCompat.Callback callback =
-                        new MediaControllerCompat.Callback() {
-
-                            @Override
-                            public void onPlaybackStateChanged(PlaybackStateCompat playbackState) {
-                                onUpdate();
-
-                                if (playbackState != null) {
-                                    showActions(playbackState.getActions());
-                                }
-                            }
-
-                            @Override
-                            public void onMetadataChanged(MediaMetadataCompat metadata) {
-                                onUpdate();
-                            }
-
-                            private void onUpdate() {
-                                String mediaInfoStr = fetchMediaInfo();
-                                if (mediaInfoStr != null) {
-                                    mMediaInfoText.setText(mediaInfoStr);
-                                }
-                            }
-                        };
-                mController.registerCallback(callback);
-
-                // Force update on connect
-                callback.onPlaybackStateChanged(mController.getPlaybackState());
-                callback.onMetadataChanged(mController.getMetadata());
-
-                Log.d(TAG, "MediaControllerCompat created");
-            } catch (RemoteException remoteException) {
-                Log.e(TAG, "Failed to connect with session token: " + remoteException);
-                showDisconnected(R.string.media_controller_failed_msg);
+        public void onPlaybackStateChanged(PlaybackStateCompat playbackState) {
+            onUpdate();
+            if (playbackState != null) {
+                showActions(playbackState.getActions());
             }
         }
 
         @Override
-        public void onConnectionSuspended() {
-            Log.d(TAG, "MediaBrowser connection suspended");
-            showDisconnected(R.string.connection_suspended_msg);
+        public void onMetadataChanged(MediaMetadataCompat metadata) {
+            onUpdate();
         }
 
-        @Override
-        public void onConnectionFailed() {
-            Log.e(TAG, "MediaBrowser connection failed");
-            showDisconnected(R.string.connection_failed_msg);
-        }
-
-        private void showDisconnected(@StringRes final int stringResource) {
-            final Snackbar snackbar =
-                    Snackbar.make(mRootView, stringResource, Snackbar.LENGTH_INDEFINITE);
-            snackbar.setAction(R.string.reconnect, view -> setupMediaController());
-            snackbar.show();
-        }
-
-        /**
-         * This updates the buttons on the controller view to show actions that
-         * aren't included in the declared supported actions in red to more easily
-         * detect potential bugs.
-         *
-         * @param actions The mask of currently supported actions from
-         *                {@see PlaybackStateCompat.getActions()}.
-         */
-        private void showActions(@PlaybackStateCompat.Actions long actions) {
-            final int count = mActionViewIdMap.size();
-            for (int i = 0; i < count; ++i) {
-                final int viewId = mActionViewIdMap.keyAt(i);
-                final long action = mActionViewIdMap.valueAt(i);
-
-                final ImageButton button = mActionButtonMap.get(viewId);
-                if (actionSupported(actions, action)) {
-                    button.setBackground(null);
-                } else {
-                    button.setBackgroundResource(R.drawable.bg_unsuported_action);
-                }
+        private void onUpdate() {
+            String mediaInfoStr = fetchMediaInfo();
+            if (mediaInfoStr != null) {
+                mMediaInfoText.setText(mediaInfoStr);
             }
+        }
+    };
 
-            final boolean shuffleEnabled =
-                    mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_ALL ||
-                            mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_GROUP;
-            final int shuffleTint = shuffleEnabled
-                    ? ContextCompat.getColor(mContext, R.color.colorPrimary)
-                    : ContextCompat.getColor(mContext, R.color.colorInactive);
-            DrawableCompat.setTint(mShuffleToggle.getDrawable(), shuffleTint);
+    private void showToastAndFinish(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        finish();
+    }
+
+    /**
+     * This updates the buttons on the controller view to show actions that
+     * aren't included in the declared supported actions in red to more easily
+     * detect potential bugs.
+     *
+     * @param actions The mask of currently supported actions from {@see
+     *                PlaybackStateCompat.getActions()}.
+     */
+    private void showActions(@PlaybackStateCompat.Actions long actions) {
+        final int count = mActionViewIdMap.size();
+        for (int i = 0; i < count; ++i) {
+            final int viewId = mActionViewIdMap.keyAt(i);
+            final long action = mActionViewIdMap.valueAt(i);
+
+            final ImageButton button = mActionButtonMap.get(viewId);
+            if (actionSupported(actions, action)) {
+                button.setBackground(null);
+            } else {
+                button.setBackgroundResource(R.drawable.bg_unsuported_action);
+            }
         }
 
-        private boolean actionSupported(@PlaybackStateCompat.Actions long actions,
-                            @PlaybackStateCompat.Actions long checkAction) {
-            return ((actions & checkAction) != 0);
-        }
+        final boolean shuffleEnabled =
+                mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_ALL ||
+                        mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_GROUP;
+        final int shuffleTint = shuffleEnabled
+                ? ContextCompat.getColor(this, R.color.colorPrimary)
+                : ContextCompat.getColor(this, R.color.colorInactive);
+        DrawableCompat.setTint(mShuffleToggle.getDrawable(), shuffleTint);
+    }
+
+    private boolean actionSupported(@PlaybackStateCompat.Actions long actions,
+                                    @PlaybackStateCompat.Actions long checkAction) {
+        return ((actions & checkAction) != 0);
     }
 
     /**
