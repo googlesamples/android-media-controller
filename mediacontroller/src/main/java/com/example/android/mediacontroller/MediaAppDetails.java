@@ -15,31 +15,29 @@
  */
 package com.example.android.mediacontroller;
 
-import android.content.ComponentName;
 import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.v4.media.session.MediaSessionCompat;
 
 /**
  * Stores details about a media app.
  */
 public class MediaAppDetails implements Parcelable {
     public final String appName;
-    public final ComponentName mediaServiceComponentName;
     public final Bitmap icon;
+    public final MediaSessionCompat.Token sessionToken;
 
-    public MediaAppDetails(String name,
-                           ComponentName mediaServiceName,
-                           Bitmap appIcon) {
+    public MediaAppDetails(String name, Bitmap appIcon, MediaSessionCompat.Token token) {
         appName = name;
-        mediaServiceComponentName = mediaServiceName;
+        sessionToken = token;
         icon = appIcon;
     }
 
     private MediaAppDetails(final Parcel parcel) {
         appName = parcel.readString();
-        mediaServiceComponentName = parcel.readParcelable(MediaAppDetails.class.getClassLoader());
         icon = parcel.readParcelable(MediaAppDetails.class.getClassLoader());
+        sessionToken = parcel.readParcelable(MediaAppDetails.class.getClassLoader());
     }
 
     @Override
@@ -50,8 +48,8 @@ public class MediaAppDetails implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(appName);
-        dest.writeParcelable(mediaServiceComponentName, flags);
         dest.writeParcelable(icon, flags);
+        dest.writeParcelable(sessionToken, flags);
     }
 
     public static final Parcelable.Creator<MediaAppDetails> CREATOR =

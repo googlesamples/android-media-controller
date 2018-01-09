@@ -15,30 +15,36 @@
  */
 package com.example.android.mediacontroller;
 
+import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ResolveInfo;
-import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
+import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener;
 import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v4.media.MediaBrowserServiceCompat;
+import android.support.v4.media.session.MediaSessionCompat.Token;
+import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -46,41 +52,42 @@ import java.util.List;
  * (via a receiver that responds to the action "android.media.browse.MediaBrowserService").
  */
 public class LaunchActivity extends AppCompatActivity {
+    private static final String TAG = LaunchActivity.class.getSimpleName();
+
+    private View mRootView;
+    private Snackbar mSnackbar;
+
+    private MediaAppListAdapter.Section mMediaBrowserApps;
+    private ContentLoadingProgressBar mSpinner;
+
     /**
      * Callback used by {@link FindMediaAppsTask}.
      */
-    private interface AppListUpdatedCallback {
-        void onAppListUpdated(List<MediaAppDetails> mediaAppDetailses);
+    public interface AppListUpdatedCallback {
+
+        void onAppListUpdated(List<MediaAppEntry> mediaAppEntries);
     }
 
-    /**
-     * Click listener used by {@link MediaListAdapter}.
-     */
-    private interface MediaAppSelectedListener {
-        void onMediaAppClicked(@NonNull MediaAppDetails mediaAppDetails);
-    }
-
-    private RecyclerView mMediaAppsList;
-    private MediaListAdapter mMediaAppsAdapter;
-
-    private View mNoAppsFoundView;
-
-    private AppListUpdatedCallback mAppListUpdatedCallback = new AppListUpdatedCallback() {
+    private final AppListUpdatedCallback mBrowserAppsUpdated = new AppListUpdatedCallback() {
         @Override
-        public void onAppListUpdated(List<MediaAppDetails> mediaAppDetails) {
+        public void onAppListUpdated(List<MediaAppEntry> mediaAppDetails) {
             if (mediaAppDetails.isEmpty()) {
                 // Show an error if no apps were found.
-                mMediaAppsList.setVisibility(View.GONE);
-                mNoAppsFoundView.setVisibility(View.VISIBLE);
+                mMediaBrowserApps.setError(
+                        R.string.no_apps_found,
+                        R.string.no_apps_reason_no_media_browser_service);
                 return;
             }
-
-            mMediaAppsAdapter.setAppsList(mediaAppDetails);
-
-            mMediaAppsList.setVisibility(View.VISIBLE);
-            mNoAppsFoundView.setVisibility(View.GONE);
+            mMediaBrowserApps.setAppsList(mediaAppDetails);
         }
     };
+
+    // MediaSessionManager is only supported on API 21+, so all related logic is bundled in a
+    // separate inner class that's only instantiated if the device is running L or later.
+    private final MediaSessionListener mMediaSessionListener =
+            Build.VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP
+                    ? new MediaSessionListener()
+                    : null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,40 +96,118 @@ public class LaunchActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mMediaAppsAdapter = new MediaListAdapter(appDetails -> {
-            final Intent intent = MediaAppControllerActivity.buildIntent(
-                    LaunchActivity.this,
-                    appDetails);
-            startActivity(intent);
+        mRootView = findViewById(R.id.root_view);
+        mSpinner = findViewById(R.id.spinner);
+
+        MediaAppListAdapter mediaAppsAdapter = new MediaAppListAdapter(app -> {
+            if (mSnackbar != null) {
+                mSnackbar.dismiss();
+                mSnackbar = null;
+            }
+
+            mSpinner.setVisibility(View.VISIBLE);
+            app.getSessionToken(LaunchActivity.this,
+                    new MediaAppEntry.SessionTokenAvailableCallback() {
+                        @Override
+                        public void onSuccess(Token sessionToken) {
+                            MediaAppDetails appDetails = new MediaAppDetails(
+                                    app.appName,
+                                    BitmapUtils.convertDrawable(getResources(), app.icon),
+                                    sessionToken);
+                            final Intent intent = MediaAppControllerActivity.buildIntent(
+                                    LaunchActivity.this, appDetails);
+                            startActivity(intent);
+                            mSpinner.setVisibility(View.GONE);
+                        }
+
+                        @Override
+                        public void onFailure() {
+                            mSnackbar = Snackbar.make(
+                                    mRootView,
+                                    getString(R.string.connection_failed_msg, app.appName),
+                                    Snackbar.LENGTH_INDEFINITE);
+                            mSnackbar.setAction(R.string.reconnect, view -> {
+                                mSpinner.setVisibility(View.VISIBLE);
+                                app.getSessionToken(LaunchActivity.this, this);
+                            });
+                            mSnackbar.show();
+                            mSpinner.setVisibility(View.GONE);
+                        }
+                    });
         });
 
-        mMediaAppsList = findViewById(R.id.app_list);
-        mMediaAppsList.setLayoutManager(new LinearLayoutManager(this));
-        mMediaAppsList.setHasFixedSize(true);
-        mMediaAppsList.setAdapter(mMediaAppsAdapter);
+        if (mMediaSessionListener != null) {
+            mMediaSessionListener.onCreate(mediaAppsAdapter);
+        }
+        mMediaBrowserApps = mediaAppsAdapter.addSection(R.string.media_app_header_browse);
 
-        mNoAppsFoundView = findViewById(R.id.no_apps_found);
+        RecyclerView mediaAppsList = findViewById(R.id.app_list);
+        mediaAppsList.setLayoutManager(new LinearLayoutManager(this));
+        mediaAppsList.setHasFixedSize(true);
+        mediaAppsList.setAdapter(mediaAppsAdapter);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-
-        // Update the list of apps in onStart so if a new app is installed it will appear
-        // on the list when the user comes back to it.
-        new FindMediaAppsTask(this, mAppListUpdatedCallback).execute();
+        // Update the list of media session in onStart so that if the user returns from the
+        // permissions screen after granting notification listener permission we re-scan correctly.
+        if (mMediaSessionListener != null) {
+            mMediaSessionListener.onStart(this);
+        }
+        // Update the list of media browser apps in onStart so if a new app is installed it will
+        // appear on the list when the user comes back to it.
+        new FindMediaBrowserAppsTask(this, mBrowserAppsUpdated).execute();
     }
 
-    private static class FindMediaAppsTask extends AsyncTask<Void, Void, List<MediaAppDetails>> {
-        private final AppListUpdatedCallback mCallback;
-        private final PackageManager mPackageManager;
-        private final Resources mResources;
+    @Override
+    protected void onStop() {
+        if (mMediaSessionListener != null) {
+            mMediaSessionListener.onStop();
+        }
+        super.onStop();
+    }
 
-        private FindMediaAppsTask(@NonNull Context context,
-                                  @NonNull AppListUpdatedCallback callback) {
-            mPackageManager = context.getPackageManager();
-            mResources = context.getResources();
+    /**
+     * Base class for an async task that fetches a list of media apps.
+     */
+    private static abstract class FindMediaAppsTask
+            extends AsyncTask<Void, Void, List<MediaAppEntry>> {
+
+        private final AppListUpdatedCallback mCallback;
+
+        private FindMediaAppsTask(AppListUpdatedCallback callback) {
             mCallback = callback;
+        }
+
+        protected abstract List<MediaAppEntry> getMediaApps();
+
+        @Override
+        protected List<MediaAppEntry> doInBackground(Void... params) {
+            final List<MediaAppEntry> mediaApps = new ArrayList<>(getMediaApps());
+            // Sort the list by localized app name for convenience.
+            Collections.sort(mediaApps,
+                    (left, right) -> left.appName.compareToIgnoreCase(right.appName));
+            return mediaApps;
+        }
+
+        @Override
+        protected void onPostExecute(List<MediaAppEntry> mediaAppEntries) {
+            mCallback.onAppListUpdated(mediaAppEntries);
+        }
+    }
+
+    /**
+     * Implementation of {@link FindMediaAppsTask} that uses available implementations of
+     * MediaBrowser to populate the list of apps.
+     */
+    private static class FindMediaBrowserAppsTask extends FindMediaAppsTask {
+
+        private final PackageManager mPackageManager;
+
+        private FindMediaBrowserAppsTask(Context context, AppListUpdatedCallback callback) {
+            super(callback);
+            mPackageManager = context.getPackageManager();
         }
 
         /**
@@ -133,8 +218,8 @@ public class LaunchActivity extends AppCompatActivity {
          * "android.media.browse.MediaBrowserService" action.
          */
         @Override
-        protected List<MediaAppDetails> doInBackground(Void... params) {
-            final List<MediaAppDetails> mediaApps = new LinkedList<>();
+        protected List<MediaAppEntry> getMediaApps() {
+            final List<MediaAppEntry> mediaApps = new ArrayList<>();
 
             // Build an Intent that only has the MediaBrowserService action and query
             // the PackageManager for apps that have services registered that can
@@ -147,116 +232,130 @@ public class LaunchActivity extends AppCompatActivity {
 
             if (services != null && !services.isEmpty()) {
                 for (final ResolveInfo info : services) {
-                    final Drawable icon = info.loadIcon(mPackageManager);
-                    final String name = info.loadLabel(mPackageManager).toString();
-                    final String packageName = info.serviceInfo.packageName;
-                    final String serviceName = info.serviceInfo.name;
-                    final ComponentName serviceComponentName =
-                            new ComponentName(packageName, serviceName);
-                    mediaApps.add(new MediaAppDetails(
-                            name,
-                            serviceComponentName,
-                            BitmapUtils.convertDrawable(mResources, icon)));
+                    mediaApps.add(
+                            MediaAppEntry.fromBrowseService(info.serviceInfo, mPackageManager));
                 }
             }
-
-            // Sort the list by localized app name for convenience.
-            Collections.sort(mediaApps, (left, right) ->
-                    left.appName.compareToIgnoreCase(right.appName));
-
             return mediaApps;
         }
+    }
+
+    /**
+     * Implementation of {@link FindMediaAppsTask} that uses active media sessions to populate the
+     * list of media apps.
+     */
+    @TargetApi(VERSION_CODES.LOLLIPOP)
+    private static class FindMediaSessionAppsTask extends FindMediaAppsTask {
+
+        private final MediaSessionManager mMediaSessionManager;
+        private final ComponentName mListenerComponent;
+        private final PackageManager mPackageManager;
+
+        private FindMediaSessionAppsTask(MediaSessionManager mediaSessionManager,
+                                         ComponentName listenerComponent,
+                                         PackageManager packageManager,
+                                         AppListUpdatedCallback callback) {
+            super(callback);
+            mMediaSessionManager = mediaSessionManager;
+            mListenerComponent = listenerComponent;
+            mPackageManager = packageManager;
+        }
 
         @Override
-        protected void onPostExecute(List<MediaAppDetails> mediaAppDetailses) {
-            mCallback.onAppListUpdated(mediaAppDetailses);
+        protected List<MediaAppEntry> getMediaApps() {
+            return getMediaAppsFromControllers(
+                    mMediaSessionManager.getActiveSessions(mListenerComponent),
+                    mPackageManager);
+        }
+
+        static List<MediaAppEntry> getMediaAppsFromControllers(
+                Collection<MediaController> controllers,
+                PackageManager packageManager) {
+            final List<MediaAppEntry> mediaApps = new ArrayList<>();
+            for (final MediaController controller : controllers) {
+                String packageName = controller.getPackageName();
+                ApplicationInfo info;
+                try {
+                    info = packageManager.getApplicationInfo(packageName, 0);
+                } catch (NameNotFoundException e) {
+                    // This should not happen. If we get a media session for a package, then the
+                    // package must be installed on the device.
+                    Log.e(TAG, "Unable to load package details", e);
+                    continue;
+                }
+                final Drawable icon = info.loadIcon(packageManager);
+                final String name = info.loadLabel(packageManager).toString();
+                mediaApps.add(MediaAppEntry.fromSessionToken(
+                        controller.getSessionToken(), name,
+                        packageName,
+                        icon
+                ));
+            }
+            return mediaApps;
         }
     }
 
-    private final class ViewHolder extends RecyclerView.ViewHolder {
-        private final ViewGroup rootView;
-        private final ImageView appIconView;
-        private final TextView appNameView;
-        private final TextView appPackageView;
+    /**
+     * Encapsulates the API 21+ functionality of looking for and observing updates to active media
+     * sessions. We only construct an instance of this class if the device is running L or later,
+     * to avoid any ClassNotFoundExceptions due to the use of MediaSession and related classes.
+     */
+    @TargetApi(VERSION_CODES.LOLLIPOP)
+    private final class MediaSessionListener {
+        private MediaAppListAdapter.Section mMediaSessionApps;
 
-        private ViewHolder(View itemView) {
-            super(itemView);
-
-            rootView = (ViewGroup) itemView;
-            appIconView = itemView.findViewById(R.id.app_icon);
-            appNameView = itemView.findViewById(R.id.app_name);
-            appPackageView = itemView.findViewById(R.id.package_name);
-        }
-    }
-
-    private class MediaListAdapter extends RecyclerView.Adapter<ViewHolder> {
-
-        private final List<MediaAppDetails> mMediaAppDetailsList = new ArrayList<>();
-        private final MediaAppSelectedListener mMediaAppSelectedListener;
-
-        private MediaListAdapter(@NonNull MediaAppSelectedListener itemClickListener) {
-            mMediaAppSelectedListener = itemClickListener;
-        }
-
-        private void setAppsList(final List<MediaAppDetails> newList) {
-            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
-                @Override
-                public int getOldListSize() {
-                    return mMediaAppDetailsList.size();
+        private final AppListUpdatedCallback mSessionAppsUpdated = new AppListUpdatedCallback() {
+            @Override
+            public void onAppListUpdated(List<MediaAppEntry> mediaAppDetails) {
+                if (mediaAppDetails.isEmpty()) {
+                    // Show an error if no apps were found.
+                    mMediaSessionApps.setError(
+                            R.string.no_apps_found,
+                            R.string.no_apps_reason_no_active_sessions);
+                    return;
                 }
+                mMediaSessionApps.setAppsList(mediaAppDetails);
+            }
+        };
 
-                @Override
-                public int getNewListSize() {
-                    return newList.size();
-                }
+        private final OnActiveSessionsChangedListener mSessionsChangedListener =
+                list -> mSessionAppsUpdated.onAppListUpdated(
+                        FindMediaSessionAppsTask.getMediaAppsFromControllers(
+                                list, getPackageManager()));
+        private MediaSessionManager mMediaSessionManager;
 
-                @Override
-                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                    final String oldPackage = mMediaAppDetailsList.get(oldItemPosition)
-                            .mediaServiceComponentName.getPackageName();
-                    final String newPackage = newList.get(oldItemPosition)
-                            .mediaServiceComponentName.getPackageName();
-
-                    return oldPackage.equals(newPackage);
-                }
-
-                @Override
-                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                    return mMediaAppDetailsList.get(oldItemPosition)
-                            .equals(newList.get(newItemPosition));
-                }
-            });
-
-            mMediaAppDetailsList.clear();
-            mMediaAppDetailsList.addAll(newList);
-
-            diffResult.dispatchUpdatesTo(this);
+        void onCreate(MediaAppListAdapter mediaAppListAdapter) {
+            mMediaSessionApps = mediaAppListAdapter.addSection(R.string.media_app_header_session);
+            mMediaSessionManager = (MediaSessionManager)
+                    getSystemService(Context.MEDIA_SESSION_SERVICE);
         }
 
-        @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            final ViewGroup itemLayout = (ViewGroup) getLayoutInflater()
-                    .inflate(R.layout.media_app_item, parent, false);
-            return new ViewHolder(itemLayout);
+        void onStart(Context context) {
+            if (!NotificationListener.isEnabled(context)) {
+                mMediaSessionApps.setError(
+                        R.string.no_apps_found,
+                        R.string.no_apps_reason_missing_permission,
+                        R.string.action_notification_permissions_settings,
+                        (v) -> startActivity(new Intent(
+                                "android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")));
+                return;
+            }
+            if (mMediaSessionManager == null) {
+                return;
+            }
+            ComponentName listenerComponent =
+                    new ComponentName(context, NotificationListener.class);
+            mMediaSessionManager.addOnActiveSessionsChangedListener(
+                    mSessionsChangedListener, listenerComponent);
+            new FindMediaSessionAppsTask(mMediaSessionManager, listenerComponent,
+                    getPackageManager(), mSessionAppsUpdated).execute();
         }
 
-        @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
-            final MediaAppDetails appDetails = mMediaAppDetailsList.get(position);
-
-            holder.appIconView.setImageBitmap(appDetails.icon);
-            holder.appIconView.setContentDescription(
-                    getString(R.string.app_icon_desc, appDetails.appName));
-            holder.appNameView.setText(appDetails.appName);
-            holder.appPackageView.setText(appDetails.mediaServiceComponentName.getPackageName());
-
-            holder.rootView.setOnClickListener(view ->
-                    mMediaAppSelectedListener.onMediaAppClicked(appDetails));
-        }
-
-        @Override
-        public int getItemCount() {
-            return mMediaAppDetailsList.size();
+        void onStop() {
+            if (mMediaSessionManager == null) {
+                return;
+            }
+            mMediaSessionManager.removeOnActiveSessionsChangedListener(mSessionsChangedListener);
         }
     }
 }
