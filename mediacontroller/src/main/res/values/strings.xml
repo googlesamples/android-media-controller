@@ -39,6 +39,7 @@
     <string name="update_media_info">Update Media Info</string>
     <string name="media_info_default">Empty Media Info</string>
     <string name="default_uri" />
+    <string name="custom_actions_header">App-provided Custom Actions</string>
 
     <string name="info_state_string">PlaybackState</string>
     <string name="info_title_string">Title</string>

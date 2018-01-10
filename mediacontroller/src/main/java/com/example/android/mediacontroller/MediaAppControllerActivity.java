@@ -21,8 +21,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -31,6 +33,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaMetadataCompat;
@@ -41,10 +44,14 @@ import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.util.DiffUtil;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -112,6 +119,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
     private AudioFocusHelper mAudioFocusHelper;
+    private CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
 
     private Spinner mInputTypeView;
     private EditText mUriInput;
@@ -176,11 +184,14 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
 
         final ViewPager viewPager = findViewById(R.id.view_pager);
+        final int[] pages = {
+                R.id.prepare_play_page,
+                R.id.controls_page,
+                R.id.custom_controls_page,
+        };
+        // Simplify the adapter by not keeping track of creating/destroying off-screen views.
+        viewPager.setOffscreenPageLimit(pages.length);
         viewPager.setAdapter(new PagerAdapter() {
-            private final int[] pages = {
-                    R.id.prepare_play_page,
-                    R.id.controls_page
-            };
 
             @Override
             public int getCount() {
@@ -200,6 +211,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         });
         final TabLayout pageIndicator = findViewById(R.id.page_indicator);
         pageIndicator.setupWithViewPager(viewPager);
+
+        final RecyclerView customControlsList = findViewById(R.id.custom_controls_list);
+        customControlsList.setLayoutManager(new LinearLayoutManager(this));
+        customControlsList.setHasFixedSize(true);
+        customControlsList.setAdapter(mCustomControlsAdapter);
     }
 
     @Override
@@ -603,6 +619,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             onUpdate();
             if (playbackState != null) {
                 showActions(playbackState.getActions());
+                mCustomControlsAdapter.setActions(mController, playbackState.getCustomActions());
             }
         }
 
@@ -765,6 +782,89 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 return true;
             }
             return false;
+        }
+    }
+
+    private class CustomControlsAdapter extends
+            RecyclerView.Adapter<CustomControlsAdapter.ViewHolder> {
+        private List<PlaybackStateCompat.CustomAction> mActions = Collections.emptyList();
+        private MediaControllerCompat.TransportControls mControls;
+        private Resources mMediaAppResources;
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new ViewHolder(
+                    LayoutInflater.from(parent.getContext())
+                            .inflate(R.layout.media_custom_control, parent, false));
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            PlaybackStateCompat.CustomAction action = mActions.get(position);
+            holder.name.setText(action.getName());
+            holder.description.setText(action.getAction());
+            if (mMediaAppResources != null) {
+                Drawable iconDrawable = ResourcesCompat.getDrawable(
+                        mMediaAppResources, action.getIcon(), /* theme = */ null);
+                holder.icon.setImageDrawable(iconDrawable);
+            }
+            holder.itemView.setOnClickListener(
+                    (v) -> mControls.sendCustomAction(action, new Bundle()));
+        }
+
+        @Override
+        public int getItemCount() {
+            return mActions.size();
+        }
+
+        void setActions(MediaControllerCompat controller,
+                        List<PlaybackStateCompat.CustomAction> actions) {
+            mControls = controller.getTransportControls();
+            try {
+                mMediaAppResources = getPackageManager()
+                        .getResourcesForApplication(controller.getPackageName());
+            } catch (PackageManager.NameNotFoundException e) {
+                // Shouldn't happen, because the controller must come from an installed app.
+                Log.e(TAG, "Failed to fetch resources from media app", e);
+            }
+            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() {
+                    return mActions.size();
+                }
+
+                @Override
+                public int getNewListSize() {
+                    return actions.size();
+                }
+
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                    return actions.get(oldItemPosition).getAction()
+                            .equals(mActions.get(newItemPosition).getAction());
+                }
+
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                    return actions.get(oldItemPosition).equals(mActions.get(newItemPosition));
+                }
+            });
+            mActions = actions;
+            diffResult.dispatchUpdatesTo(this);
+        }
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+
+            private final TextView name;
+            private final TextView description;
+            private final ImageView icon;
+
+            ViewHolder(View itemView) {
+                super(itemView);
+                name = itemView.findViewById(R.id.action_name);
+                description = itemView.findViewById(R.id.action_description);
+                icon = itemView.findViewById(R.id.action_icon);
+            }
         }
     }
 }
