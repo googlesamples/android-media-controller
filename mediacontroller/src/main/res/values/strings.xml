@@ -89,6 +89,20 @@
     <string name="audio_focus_abandon_focus">Abandon</string>
     <string name="start_session_activity">Start Session Activity</string>
 
+    <string name="rating_thumb_up">Thumb Up</string>
+    <string name="rating_thumb_down">Thumb Down</string>
+
+    <string name="rating_heart">Heart</string>
+
+    <string name="rating_star_1">1 star</string>
+    <string name="rating_star_2">2 stars</string>
+    <string name="rating_star_3">3 stars</string>
+    <string name="rating_star_4">4 stars</string>
+    <string name="rating_star_5">5 stars</string>
+
+    <string name="rating_percentage">Rating %</string>
+    <string name="rating_set_percentage">Set</string>
+
     <!--
     The order of these strings must match the order of the constants
     declared in MediaAppControllerActivity.AudioFocusHelper (FOCUS_TYPES).

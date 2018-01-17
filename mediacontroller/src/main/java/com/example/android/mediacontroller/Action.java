@@ -162,17 +162,6 @@ public class Action {
                 controller.getTransportControls().skipToPrevious());
         actions.add(action);
 
-        action = new Action(R.id.action_thumbs_up, context.getString(R.string.action_thumbs_up));
-        action.setMediaControllerAction((controller, id, extras) ->
-                controller.getTransportControls().setRating(RatingCompat.newThumbRating(true)));
-        actions.add(action);
-
-        action = new Action(R.id.action_thumbs_down,
-                context.getString(R.string.action_thumbs_down));
-        action.setMediaControllerAction((controller, id, extras) ->
-                controller.getTransportControls().setRating(RatingCompat.newThumbRating(false)));
-        actions.add(action);
-
         action = new Action(R.id.action_skip_30s_backward,
                 context.getString(R.string.action_skip_30s_backward));
         action.setMediaControllerAction((controller, id, extras) -> {

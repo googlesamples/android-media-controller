@@ -38,6 +38,7 @@ import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -122,6 +123,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
     private AudioFocusHelper mAudioFocusHelper;
+    private RatingUiHelper mRatingUiHelper;
     private CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
 
     private Spinner mInputTypeView;
@@ -135,6 +137,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
     private ModeHelper mShuffleToggle;
     private ModeHelper mRepeatToggle;
+
+    private ViewGroup mRatingViewGroup;
 
     private final SparseArray<ImageButton> mActionButtonMap = new SparseArray<>();
 
@@ -170,6 +174,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         mShuffleToggle = new ShuffleModeHelper();
         mRepeatToggle = new RepeatModeHelper();
+
+        mRatingViewGroup = findViewById(R.id.rating);
 
         if (savedInstanceState != null) {
             mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
@@ -323,6 +329,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         try {
             mController = new MediaControllerCompat(this, mMediaAppDetails.sessionToken);
             mController.registerCallback(mCallback);
+            mRatingUiHelper = ratingUiHelperFor(mController.getRatingType());
 
             // Force update on connect.
             mCallback.onPlaybackStateChanged(mController.getPlaybackState());
@@ -447,9 +454,17 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             } else {
                 mMediaAlbumArtView.setImageResource(R.drawable.ic_album_black_24dp);
             }
+            // Prefer user rating, but fall back to global rating if available.
+            RatingCompat rating =
+                    mediaMetadata.getRating(MediaMetadataCompat.METADATA_KEY_USER_RATING);
+            if (rating == null) {
+                rating = mediaMetadata.getRating(MediaMetadataCompat.METADATA_KEY_RATING);
+            }
+            mRatingUiHelper.setRating(rating);
         } else {
             mMediaArtistView.setText(R.string.media_info_default);
             mMediaAlbumArtView.setImageResource(R.drawable.ic_album_black_24dp);
+            mRatingUiHelper.setRating(null);
         }
 
         final long actions = playbackState.getActions();
@@ -522,6 +537,26 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 return "STATE_SKIPPING_TO_QUEUE_ITEM";
             default:
                 return "!Unknown State!";
+        }
+    }
+
+    private RatingUiHelper ratingUiHelperFor(int ratingStyle) {
+        switch (ratingStyle) {
+            case RatingCompat.RATING_3_STARS:
+                return new RatingUiHelper.Stars3(mRatingViewGroup, mController);
+            case RatingCompat.RATING_4_STARS:
+                return new RatingUiHelper.Stars4(mRatingViewGroup, mController);
+            case RatingCompat.RATING_5_STARS:
+                return new RatingUiHelper.Stars5(mRatingViewGroup, mController);
+            case RatingCompat.RATING_HEART:
+                return new RatingUiHelper.Heart(mRatingViewGroup, mController);
+            case RatingCompat.RATING_THUMB_UP_DOWN:
+                return new RatingUiHelper.Thumbs(mRatingViewGroup, mController);
+            case RatingCompat.RATING_PERCENTAGE:
+                return new RatingUiHelper.Percentage(mRatingViewGroup, mController);
+            case RatingCompat.RATING_NONE:
+            default:
+                return new RatingUiHelper.None(mRatingViewGroup, mController);
         }
     }
 
