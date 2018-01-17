@@ -91,7 +91,7 @@
         android:contentDescription="@string/action_thumbs_down"
         app:layout_constraintLeft_toLeftOf="@+id/primaryGuidelineStart"
         app:layout_constraintRight_toLeftOf="@+id/centerGuideline"
-        app:layout_constraintBottom_toTopOf="@+id/action_skip_30s_backward"
+        app:layout_constraintBottom_toTopOf="@+id/group_toggle_repeat"
         app:srcCompat="@drawable/ic_thumb_down_black_32dp" />
 
     <ImageButton
@@ -107,7 +107,7 @@
         android:contentDescription="@string/action_thumbs_up"
         app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
         app:layout_constraintRight_toLeftOf="@+id/primaryGuidelineEnd"
-        app:layout_constraintBottom_toTopOf="@+id/action_skip_30s_forward"
+        app:layout_constraintBottom_toTopOf="@+id/group_toggle_shuffle"
         app:srcCompat="@drawable/ic_thumb_up_black_32dp" />
 
     <ImageButton
@@ -134,18 +134,61 @@
         app:layout_constraintStart_toStartOf="@id/centerGuideline"
         app:srcCompat="@drawable/ic_forward_30_black_32dp" />
 
-    <ImageButton
-        android:id="@+id/action_toggle_shuffle"
-        style="@style/AppTheme.MediaControl"
+    <LinearLayout
+        android:id="@+id/group_toggle_repeat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:contentDescription="@string/action_toggle_shuffle"
+        android:layout_margin="8dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
+        app:layout_constraintEnd_toStartOf="@+id/action_skip_30s_backward"
+        app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
+        app:layout_constraintStart_toEndOf="@+id/primaryGuidelineStart">
+
+        <ImageView
+            android:id="@+id/repeat_mode_icon"
+            style="@style/AppTheme.MediaControl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/action_set_repeat"
+            app:srcCompat="@drawable/ic_repeat_black_32dp" />
+
+        <Spinner
+            android:id="@+id/repeat_mode"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:entries="@array/repeat_modes" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/group_toggle_shuffle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:gravity="center"
+        android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@+id/mediaControlsGuideline"
         app:layout_constraintEnd_toStartOf="@+id/primaryGuidelineEnd"
         app:layout_constraintLeft_toLeftOf="@+id/centerGuideline"
-        app:layout_constraintStart_toEndOf="@+id/action_skip_30s_forward"
-        app:srcCompat="@drawable/ic_shuffle_toggle_32dp" />
+        app:layout_constraintStart_toEndOf="@+id/action_skip_30s_forward">
+
+        <ImageView
+            android:id="@+id/shuffle_mode_icon"
+            style="@style/AppTheme.MediaControl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/action_set_shuffle"
+            app:srcCompat="@drawable/ic_shuffle_toggle_32dp" />
+
+        <Spinner
+            android:id="@+id/shuffle_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/shuffle_modes" />
+
+    </LinearLayout>
 
     <ImageButton
         android:id="@+id/action_skip_previous"

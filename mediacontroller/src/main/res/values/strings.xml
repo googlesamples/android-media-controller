@@ -81,7 +81,8 @@
     <string name="action_skip_30s_forward">Skip 30s</string>
     <string name="action_skip_30s_backward">Skip back 30s</string>
 
-    <string name="action_toggle_shuffle">Toggle shuffle mode</string>
+    <string name="action_set_shuffle">Set shuffle mode</string>
+    <string name="action_set_repeat">Set repeat mode</string>
 
     <string name="audio_focus_title">Audio Focus</string>
     <string name="audio_focus_gain_focus">Gain</string>
@@ -96,5 +97,26 @@
         <item>GAIN</item>
         <item>GAIN_TRANSIENT</item>
         <item>GAIN_TRANSIENT_MAY_DUCK</item>
+    </string-array>
+
+    <!--
+    The order of these strings must match the order of the constants
+    declared in MediaAppControllerActivity.RepeatModeHelper's constructor.
+    -->
+    <string-array name="repeat_modes">
+        <item>None</item>
+        <item>One</item>
+        <item>Group</item>
+        <item>All</item>
+    </string-array>
+
+    <!--
+    The order of these strings must match the order of the constants
+    declared in MediaAppControllerActivity.ShuffleModeHelper's constructor.
+    -->
+    <string-array name="shuffle_modes">
+        <item>None</item>
+        <item>Group</item>
+        <item>All</item>
     </string-array>
 </resources>

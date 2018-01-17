@@ -29,6 +29,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
@@ -72,6 +73,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
+import static java.util.Arrays.asList;
 
 /**
  * This class connects to a {@link android.support.v4.media.MediaBrowserServiceCompat}
@@ -130,7 +133,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private TextView mMediaArtistView;
     private TextView mMediaAlbumView;
 
-    private ImageButton mShuffleToggle;
+    private ModeHelper mShuffleToggle;
+    private ModeHelper mRepeatToggle;
 
     private final SparseArray<ImageButton> mActionButtonMap = new SparseArray<>();
 
@@ -164,7 +168,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mMediaArtistView = findViewById(R.id.media_artist);
         mMediaAlbumView = findViewById(R.id.media_album);
 
-        mShuffleToggle = findViewById(R.id.action_toggle_shuffle);
+        mShuffleToggle = new ShuffleModeHelper();
+        mRepeatToggle = new RepeatModeHelper();
 
         if (savedInstanceState != null) {
             mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
@@ -608,9 +613,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         // They're the same action, but each of the buttons should be colored anyway.
         mActionViewIdMap.put(R.id.action_skip_30s_backward, PlaybackStateCompat.ACTION_SEEK_TO);
         mActionViewIdMap.put(R.id.action_skip_30s_forward, PlaybackStateCompat.ACTION_SEEK_TO);
-
-        mActionViewIdMap.put(R.id.action_toggle_shuffle,
-                PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE);
     }
 
     final MediaControllerCompat.Callback mCallback = new MediaControllerCompat.Callback() {
@@ -663,13 +665,14 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
         }
 
-        final boolean shuffleEnabled =
-                mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_ALL ||
-                        mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_GROUP;
-        final int shuffleTint = shuffleEnabled
-                ? ContextCompat.getColor(this, R.color.colorPrimary)
-                : ContextCompat.getColor(this, R.color.colorInactive);
-        DrawableCompat.setTint(mShuffleToggle.getDrawable(), shuffleTint);
+        mShuffleToggle.updateView(
+                actionSupported(actions, PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE),
+                mController.getShuffleMode()
+        );
+        mRepeatToggle.updateView(
+                actionSupported(actions, PlaybackStateCompat.ACTION_SET_REPEAT_MODE),
+                mController.getRepeatMode()
+        );
     }
 
     private boolean actionSupported(@PlaybackStateCompat.Actions long actions,
@@ -865,6 +868,104 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 description = itemView.findViewById(R.id.action_description);
                 icon = itemView.findViewById(R.id.action_icon);
             }
+        }
+    }
+
+    /**
+     * Helper class to manage shuffle and repeat "modes"
+     */
+    private static abstract class ModeHelper implements AdapterView.OnItemSelectedListener {
+        private final Context context;
+        private final Spinner spinner;
+        private final ImageView icon;
+        private final ViewGroup container;
+        private final List<Integer> modes;
+
+        ModeHelper(ViewGroup container,
+                   @IdRes int stateSpinnerView,
+                   @IdRes int iconImageView,
+                   List<Integer> modes) {
+            this.context = container.getContext();
+            this.spinner = container.findViewById(stateSpinnerView);
+            this.icon = container.findViewById(iconImageView);
+            this.container = container;
+            this.modes = modes;
+            this.spinner.setOnItemSelectedListener(this);
+        }
+
+        protected abstract boolean enabled(int mode);
+
+        protected abstract void setMode(int mode);
+
+        void updateView(boolean supported, int mode) {
+            if (supported) {
+                container.setBackground(null);
+                spinner.setVisibility(View.VISIBLE);
+                spinner.setSelection(modes.indexOf(mode));
+            } else {
+                container.setBackgroundResource(R.drawable.bg_unsuported_action);
+                spinner.setVisibility(View.GONE);
+            }
+            final int tint = enabled(mode) ? R.color.colorPrimary : R.color.colorInactive;
+            DrawableCompat.setTint(icon.getDrawable(), ContextCompat.getColor(context, tint));
+        }
+
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            setMode(this.modes.get(position));
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> parent) {
+        }
+    }
+
+    private class ShuffleModeHelper extends ModeHelper {
+        ShuffleModeHelper() {
+            super(findViewById(R.id.group_toggle_shuffle),
+                    R.id.shuffle_mode,
+                    R.id.shuffle_mode_icon,
+                    asList(
+                            PlaybackStateCompat.SHUFFLE_MODE_NONE,
+                            PlaybackStateCompat.SHUFFLE_MODE_GROUP,
+                            PlaybackStateCompat.SHUFFLE_MODE_ALL));
+        }
+
+        @Override
+        protected boolean enabled(int mode) {
+            return mode == PlaybackStateCompat.SHUFFLE_MODE_ALL ||
+                    mode == PlaybackStateCompat.SHUFFLE_MODE_GROUP;
+        }
+
+        @Override
+        protected void setMode(int mode) {
+            mController.getTransportControls().setShuffleMode(mode);
+        }
+    }
+
+    private class RepeatModeHelper extends ModeHelper {
+        RepeatModeHelper() {
+            super(findViewById(R.id.group_toggle_repeat),
+                    R.id.repeat_mode,
+                    R.id.repeat_mode_icon,
+                    asList(
+                            PlaybackStateCompat.REPEAT_MODE_NONE,
+                            PlaybackStateCompat.REPEAT_MODE_ONE,
+                            PlaybackStateCompat.REPEAT_MODE_GROUP,
+                            PlaybackStateCompat.REPEAT_MODE_ALL)
+            );
+        }
+
+        @Override
+        protected boolean enabled(int mode) {
+            return mode == PlaybackStateCompat.REPEAT_MODE_ONE ||
+                    mode == PlaybackStateCompat.REPEAT_MODE_GROUP ||
+                    mode == PlaybackStateCompat.REPEAT_MODE_ALL;
+        }
+
+        @Override
+        protected void setMode(int mode) {
+            mController.getTransportControls().setRepeatMode(mode);
         }
     }
 }
