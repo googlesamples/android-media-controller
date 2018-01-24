@@ -21,19 +21,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -41,10 +46,14 @@ import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.util.DiffUtil;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -65,6 +74,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
+import static java.util.Arrays.asList;
 
 /**
  * This class connects to a {@link android.support.v4.media.MediaBrowserServiceCompat}
@@ -112,6 +123,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
     private AudioFocusHelper mAudioFocusHelper;
+    private RatingUiHelper mRatingUiHelper;
+    private CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
 
     private Spinner mInputTypeView;
     private EditText mUriInput;
@@ -122,7 +135,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private TextView mMediaArtistView;
     private TextView mMediaAlbumView;
 
-    private ImageButton mShuffleToggle;
+    private ModeHelper mShuffleToggle;
+    private ModeHelper mRepeatToggle;
+
+    private ViewGroup mRatingViewGroup;
 
     private final SparseArray<ImageButton> mActionButtonMap = new SparseArray<>();
 
@@ -156,7 +172,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mMediaArtistView = findViewById(R.id.media_artist);
         mMediaAlbumView = findViewById(R.id.media_album);
 
-        mShuffleToggle = findViewById(R.id.action_toggle_shuffle);
+        mShuffleToggle = new ShuffleModeHelper();
+        mRepeatToggle = new RepeatModeHelper();
+
+        mRatingViewGroup = findViewById(R.id.rating);
 
         if (savedInstanceState != null) {
             mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
@@ -176,11 +195,14 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
 
         final ViewPager viewPager = findViewById(R.id.view_pager);
+        final int[] pages = {
+                R.id.prepare_play_page,
+                R.id.controls_page,
+                R.id.custom_controls_page,
+        };
+        // Simplify the adapter by not keeping track of creating/destroying off-screen views.
+        viewPager.setOffscreenPageLimit(pages.length);
         viewPager.setAdapter(new PagerAdapter() {
-            private final int[] pages = {
-                    R.id.prepare_play_page,
-                    R.id.controls_page
-            };
 
             @Override
             public int getCount() {
@@ -200,6 +222,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         });
         final TabLayout pageIndicator = findViewById(R.id.page_indicator);
         pageIndicator.setupWithViewPager(viewPager);
+
+        final RecyclerView customControlsList = findViewById(R.id.custom_controls_list);
+        customControlsList.setLayoutManager(new LinearLayoutManager(this));
+        customControlsList.setHasFixedSize(true);
+        customControlsList.setAdapter(mCustomControlsAdapter);
     }
 
     @Override
@@ -302,6 +329,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         try {
             mController = new MediaControllerCompat(this, mMediaAppDetails.sessionToken);
             mController.registerCallback(mCallback);
+            mRatingUiHelper = ratingUiHelperFor(mController.getRatingType());
 
             // Force update on connect.
             mCallback.onPlaybackStateChanged(mController.getPlaybackState());
@@ -426,9 +454,17 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             } else {
                 mMediaAlbumArtView.setImageResource(R.drawable.ic_album_black_24dp);
             }
+            // Prefer user rating, but fall back to global rating if available.
+            RatingCompat rating =
+                    mediaMetadata.getRating(MediaMetadataCompat.METADATA_KEY_USER_RATING);
+            if (rating == null) {
+                rating = mediaMetadata.getRating(MediaMetadataCompat.METADATA_KEY_RATING);
+            }
+            mRatingUiHelper.setRating(rating);
         } else {
             mMediaArtistView.setText(R.string.media_info_default);
             mMediaAlbumArtView.setImageResource(R.drawable.ic_album_black_24dp);
+            mRatingUiHelper.setRating(null);
         }
 
         final long actions = playbackState.getActions();
@@ -501,6 +537,26 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 return "STATE_SKIPPING_TO_QUEUE_ITEM";
             default:
                 return "!Unknown State!";
+        }
+    }
+
+    private RatingUiHelper ratingUiHelperFor(int ratingStyle) {
+        switch (ratingStyle) {
+            case RatingCompat.RATING_3_STARS:
+                return new RatingUiHelper.Stars3(mRatingViewGroup, mController);
+            case RatingCompat.RATING_4_STARS:
+                return new RatingUiHelper.Stars4(mRatingViewGroup, mController);
+            case RatingCompat.RATING_5_STARS:
+                return new RatingUiHelper.Stars5(mRatingViewGroup, mController);
+            case RatingCompat.RATING_HEART:
+                return new RatingUiHelper.Heart(mRatingViewGroup, mController);
+            case RatingCompat.RATING_THUMB_UP_DOWN:
+                return new RatingUiHelper.Thumbs(mRatingViewGroup, mController);
+            case RatingCompat.RATING_PERCENTAGE:
+                return new RatingUiHelper.Percentage(mRatingViewGroup, mController);
+            case RatingCompat.RATING_NONE:
+            default:
+                return new RatingUiHelper.None(mRatingViewGroup, mController);
         }
     }
 
@@ -592,9 +648,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         // They're the same action, but each of the buttons should be colored anyway.
         mActionViewIdMap.put(R.id.action_skip_30s_backward, PlaybackStateCompat.ACTION_SEEK_TO);
         mActionViewIdMap.put(R.id.action_skip_30s_forward, PlaybackStateCompat.ACTION_SEEK_TO);
-
-        mActionViewIdMap.put(R.id.action_toggle_shuffle,
-                PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE);
     }
 
     final MediaControllerCompat.Callback mCallback = new MediaControllerCompat.Callback() {
@@ -603,6 +656,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             onUpdate();
             if (playbackState != null) {
                 showActions(playbackState.getActions());
+                mCustomControlsAdapter.setActions(mController, playbackState.getCustomActions());
             }
         }
 
@@ -646,13 +700,14 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
         }
 
-        final boolean shuffleEnabled =
-                mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_ALL ||
-                        mController.getShuffleMode() == PlaybackStateCompat.SHUFFLE_MODE_GROUP;
-        final int shuffleTint = shuffleEnabled
-                ? ContextCompat.getColor(this, R.color.colorPrimary)
-                : ContextCompat.getColor(this, R.color.colorInactive);
-        DrawableCompat.setTint(mShuffleToggle.getDrawable(), shuffleTint);
+        mShuffleToggle.updateView(
+                actionSupported(actions, PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE),
+                mController.getShuffleMode()
+        );
+        mRepeatToggle.updateView(
+                actionSupported(actions, PlaybackStateCompat.ACTION_SET_REPEAT_MODE),
+                mController.getRepeatMode()
+        );
     }
 
     private boolean actionSupported(@PlaybackStateCompat.Actions long actions,
@@ -765,6 +820,187 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 return true;
             }
             return false;
+        }
+    }
+
+    private class CustomControlsAdapter extends
+            RecyclerView.Adapter<CustomControlsAdapter.ViewHolder> {
+        private List<PlaybackStateCompat.CustomAction> mActions = Collections.emptyList();
+        private MediaControllerCompat.TransportControls mControls;
+        private Resources mMediaAppResources;
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new ViewHolder(
+                    LayoutInflater.from(parent.getContext())
+                            .inflate(R.layout.media_custom_control, parent, false));
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            PlaybackStateCompat.CustomAction action = mActions.get(position);
+            holder.name.setText(action.getName());
+            holder.description.setText(action.getAction());
+            if (mMediaAppResources != null) {
+                Drawable iconDrawable = ResourcesCompat.getDrawable(
+                        mMediaAppResources, action.getIcon(), /* theme = */ null);
+                holder.icon.setImageDrawable(iconDrawable);
+            }
+            holder.itemView.setOnClickListener(
+                    (v) -> mControls.sendCustomAction(action, new Bundle()));
+        }
+
+        @Override
+        public int getItemCount() {
+            return mActions.size();
+        }
+
+        void setActions(MediaControllerCompat controller,
+                        List<PlaybackStateCompat.CustomAction> actions) {
+            mControls = controller.getTransportControls();
+            try {
+                mMediaAppResources = getPackageManager()
+                        .getResourcesForApplication(controller.getPackageName());
+            } catch (PackageManager.NameNotFoundException e) {
+                // Shouldn't happen, because the controller must come from an installed app.
+                Log.e(TAG, "Failed to fetch resources from media app", e);
+            }
+            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() {
+                    return mActions.size();
+                }
+
+                @Override
+                public int getNewListSize() {
+                    return actions.size();
+                }
+
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                    return actions.get(oldItemPosition).getAction()
+                            .equals(mActions.get(newItemPosition).getAction());
+                }
+
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                    return actions.get(oldItemPosition).equals(mActions.get(newItemPosition));
+                }
+            });
+            mActions = actions;
+            diffResult.dispatchUpdatesTo(this);
+        }
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+
+            private final TextView name;
+            private final TextView description;
+            private final ImageView icon;
+
+            ViewHolder(View itemView) {
+                super(itemView);
+                name = itemView.findViewById(R.id.action_name);
+                description = itemView.findViewById(R.id.action_description);
+                icon = itemView.findViewById(R.id.action_icon);
+            }
+        }
+    }
+
+    /**
+     * Helper class to manage shuffle and repeat "modes"
+     */
+    private static abstract class ModeHelper implements AdapterView.OnItemSelectedListener {
+        private final Context context;
+        private final Spinner spinner;
+        private final ImageView icon;
+        private final ViewGroup container;
+        private final List<Integer> modes;
+
+        ModeHelper(ViewGroup container,
+                   @IdRes int stateSpinnerView,
+                   @IdRes int iconImageView,
+                   List<Integer> modes) {
+            this.context = container.getContext();
+            this.spinner = container.findViewById(stateSpinnerView);
+            this.icon = container.findViewById(iconImageView);
+            this.container = container;
+            this.modes = modes;
+            this.spinner.setOnItemSelectedListener(this);
+        }
+
+        protected abstract boolean enabled(int mode);
+
+        protected abstract void setMode(int mode);
+
+        void updateView(boolean supported, int mode) {
+            if (supported) {
+                container.setBackground(null);
+                spinner.setVisibility(View.VISIBLE);
+                spinner.setSelection(modes.indexOf(mode));
+            } else {
+                container.setBackgroundResource(R.drawable.bg_unsuported_action);
+                spinner.setVisibility(View.GONE);
+            }
+            final int tint = enabled(mode) ? R.color.colorPrimary : R.color.colorInactive;
+            DrawableCompat.setTint(icon.getDrawable(), ContextCompat.getColor(context, tint));
+        }
+
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            setMode(this.modes.get(position));
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> parent) {
+        }
+    }
+
+    private class ShuffleModeHelper extends ModeHelper {
+        ShuffleModeHelper() {
+            super(findViewById(R.id.group_toggle_shuffle),
+                    R.id.shuffle_mode,
+                    R.id.shuffle_mode_icon,
+                    asList(
+                            PlaybackStateCompat.SHUFFLE_MODE_NONE,
+                            PlaybackStateCompat.SHUFFLE_MODE_GROUP,
+                            PlaybackStateCompat.SHUFFLE_MODE_ALL));
+        }
+
+        @Override
+        protected boolean enabled(int mode) {
+            return mode == PlaybackStateCompat.SHUFFLE_MODE_ALL ||
+                    mode == PlaybackStateCompat.SHUFFLE_MODE_GROUP;
+        }
+
+        @Override
+        protected void setMode(int mode) {
+            mController.getTransportControls().setShuffleMode(mode);
+        }
+    }
+
+    private class RepeatModeHelper extends ModeHelper {
+        RepeatModeHelper() {
+            super(findViewById(R.id.group_toggle_repeat),
+                    R.id.repeat_mode,
+                    R.id.repeat_mode_icon,
+                    asList(
+                            PlaybackStateCompat.REPEAT_MODE_NONE,
+                            PlaybackStateCompat.REPEAT_MODE_ONE,
+                            PlaybackStateCompat.REPEAT_MODE_GROUP,
+                            PlaybackStateCompat.REPEAT_MODE_ALL)
+            );
+        }
+
+        @Override
+        protected boolean enabled(int mode) {
+            return mode == PlaybackStateCompat.REPEAT_MODE_ONE ||
+                    mode == PlaybackStateCompat.REPEAT_MODE_GROUP ||
+                    mode == PlaybackStateCompat.REPEAT_MODE_ALL;
+        }
+
+        @Override
+        protected void setMode(int mode) {
+            mController.getTransportControls().setRepeatMode(mode);
         }
     }
 }

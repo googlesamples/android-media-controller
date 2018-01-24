@@ -39,6 +39,7 @@
     <string name="update_media_info">Update Media Info</string>
     <string name="media_info_default">Empty Media Info</string>
     <string name="default_uri" />
+    <string name="custom_actions_header">App-provided Custom Actions</string>
 
     <string name="info_state_string">PlaybackState</string>
     <string name="info_title_string">Title</string>
@@ -80,12 +81,27 @@
     <string name="action_skip_30s_forward">Skip 30s</string>
     <string name="action_skip_30s_backward">Skip back 30s</string>
 
-    <string name="action_toggle_shuffle">Toggle shuffle mode</string>
+    <string name="action_set_shuffle">Set shuffle mode</string>
+    <string name="action_set_repeat">Set repeat mode</string>
 
     <string name="audio_focus_title">Audio Focus</string>
     <string name="audio_focus_gain_focus">Gain</string>
     <string name="audio_focus_abandon_focus">Abandon</string>
     <string name="start_session_activity">Start Session Activity</string>
+
+    <string name="rating_thumb_up">Thumb Up</string>
+    <string name="rating_thumb_down">Thumb Down</string>
+
+    <string name="rating_heart">Heart</string>
+
+    <string name="rating_star_1">1 star</string>
+    <string name="rating_star_2">2 stars</string>
+    <string name="rating_star_3">3 stars</string>
+    <string name="rating_star_4">4 stars</string>
+    <string name="rating_star_5">5 stars</string>
+
+    <string name="rating_percentage">Rating %</string>
+    <string name="rating_set_percentage">Set</string>
 
     <!--
     The order of these strings must match the order of the constants
@@ -95,5 +111,26 @@
         <item>GAIN</item>
         <item>GAIN_TRANSIENT</item>
         <item>GAIN_TRANSIENT_MAY_DUCK</item>
+    </string-array>
+
+    <!--
+    The order of these strings must match the order of the constants
+    declared in MediaAppControllerActivity.RepeatModeHelper's constructor.
+    -->
+    <string-array name="repeat_modes">
+        <item>None</item>
+        <item>One</item>
+        <item>Group</item>
+        <item>All</item>
+    </string-array>
+
+    <!--
+    The order of these strings must match the order of the constants
+    declared in MediaAppControllerActivity.ShuffleModeHelper's constructor.
+    -->
+    <string-array name="shuffle_modes">
+        <item>None</item>
+        <item>Group</item>
+        <item>All</item>
     </string-array>
 </resources>
