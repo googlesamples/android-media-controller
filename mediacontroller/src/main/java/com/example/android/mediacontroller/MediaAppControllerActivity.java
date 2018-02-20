@@ -126,6 +126,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private RatingUiHelper mRatingUiHelper;
     private CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
 
+    private ViewPager mViewPager;
     private Spinner mInputTypeView;
     private EditText mUriInput;
     private TextView mMediaInfoText;
@@ -163,6 +164,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        mViewPager = findViewById(R.id.view_pager);
         mInputTypeView = findViewById(R.id.input_type);
         mUriInput = findViewById(R.id.uri_id_query);
         mMediaInfoText = findViewById(R.id.media_info);
@@ -192,17 +194,19 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             // that will be taken care of by #connectToMediaBrowserPackage in handleIntent.
             setupMediaController();
             setupToolbar(mMediaAppDetails.appName, mMediaAppDetails.icon);
+        } else {
+            // Wait to show the ViewPager until connected.
+            mViewPager.setVisibility(View.GONE);
         }
 
-        final ViewPager viewPager = findViewById(R.id.view_pager);
         final int[] pages = {
                 R.id.prepare_play_page,
                 R.id.controls_page,
                 R.id.custom_controls_page,
         };
         // Simplify the adapter by not keeping track of creating/destroying off-screen views.
-        viewPager.setOffscreenPageLimit(pages.length);
-        viewPager.setAdapter(new PagerAdapter() {
+        mViewPager.setOffscreenPageLimit(pages.length);
+        mViewPager.setAdapter(new PagerAdapter() {
 
             @Override
             public int getCount() {
@@ -221,7 +225,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
         });
         final TabLayout pageIndicator = findViewById(R.id.page_indicator);
-        pageIndicator.setupWithViewPager(viewPager);
+        pageIndicator.setupWithViewPager(mViewPager);
 
         final RecyclerView customControlsList = findViewById(R.id.custom_controls_list);
         customControlsList.setLayoutManager(new LinearLayoutManager(this));
@@ -334,6 +338,9 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             // Force update on connect.
             mCallback.onPlaybackStateChanged(mController.getPlaybackState());
             mCallback.onMetadataChanged(mController.getMetadata());
+
+            // Ensure views are visible.
+            mViewPager.setVisibility(View.VISIBLE);
 
             Log.d(TAG, "MediaControllerCompat created");
         } catch (RemoteException remoteException) {
