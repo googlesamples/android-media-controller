@@ -36,6 +36,7 @@
     <string name="connection_failed_msg">MediaBrowser connection failed for %s</string>
     <string name="media_controller_failed_msg">Failed to create a MediaController with session token</string>
     <string name="id_hint">URI, Media ID, or Query</string>
+    <string name="search_hint">Query</string>
     <string name="update_media_info">Update Media Info</string>
     <string name="media_info_default">Empty Media Info</string>
     <string name="default_uri" />
@@ -88,6 +89,14 @@
     <string name="audio_focus_gain_focus">Gain</string>
     <string name="audio_focus_abandon_focus">Abandon</string>
     <string name="start_session_activity">Start Session Activity</string>
+
+    <string name="media_browse_tree_top">Top</string>
+    <string name="media_browse_tree_up">Up</string>
+    <string name="media_browse_tree_header">App-provided MediaItems</string>
+    <string name="media_no_browser">No Browser</string>
+    <string name="media_browse_tree_loading">Loading...</string>
+    <string name="media_browse_tree_empty">Empty.</string>
+    <string name="search_media">Search</string>
 
     <string name="rating_thumb_up">Thumb Up</string>
     <string name="rating_thumb_down">Thumb Down</string>
