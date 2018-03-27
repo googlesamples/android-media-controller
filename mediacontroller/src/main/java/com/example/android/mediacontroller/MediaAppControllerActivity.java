@@ -20,7 +20,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
+import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -36,7 +36,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v4.media.MediaBrowserServiceCompat;
+import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -74,6 +74,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 import static java.util.Arrays.asList;
 
@@ -122,9 +123,12 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
+    private MediaBrowserCompat mBrowser;
     private AudioFocusHelper mAudioFocusHelper;
     private RatingUiHelper mRatingUiHelper;
     private CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
+    private BrowseMediaItemsAdapter mBrowseMediaItemsAdapter = new BrowseMediaItemsAdapter();
+    private SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter();
 
     private ViewPager mViewPager;
     private Spinner mInputTypeView;
@@ -192,7 +196,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             // intent, (e.g. triggered through the URL scheme). If that happens, we need to wait
             // for a media browser connection before we can set up the controller or toolbar, and
             // that will be taken care of by #connectToMediaBrowserPackage in handleIntent.
-            setupMediaController();
+            setupMedia();
             setupToolbar(mMediaAppDetails.appName, mMediaAppDetails.icon);
         } else {
             // Wait to show the ViewPager until connected.
@@ -203,6 +207,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 R.id.prepare_play_page,
                 R.id.controls_page,
                 R.id.custom_controls_page,
+                R.id.browse_tree_page,
+                R.id.media_search_page,
         };
         // Simplify the adapter by not keeping track of creating/destroying off-screen views.
         mViewPager.setOffscreenPageLimit(pages.length);
@@ -231,6 +237,29 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         customControlsList.setLayoutManager(new LinearLayoutManager(this));
         customControlsList.setHasFixedSize(true);
         customControlsList.setAdapter(mCustomControlsAdapter);
+
+        final RecyclerView browseTreeList = findViewById(R.id.media_items_list);
+        browseTreeList.setLayoutManager(new LinearLayoutManager(this));
+        browseTreeList.setHasFixedSize(true);
+        browseTreeList.setAdapter(mBrowseMediaItemsAdapter);
+        mBrowseMediaItemsAdapter.init(findViewById(R.id.media_browse_tree_top),
+                findViewById(R.id.media_browse_tree_up));
+
+        final RecyclerView searchItemsList = findViewById(R.id.search_items_list);
+        searchItemsList.setLayoutManager(new LinearLayoutManager(this));
+        searchItemsList.setHasFixedSize(true);
+        searchItemsList.setAdapter(mSearchMediaItemsAdapter);
+        mSearchMediaItemsAdapter.init(null, null);
+
+        findViewById(R.id.search_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CharSequence queryText = ((TextView)findViewById(R.id.search_query)).getText();
+                if (!TextUtils.isEmpty(queryText)) {
+                    mSearchMediaItemsAdapter.setRoot(queryText.toString());
+                }
+            }
+        });
     }
 
     @Override
@@ -249,10 +278,19 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         handleIntent(intent);
     }
 
+    /**
+     * This is the single point where the MedieBrowser and MediaController are setup. If there is
+     * previously a controller/browser, they are disconnected/unsubscribed.
+     */
     private void handleIntent(Intent intent) {
         if (intent == null) {
             return;
         }
+
+        if (mBrowser != null && mBrowser.isConnected()) {
+            mBrowser.disconnect();
+        }
+        mBrowser = null;
 
         final Uri data = intent.getData();
         final String appPackageName;
@@ -276,13 +314,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             appPackageName = null;
         }
 
-        // Create app details from URI, if one was present.
-        if (appPackageName != null) {
-            if (mMediaAppDetails == null || !appPackageName.equals(CURRENT_PACKAGE)) {
-                connectToMediaBrowserPackage(appPackageName);
-            }
-        }
-
         final Bundle extras = intent.getExtras();
         if (extras != null) {
             // Pull data out of the extras, if they're there.
@@ -300,6 +331,15 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             // It's also possible we're here from LaunchActivity, which did all this work for us.
             if (extras.containsKey(APP_DETAILS_EXTRA)) {
                 mMediaAppDetails = extras.getParcelable(APP_DETAILS_EXTRA);
+            }
+        }
+
+        if (mMediaAppDetails == null && appPackageName != null) {
+            PackageManager pm = getPackageManager();
+            ServiceInfo serviceInfo = MediaAppDetails.findServiceInfo(appPackageName, pm);
+            if (serviceInfo != null) {
+                Resources res = getResources();
+                mMediaAppDetails = new MediaAppDetails(serviceInfo, pm, res);
             }
         }
     }
@@ -329,9 +369,44 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
     }
 
+    private void setupMedia() {
+        // Should now have a viable details.. connect to browser and service as needed.
+        if (mMediaAppDetails.componentName != null) {
+            mBrowser = new MediaBrowserCompat(this, mMediaAppDetails.componentName,
+                    new MediaBrowserCompat.ConnectionCallback() {
+                        @Override
+                        public void onConnected() {
+                            setupMediaController();
+                            mBrowseMediaItemsAdapter.setRoot(mBrowser.getRoot());
+                        }
+                        @Override
+                        public void onConnectionSuspended(){
+                            //TODO(rasekh): shut down browser.
+                            mBrowseMediaItemsAdapter.setRoot(null);
+                        }
+                        @Override
+                        public void onConnectionFailed() {
+
+                            showToastAndFinish(getString(
+                                    R.string.connection_failed_msg, mMediaAppDetails.appName));
+                        }
+
+                    }, null);
+            mBrowser.connect();
+        } else if (mMediaAppDetails.sessionToken != null) {
+            setupMediaController();
+        } else {
+            showToastAndFinish(getString(R.string.connection_failed_msg, mMediaAppDetails.appName));
+        }
+    }
+
     private void setupMediaController() {
         try {
-            mController = new MediaControllerCompat(this, mMediaAppDetails.sessionToken);
+            MediaSessionCompat.Token token = mMediaAppDetails.sessionToken;
+            if (token == null) {
+                token = mBrowser.getSessionToken();
+            }
+            mController = new MediaControllerCompat(this, token);
             mController.registerCallback(mCallback);
             mRatingUiHelper = ratingUiHelperFor(mController.getRatingType());
 
@@ -347,41 +422,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             Log.e(TAG, "Failed to create MediaController from session token", remoteException);
             showToastAndFinish(getString(R.string.media_controller_failed_msg));
         }
-    }
-
-    private void connectToMediaBrowserPackage(final String packageName) {
-        final PackageManager packageManager = getPackageManager();
-
-        final Intent mediaBrowserIntent = new Intent(MediaBrowserServiceCompat.SERVICE_INTERFACE);
-        final List<ResolveInfo> services =
-                packageManager.queryIntentServices(mediaBrowserIntent,
-                        PackageManager.GET_RESOLVED_FILTER);
-        for (ResolveInfo info : services) {
-            if (info.serviceInfo.packageName.equals(packageName)) {
-                final Bitmap icon = BitmapUtils.convertDrawable(
-                        getResources(), info.loadIcon(packageManager));
-                final String name = info.loadLabel(packageManager).toString();
-
-                setupToolbar(name, icon);
-                MediaAppEntry appEntry = MediaAppEntry.fromBrowseService(
-                        info.serviceInfo, packageManager);
-                appEntry.getSessionToken(this, new MediaAppEntry.SessionTokenAvailableCallback() {
-                    @Override
-                    public void onSuccess(MediaSessionCompat.Token sessionToken) {
-                        mMediaAppDetails = new MediaAppDetails(name, icon, sessionToken);
-                        setupMediaController();
-                    }
-
-                    @Override
-                    public void onFailure() {
-                        showToastAndFinish(getString(R.string.connection_failed_msg, packageName));
-                    }
-                });
-                return;
-            }
-        }
-        // Failed to find package.
-        showToastAndFinish(getString(R.string.no_app_for_package, packageName));
     }
 
     private void setupButtons() {
@@ -981,7 +1021,9 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         @Override
         protected void setMode(int mode) {
-            mController.getTransportControls().setShuffleMode(mode);
+            if (mController != null) {
+                mController.getTransportControls().setShuffleMode(mode);
+            }
         }
     }
 
@@ -1007,7 +1049,231 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         @Override
         protected void setMode(int mode) {
-            mController.getTransportControls().setRepeatMode(mode);
+            if (mController != null) {
+                mController.getTransportControls().setRepeatMode(mode);
+            }
+        }
+    }
+
+    /**
+     * Helper class which manages a MediaBrowser tree. Handles modifying the adapter when selecting
+     * an item would cause the browse tree to change or play a media item. Only subscribes to a
+     * single level at once.
+     *
+     * The class keeps track of two pieces of data. (1) The Items to be displayed in mItems and
+     * (2) the stack of mNodes from the root to the current node. Depending on the current state
+     * different values are displayed in the adapter.
+     * (a) mItems == null and mNodes.size() == 0 -> No Browser.
+     * (b) mItems == null and mNodes.size() > 0 -> Loading.
+     * (c) mItems != null && mItems.size() == 0 -> Empty.
+     * (d) mItems.
+     */
+    private class BrowseMediaItemsAdapter extends
+            RecyclerView.Adapter<BrowseMediaItemsAdapter.ViewHolder> {
+
+        private List<MediaBrowserCompat.MediaItem> mItems;
+        private Stack<String> mNodes = new Stack<>();
+
+        MediaBrowserCompat.SubscriptionCallback callback =
+                new MediaBrowserCompat.SubscriptionCallback() {
+            @Override
+            public void onChildrenLoaded(@NonNull String parentId,
+                                         @NonNull List<MediaBrowserCompat.MediaItem> children) {
+                updateItemsEmptyIfNull(children);
+            }};
+
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new ViewHolder(
+                    LayoutInflater.from(parent.getContext())
+                            .inflate(R.layout.media_browse_item, parent, false));
+        }
+
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            if (mNodes.size() == 0) {
+                holder.name.setText(getString(R.string.media_no_browser));
+                holder.name.setVisibility(View.VISIBLE);
+                holder.description.setVisibility(View.GONE);
+                holder.icon.setVisibility(View.GONE);
+                holder.itemView.setOnClickListener((v) -> {});
+                return;
+            }
+            if (mItems == null) {
+                holder.name.setText(getString(R.string.media_browse_tree_loading));
+                holder.name.setVisibility(View.VISIBLE);
+                holder.description.setVisibility(View.GONE);
+                holder.icon.setVisibility(View.GONE);
+                holder.itemView.setOnClickListener((v) -> {});
+                return;
+            }
+            if (mItems.size() == 0) {
+                holder.name.setText(getString(R.string.media_browse_tree_empty));
+                holder.name.setVisibility(View.VISIBLE);
+                holder.description.setVisibility(View.GONE);
+                holder.icon.setVisibility(View.GONE);
+                holder.itemView.setOnClickListener((v) -> {});
+                return;
+            }
+
+            final MediaBrowserCompat.MediaItem item = mItems.get(position);
+            holder.name.setText(item.getDescription().getTitle());
+            holder.name.setVisibility(View.VISIBLE);
+            holder.description.setText(item.getDescription().getSubtitle());
+            holder.description.setVisibility(View.VISIBLE);
+            Uri iconUri = item.getDescription().getIconUri();
+            Bitmap iconBitmap = item.getDescription().getIconBitmap();
+             if (iconBitmap != null) {
+                holder.icon.setImageBitmap(iconBitmap);
+                holder.icon.setVisibility(View.VISIBLE);
+            } else if (iconUri != null) {
+                holder.icon.setImageURI(iconUri);
+                holder.icon.setVisibility(View.VISIBLE);
+            } else {
+                holder.icon.setVisibility(View.GONE);
+            }
+            holder.itemView.setOnClickListener(
+                    (v) -> {
+                        if (item.isBrowsable()) {
+                            unsubscribe();
+                            mNodes.push(item.getMediaId());
+                            subscribe();
+                        }
+                        if (item.isPlayable() && mController != null) {
+                            mController.getTransportControls().playFromMediaId(item.getMediaId(),
+                                    null);
+                        }
+                    });
+        }
+
+        @Override
+        public int getItemCount() {
+            if (mNodes.size() == 0 || mItems == null || mItems.size() == 0) {
+                return 1;
+            }
+            return mItems.size();
+        }
+
+        protected void updateItemsEmptyIfNull(List<MediaBrowserCompat.MediaItem> items) {
+            if (items == null) {
+                updateItems(Collections.emptyList());
+            } else {
+                updateItems(items);
+            }
+        }
+
+        protected void updateItems(List<MediaBrowserCompat.MediaItem> items) {
+            mItems = items;
+            notifyDataSetChanged();
+        }
+
+        /**
+         * Assigns click handlers to the buttons if provided for moving to the top of the tree or
+         * for moving up one level in the tree.
+         */
+        public void init(View topButtonView, View upButtonView) {
+            if (topButtonView != null) {
+                topButtonView.setOnClickListener(v -> {
+                    if (mNodes.size() > 1) {
+                        unsubscribe();
+                        while (mNodes.size() > 1) {
+                            mNodes.pop();
+                        }
+                        subscribe();
+                    }
+                });
+            }
+
+            if (upButtonView != null) {
+                upButtonView.setOnClickListener(v -> {
+                    if (mNodes.size() > 1) {
+                        unsubscribe();
+                        mNodes.pop();
+                        subscribe();
+                    }
+                });
+            }
+        }
+
+        protected void subscribe() {
+            if (mNodes.size() > 0) {
+                mBrowser.subscribe(mNodes.peek(), callback);
+            }
+        }
+
+        protected void unsubscribe() {
+            if (mNodes.size() > 0) {
+                mBrowser.unsubscribe(mNodes.peek(), callback);
+            }
+            updateItems(null);
+        }
+
+        protected int treeDepth() {
+            return mNodes.size();
+        }
+
+        protected String getCurrentNode() {
+            return mNodes.peek();
+        }
+
+        public void setRoot(String root) {
+            unsubscribe();
+            mNodes.clear();
+            if (root != null) {
+                mNodes.push(root);
+                subscribe();
+            }
+        }
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+
+            private final TextView name;
+            private final TextView description;
+            private final ImageView icon;
+
+            ViewHolder(View itemView) {
+                super(itemView);
+                name = itemView.findViewById(R.id.item_name);
+                description = itemView.findViewById(R.id.item_description);
+                icon = itemView.findViewById(R.id.item_icon);
+            }
+        }
+    }
+
+    /**
+     * Helper class which gets the search tree and presents it as a browse tree. Overrides
+     * subscription function to perform search at the root node.
+     */
+    private class SearchMediaItemsAdapter extends BrowseMediaItemsAdapter {
+
+        @Override
+        protected void subscribe() {
+            if (treeDepth() == 1) {
+                mBrowser.search(getCurrentNode(), null, new MediaBrowserCompat.SearchCallback() {
+                    @Override
+                    public void onSearchResult(@NonNull String query, Bundle extras,
+                                               @NonNull List<MediaBrowserCompat.MediaItem> items) {
+                        if (query.equals(getCurrentNode())) {
+                            updateItemsEmptyIfNull(items);
+                        }
+                    }
+
+                    @Override
+                    public void onError(@NonNull String query, Bundle extras) {
+                        super.onError(query, extras);
+                    }
+                });
+            } else {
+                super.subscribe();
+            }
+        }
+
+        @Override()
+        protected void unsubscribe() {
+            if (treeDepth() == 1) {
+                return;
+            }
+            super.unsubscribe();
         }
     }
 }
