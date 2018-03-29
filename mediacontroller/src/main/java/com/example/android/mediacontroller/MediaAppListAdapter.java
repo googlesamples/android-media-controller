@@ -41,7 +41,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
      */
     public interface MediaAppSelectedListener {
 
-        void onMediaAppClicked(@NonNull MediaAppEntry mediaAppEntry);
+        void onMediaAppClicked(@NonNull MediaAppDetails mediaAppDetails);
     }
 
     /**
@@ -101,10 +101,10 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
      */
     static class AppEntry implements RecyclerViewItem {
 
-        private final MediaAppEntry appDetails;
+        private final MediaAppDetails appDetails;
         private final MediaAppSelectedListener appSelectedListener;
 
-        public AppEntry(MediaAppEntry appDetails,
+        public AppEntry(MediaAppDetails appDetails,
                         MediaAppSelectedListener appSelectedListener) {
             this.appDetails = appDetails;
             this.appSelectedListener = appSelectedListener;
@@ -118,7 +118,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
         @Override
         public void bindTo(RecyclerView.ViewHolder vh) {
             ViewHolder holder = (ViewHolder) vh;
-            holder.appIconView.setImageDrawable(appDetails.icon);
+            holder.appIconView.setImageBitmap(appDetails.icon);
             holder.appIconView.setContentDescription(
                     holder.appIconView.getContext().getString(R.string.app_icon_desc, appDetails.appName));
             holder.appNameView.setText(appDetails.appName);
@@ -318,9 +318,9 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
             updateData();
         }
 
-        public void setAppsList(final List<MediaAppEntry> appEntries) {
+        public void setAppsList(final List<MediaAppDetails> appEntries) {
             mItems.clear();
-            for (MediaAppEntry appEntry : appEntries) {
+            for (MediaAppDetails appEntry : appEntries) {
                 mItems.add(new AppEntry(appEntry, mMediaAppSelectedListener));
             }
             updateData();
