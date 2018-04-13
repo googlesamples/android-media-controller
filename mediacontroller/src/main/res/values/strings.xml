@@ -88,13 +88,16 @@
     <string name="audio_focus_title">Audio Focus</string>
     <string name="audio_focus_gain_focus">Gain</string>
     <string name="audio_focus_abandon_focus">Abandon</string>
+
     <string name="start_session_activity">Start Session Activity</string>
+    <string name="no_session">Media session does not contain an Activity to start</string>
+    <string name="session_start_failed">Failed to open app by session activity</string>
 
     <string name="media_browse_tree_top">Top</string>
     <string name="media_browse_tree_up">Up</string>
     <string name="media_browse_tree_header">App-provided MediaItems</string>
     <string name="media_no_browser">No Browser</string>
-    <string name="media_browse_tree_loading">Loading...</string>
+    <string name="media_browse_tree_loading">Loading…</string>
     <string name="media_browse_tree_empty">Empty.</string>
     <string name="search_media">Search</string>
 

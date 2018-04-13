@@ -54,6 +54,8 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -360,6 +362,25 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.controller, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item != null && item.getItemId() == R.id.start_session) {
+            if (mController != null) {
+                startSessionActivity(mController);
+            } else {
+                Toast.makeText(this, R.string.no_session, Toast.LENGTH_SHORT).show();
+            }
+            return true;
+        }
+        return false;
+    }
+
     private void setupToolbar(String name, Bitmap icon) {
         final ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
@@ -429,14 +450,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         final PreparePlayHandler preparePlayHandler = new PreparePlayHandler(this);
         findViewById(R.id.action_prepare).setOnClickListener(preparePlayHandler);
         findViewById(R.id.action_play).setOnClickListener(preparePlayHandler);
-
-        findViewById(R.id.start_session_activity_button).setOnClickListener(v -> {
-            if (mController != null) {
-                startSessionActivity(mController);
-            } else {
-                Log.w(TAG, "Media session does not contain an Activity to start");
-            }
-        });
 
         mAudioFocusHelper = new AudioFocusHelper(this,
                 findViewById(R.id.audio_focus_button),
@@ -620,11 +633,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 intent.send();
                 return;
             } catch (PendingIntent.CanceledException e) {
-                e.printStackTrace();
-                Log.e(TAG, e.toString());
+                Log.e(TAG, "Failed to start session activity", e);
             }
         }
-        Log.w(TAG, "Failed to open app by session activity.");
+        Toast.makeText(this, R.string.session_start_failed, Toast.LENGTH_SHORT).show();
     }
 
     private class PreparePlayHandler implements View.OnClickListener {

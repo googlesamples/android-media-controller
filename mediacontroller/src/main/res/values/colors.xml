@@ -21,6 +21,8 @@
     <color name="colorAccent">#ff4081</color>
     <color name="colorInactive">#a0a0a0</color>
 
+    <color name="appBarIconTint">#fff</color>
+
     <color name="background_grey">#e0e0e0</color>
     <color name="background_white">#f0f0f0</color>
 
