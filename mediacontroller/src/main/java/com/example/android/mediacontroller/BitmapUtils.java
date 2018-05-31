@@ -41,7 +41,7 @@ public final class BitmapUtils {
      * @return A scaled Bitmap that's no larger than {@code R.dimen.app_icon_size} dp.
      */
     public static Bitmap convertDrawable(@NonNull final Resources resources,
-                                   @NonNull final Drawable drawable) {
+                                  @NonNull final Drawable drawable) {
 
         final Bitmap bitmap;
         if (drawable instanceof BitmapDrawable) {

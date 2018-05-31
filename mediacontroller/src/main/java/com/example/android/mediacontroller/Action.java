@@ -21,7 +21,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -194,7 +193,7 @@ public class Action {
     }
 
     public interface MediaControllerAction {
-        public void run(@NonNull MediaControllerCompat controller, @Nullable String id,
-                        @Nullable Bundle extras);
+        void run(@NonNull MediaControllerCompat controller, @Nullable String id,
+                 @Nullable Bundle extras);
     }
 }

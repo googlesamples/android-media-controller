@@ -24,6 +24,9 @@
     <string name="action_notification_permissions_settings">Settings</string>
     <string name="no_app_for_package">Could not find a media browser for package "%1$s".</string>
 
+    <string name="app_control_button">Control</string>
+    <string name="app_test_button">Test</string>
+
     <string name="media_app_header_browse">MediaBrowserService Implementations</string>
     <string name="media_app_header_session">Active MediaSessions</string>
 
@@ -33,8 +36,14 @@
     <string name="reconnect">Reconnect</string>
     <string name="package_name_hint">Media app package name</string>
     <string name="class_name_hint">Class name of MediaBrowserService</string>
+    <string name="connection_failed_hint_reject">MediaBrowser connection failed for %s\n\nService [%s] refused to connect</string>
+    <string name="connection_failed_hint_setup">MediaBrowser connection failed for %s\n\nPlease ensure you have exactly one (1) MediaBrowserService and that you are setting the session token with MediaBrowserService.setSessionToken() in MediaBrowserService.onCreate()</string>
     <string name="connection_failed_msg">MediaBrowser connection failed for %s</string>
-    <string name="media_controller_failed_msg">Failed to create a MediaController with session token</string>
+    <string name="connection_lost_msg">MediaBrowser connection lost for %s</string>
+    <string name="media_controller_failed_msg">Failed to create a MediaController from session token</string>
+    <string name="setup_media_controller_error_msg">setupMediaController() called with null %s object</string>
+    <string name="setup_media_controller_error_hint">Missing MediaSession Token from %s object</string>
+    <string name="setup_media_error_msg">setupMedia() called with null MediaAppDetails object</string>
     <string name="id_hint">URI, Media ID, or Query</string>
     <string name="search_hint">Query</string>
     <string name="update_media_info">Update Media Info</string>
@@ -114,6 +123,20 @@
 
     <string name="rating_percentage">Rating %</string>
     <string name="rating_set_percentage">Set</string>
+
+    <string name="tests_info_state">Playback State</string>
+    <string name="tests_info_metadata">Metadata</string>
+    <string name="tests_info_repeat">Repeat Mode</string>
+    <string name="tests_info_shuffle">Shuffle Mode</string>
+    <string name="tests_info_queue_title">Queue Title</string>
+    <string name="tests_info_queue">Queue</string>
+
+    <string name="tests_info_queue_null">Null</string>
+
+    <string name="tests_run_button">Run Test</string>
+    <string name="tests_options_header">Tests</string>
+    <string name="tests_results_header">Results</string>
+    <string name="tests_query_hint">Query</string>
 
     <!--
     The order of these strings must match the order of the constants

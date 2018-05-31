@@ -26,8 +26,8 @@
     <color name="background_grey">#e0e0e0</color>
     <color name="background_white">#f0f0f0</color>
 
-    <color name="border_unsuported_action">#ff8080</color>
-    <color name="background_unsuported_action">#80ff8080</color>
+    <color name="border_unsupported_action">#ff8080</color>
+    <color name="background_unsupported_action">#80ff8080</color>
 
     <color name="text_dark">#303030</color>
     <color name="text_light">#909090</color>

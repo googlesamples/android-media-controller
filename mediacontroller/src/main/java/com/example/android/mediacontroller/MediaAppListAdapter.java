@@ -28,6 +28,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,8 +41,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
      * Click listener for when an app is selected.
      */
     public interface MediaAppSelectedListener {
-
-        void onMediaAppClicked(@NonNull MediaAppDetails mediaAppDetails);
+        void onMediaAppClicked(@NonNull MediaAppDetails mediaAppDetails, @NonNull Boolean isTest);
     }
 
     /**
@@ -124,22 +124,26 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
             holder.appNameView.setText(appDetails.appName);
             holder.appPackageView.setText(appDetails.packageName);
 
-            holder.rootView.setOnClickListener(view ->
-                    appSelectedListener.onMediaAppClicked(appDetails));
+            holder.controlButton.setOnClickListener(view ->
+                    appSelectedListener.onMediaAppClicked(appDetails, false));
+            holder.testButton.setOnClickListener(view ->
+                    appSelectedListener.onMediaAppClicked(appDetails, true));
         }
 
         static class ViewHolder extends RecyclerView.ViewHolder {
-            private final ViewGroup rootView;
             private final ImageView appIconView;
             private final TextView appNameView;
             private final TextView appPackageView;
+            private final Button controlButton;
+            private final Button testButton;
 
             private ViewHolder(View itemView) {
                 super(itemView);
-                rootView = (ViewGroup) itemView;
                 appIconView = itemView.findViewById(R.id.app_icon);
                 appNameView = itemView.findViewById(R.id.app_name);
                 appPackageView = itemView.findViewById(R.id.package_name);
+                controlButton = itemView.findViewById(R.id.app_control);
+                testButton = itemView.findViewById(R.id.app_test);
             }
         }
 
@@ -378,8 +382,9 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
         diffResult.dispatchUpdatesTo(this);
     }
 
+    @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ViewType type = ViewType.values()[viewType];
         final ViewGroup itemLayout = (ViewGroup) LayoutInflater.from(parent.getContext())
                 .inflate(type.layoutId, parent, false);
@@ -387,7 +392,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         mRecyclerViewEntries.get(position).bindTo(holder);
     }
 

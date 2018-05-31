@@ -106,9 +106,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private static final String URI_EXTRA = "com.example.android.mediacontroller.URI";
     private static final String MEDIA_ID_EXTRA = "com.example.android.mediacontroller.MEDIA_ID";
 
-    // Hint to use the currently loaded app rather than specifying a package.
-    private static final String CURRENT_PACKAGE = "current";
-
     // Parameters for deep link URI.
     private static final String SEARCH_PARAM = "search";
     private static final String MEDIA_ID_PARAM = "id";
@@ -253,13 +250,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         searchItemsList.setAdapter(mSearchMediaItemsAdapter);
         mSearchMediaItemsAdapter.init(null, null);
 
-        findViewById(R.id.search_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                CharSequence queryText = ((TextView)findViewById(R.id.search_query)).getText();
-                if (!TextUtils.isEmpty(queryText)) {
-                    mSearchMediaItemsAdapter.setRoot(queryText.toString());
-                }
+        findViewById(R.id.search_button).setOnClickListener(v -> {
+            CharSequence queryText = ((TextView) findViewById(R.id.search_query)).getText();
+            if (!TextUtils.isEmpty(queryText)) {
+                mSearchMediaItemsAdapter.setRoot(queryText.toString());
             }
         });
     }
@@ -270,6 +264,12 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             mController.unregisterCallback(mCallback);
             mController = null;
         }
+
+        if (mBrowser != null && mBrowser.isConnected()) {
+            mBrowser.disconnect();
+        }
+        mBrowser = null;
+
         super.onDestroy();
     }
 
@@ -281,7 +281,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     }
 
     /**
-     * This is the single point where the MedieBrowser and MediaController are setup. If there is
+     * This is the single point where the MediaBrowser and MediaController are setup. If there is
      * previously a controller/browser, they are disconnected/unsubscribed.
      */
     private void handleIntent(Intent intent) {
@@ -400,11 +400,13 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                             setupMediaController();
                             mBrowseMediaItemsAdapter.setRoot(mBrowser.getRoot());
                         }
+
                         @Override
-                        public void onConnectionSuspended(){
+                        public void onConnectionSuspended() {
                             //TODO(rasekh): shut down browser.
                             mBrowseMediaItemsAdapter.setRoot(null);
                         }
+
                         @Override
                         public void onConnectionFailed() {
 
@@ -446,7 +448,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
-
         final PreparePlayHandler preparePlayHandler = new PreparePlayHandler(this);
         findViewById(R.id.action_prepare).setOnClickListener(preparePlayHandler);
         findViewById(R.id.action_play).setOnClickListener(preparePlayHandler);
@@ -709,7 +710,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mActionViewIdMap.put(R.id.action_skip_30s_forward, PlaybackStateCompat.ACTION_SEEK_TO);
     }
 
-    final MediaControllerCompat.Callback mCallback = new MediaControllerCompat.Callback() {
+    private final MediaControllerCompat.Callback mCallback = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat playbackState) {
             onUpdate();
@@ -755,7 +756,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             if (actionSupported(actions, action)) {
                 button.setBackground(null);
             } else {
-                button.setBackgroundResource(R.drawable.bg_unsuported_action);
+                button.setBackgroundResource(R.drawable.bg_unsupported_action);
             }
         }
 
@@ -888,15 +889,16 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private MediaControllerCompat.TransportControls mControls;
         private Resources mMediaAppResources;
 
+        @NonNull
         @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             return new ViewHolder(
                     LayoutInflater.from(parent.getContext())
                             .inflate(R.layout.media_custom_control, parent, false));
         }
 
         @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             PlaybackStateCompat.CustomAction action = mActions.get(position);
             holder.name.setText(action.getName());
             holder.description.setText(action.getAction());
@@ -997,7 +999,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 spinner.setVisibility(View.VISIBLE);
                 spinner.setSelection(modes.indexOf(mode));
             } else {
-                container.setBackgroundResource(R.drawable.bg_unsuported_action);
+                container.setBackgroundResource(R.drawable.bg_unsupported_action);
                 spinner.setVisibility(View.GONE);
             }
             final int tint = enabled(mode) ? R.color.colorPrimary : R.color.colorInactive;
@@ -1094,15 +1096,16 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 updateItemsEmptyIfNull(children);
             }};
 
+        @NonNull
         @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             return new ViewHolder(
                     LayoutInflater.from(parent.getContext())
                             .inflate(R.layout.media_browse_item, parent, false));
         }
 
         @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             if (mNodes.size() == 0) {
                 holder.name.setText(getString(R.string.media_no_browser));
                 holder.name.setVisibility(View.VISIBLE);
@@ -1135,7 +1138,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             holder.description.setVisibility(View.VISIBLE);
             Uri iconUri = item.getDescription().getIconUri();
             Bitmap iconBitmap = item.getDescription().getIconBitmap();
-             if (iconBitmap != null) {
+            if (iconBitmap != null) {
                 holder.icon.setImageBitmap(iconBitmap);
                 holder.icon.setVisibility(View.VISIBLE);
             } else if (iconUri != null) {
@@ -1166,7 +1169,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             return mItems.size();
         }
 
-        protected void updateItemsEmptyIfNull(List<MediaBrowserCompat.MediaItem> items) {
+        void updateItemsEmptyIfNull(List<MediaBrowserCompat.MediaItem> items) {
             if (items == null) {
                 updateItems(Collections.emptyList());
             } else {
@@ -1174,7 +1177,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
         }
 
-        protected void updateItems(List<MediaBrowserCompat.MediaItem> items) {
+        void updateItems(List<MediaBrowserCompat.MediaItem> items) {
             mItems = items;
             notifyDataSetChanged();
         }
@@ -1183,7 +1186,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
          * Assigns click handlers to the buttons if provided for moving to the top of the tree or
          * for moving up one level in the tree.
          */
-        public void init(View topButtonView, View upButtonView) {
+        void init(View topButtonView, View upButtonView) {
             if (topButtonView != null) {
                 topButtonView.setOnClickListener(v -> {
                     if (mNodes.size() > 1) {
@@ -1220,15 +1223,15 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             updateItems(null);
         }
 
-        protected int treeDepth() {
+        int treeDepth() {
             return mNodes.size();
         }
 
-        protected String getCurrentNode() {
+        String getCurrentNode() {
             return mNodes.peek();
         }
 
-        public void setRoot(String root) {
+        void setRoot(String root) {
             unsubscribe();
             mNodes.clear();
             if (root != null) {

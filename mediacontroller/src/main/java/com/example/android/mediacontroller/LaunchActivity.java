@@ -26,12 +26,10 @@ import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
 
 import com.example.android.mediacontroller.tasks.FindMediaAppsTask;
 import com.example.android.mediacontroller.tasks.FindMediaBrowserAppsTask;
@@ -47,11 +45,9 @@ import java.util.List;
 public class LaunchActivity extends AppCompatActivity {
     private static final String TAG = LaunchActivity.class.getSimpleName();
 
-    private View mRootView;
     private Snackbar mSnackbar;
 
     private MediaAppListAdapter.Section mMediaBrowserApps;
-    private ContentLoadingProgressBar mSpinner;
 
     private final FindMediaAppsTask.AppListUpdatedCallback mBrowserAppsUpdated =
             new FindMediaAppsTask.AppListUpdatedCallback() {
@@ -82,17 +78,15 @@ public class LaunchActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mRootView = findViewById(R.id.root_view);
-        mSpinner = findViewById(R.id.spinner);
-
-        MediaAppListAdapter mediaAppsAdapter = new MediaAppListAdapter(app -> {
+        MediaAppListAdapter mediaAppsAdapter = new MediaAppListAdapter((app, isTest) -> {
             if (mSnackbar != null) {
                 mSnackbar.dismiss();
                 mSnackbar = null;
             }
 
-            final Intent intent = MediaAppControllerActivity.buildIntent(
-                LaunchActivity.this, app);
+            final Intent intent = isTest ?
+                    MediaAppTestingActivity.Companion.buildIntent(LaunchActivity.this, app)
+                    : MediaAppControllerActivity.buildIntent(LaunchActivity.this, app);
             startActivity(intent);
         });
 

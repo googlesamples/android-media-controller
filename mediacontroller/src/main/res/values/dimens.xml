@@ -31,9 +31,16 @@
     <dimen name="app_icon_size">48dp</dimen>
     <dimen name="app_name_text_size">18sp</dimen>
     <dimen name="app_package_text_size">12sp</dimen>
+    <dimen name="app_button_height">48dp</dimen>
+    <dimen name="app_control_button_width">96dp</dimen>
+    <dimen name="app_test_button_width">72dp</dimen>
 
     <dimen name="error_text_size">18sp</dimen>
     <dimen name="error_details_text_size">12sp</dimen>
 
     <dimen name="text_shadow_size">2dp</dimen>
+
+    <dimen name="tests_header_text_size">24sp</dimen>
+    <dimen name="tests_subheader_text_size">20sp</dimen>
+    <dimen name="tests_details_text_size">12sp</dimen>
 </resources>

@@ -20,7 +20,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_white"
     tools:context=".MediaAppControllerActivity">
 
     <ImageView
@@ -224,7 +223,7 @@
         app:layout_constraintTop_toBottomOf="@+id/mediaControlsGuideline"
         app:layout_constraintLeft_toRightOf="@+id/action_pause"
         app:srcCompat="@drawable/ic_stop_black_32dp"
-        tools:background="@drawable/bg_unsuported_action" />
+        tools:background="@drawable/bg_unsupported_action" />
 
     <ImageButton
         android:id="@+id/action_fast_forward"
