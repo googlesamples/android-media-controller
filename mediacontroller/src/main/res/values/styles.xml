@@ -37,4 +37,6 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="AppTheme.TV" parent="Theme.Leanback" />
+
 </resources>
