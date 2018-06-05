@@ -24,9 +24,7 @@ import android.support.v17.leanback.widget.DiffCallback
 import android.support.v17.leanback.widget.HeaderItem
 import android.support.v17.leanback.widget.ListRow
 import android.support.v17.leanback.widget.ListRowPresenter
-import android.support.v17.leanback.widget.ObjectAdapter
 import android.support.v17.leanback.widget.Presenter
-import android.text.TextUtils
 import com.example.android.mediacontroller.MediaAppDetails
 import com.example.android.mediacontroller.R
 import com.example.android.mediacontroller.tasks.FindMediaAppsTask

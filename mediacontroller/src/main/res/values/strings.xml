@@ -57,6 +57,13 @@
     <string name="info_artist_string">Artist</string>
     <string name="info_album_string">Album</string>
 
+    <string name="queue_size">%d items in queue</string>
+    <string name="queue_item_id">Queue ID: %d</string>
+    <string name="queue_item_title">Title: %s</string>
+    <string name="queue_item_subtitle">Subtitle: %s</string>
+    <string name="queue_item_media_id">Media ID: %s</string>
+    <string name="queue_item_media_uri">Media URI: %s</string>
+
     <!--
     The order of these must be reflected in the Actions list created by
     createPreparePlayActions(Context) in Action.java.
@@ -138,6 +145,8 @@
     <string name="tests_options_header">Tests</string>
     <string name="tests_results_header">Results</string>
     <string name="tests_query_hint">Query</string>
+
+    <string name="play_test_desc">This tests the \'play\' functionality.</string>
 
     <!--
     The order of these strings must match the order of the constants

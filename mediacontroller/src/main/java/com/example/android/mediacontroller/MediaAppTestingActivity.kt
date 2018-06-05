@@ -50,10 +50,16 @@ import kotlinx.android.synthetic.main.activity_media_app_testing.view_pager
 import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
 import kotlinx.android.synthetic.main.media_controller_info.metadata_text
 import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
+import kotlinx.android.synthetic.main.media_controller_info.queue_item_list
 import kotlinx.android.synthetic.main.media_controller_info.queue_text
 import kotlinx.android.synthetic.main.media_controller_info.queue_title_text
 import kotlinx.android.synthetic.main.media_controller_info.repeat_mode_text
 import kotlinx.android.synthetic.main.media_controller_info.shuffle_mode_text
+import kotlinx.android.synthetic.main.media_queue_item.view.description_id
+import kotlinx.android.synthetic.main.media_queue_item.view.description_subtitle
+import kotlinx.android.synthetic.main.media_queue_item.view.description_title
+import kotlinx.android.synthetic.main.media_queue_item.view.description_uri
+import kotlinx.android.synthetic.main.media_queue_item.view.queue_id
 import kotlinx.android.synthetic.main.media_test_option.view.card_button
 import kotlinx.android.synthetic.main.media_test_option.view.card_header
 import kotlinx.android.synthetic.main.media_test_option.view.card_text
@@ -124,12 +130,13 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         val pageIndicator: TabLayout = page_indicator
         pageIndicator.setupWithViewPager(viewPager)
-
-        setupTests()
     }
 
     override fun onDestroy() {
-        mediaController?.unregisterCallback(controllerCallback)
+        mediaController?.run {
+            unregisterCallback(controllerCallback)
+            currentTest?.endTest()
+        }
         mediaController = null
 
         mediaBrowser?.let {
@@ -175,8 +182,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         val data = intent.data
-        val appPackageName: String?
-        appPackageName = when {
+        val appPackageName: String? = when {
             data != null -> data.host
             intent.hasExtra(PACKAGE_NAME_EXTRA) -> intent.getStringExtra(PACKAGE_NAME_EXTRA)
             else -> null
@@ -316,8 +322,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 }
             }
 
-            mediaController = MediaControllerCompat(this, token)
-            mediaController?.let {
+            mediaController = MediaControllerCompat(this, token).also {
                 it.registerCallback(controllerCallback)
 
                 // Force update on connect
@@ -331,6 +336,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 }
             }
 
+            // Setup tests once media controller is connected
+            setupTests()
+
             // Ensure views are visible
             viewPager.visibility = View.VISIBLE
 
@@ -341,272 +349,140 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
     }
 
+    // TODO(nevmital): Temporary descriptions, add more details
     private fun setupTests() {
-        val testOptionAdapter = TestOptionAdapter(
-                arrayOf(
-                        TestOptionDetails(
-                                "Play",
-                                "This tests the play functionality",
-                                ::testPlay
-                        ),
-                        TestOptionDetails(
-                                "Play from Search",
-                                "This tests the Play From Search functionality",
-                                ::testPlayFromSearch
-                        ),
-                        TestOptionDetails(
-                                "Pause",
-                                "This tests the pause functionality",
-                                ::testPause
-                        ),
-                        TestOptionDetails(
-                                "Stop",
-                                "This tests the stop functionality",
-                                ::testStop
-                        ),
-                        TestOptionDetails(
-                                "Seek",
-                                "This tests the seek functionality",
-                                ::testSeek
-                        ),
-                        TestOptionDetails(
-                                "Skip",
-                                "This tests the skip functionality",
-                                ::testSkip
-                        )
-                ))
+        // setupTests() should only be called after the mediaController is connected, so this
+        // should never enter the if block
+        val controller = mediaController
+        if (controller == null) {
+            Log.e(TAG, "Unable to setup tests")
+            showToast("Unable to setup tests")
+            return
+        }
 
+        val playTest = TestOptionDetails(
+                "Play",
+                getString(R.string.play_test_desc)
+        ) { _ ->
+            Test(
+                    "Play",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigurePlay(this))
+                addStep(WaitForBufferingOrPlaying(this))
+                addStep(WaitForPlaying(this))
+                runTest()
+            }
+        }
+
+        val testOptionAdapter = TestOptionAdapter(arrayOf(playTest))
         val testList = test_options_list
         testList.layoutManager = LinearLayoutManager(this)
         testList.setHasFixedSize(true)
         testList.adapter = testOptionAdapter
     }
 
-    private fun playbackStateToName(playbackState: Int): String {
-        return when (playbackState) {
-            PlaybackStateCompat.STATE_NONE -> "STATE_NONE"
-            PlaybackStateCompat.STATE_STOPPED -> "STATE_STOPPED"
-            PlaybackStateCompat.STATE_PAUSED -> "STATE_PAUSED"
-            PlaybackStateCompat.STATE_PLAYING -> "STATE_PLAYING"
-            PlaybackStateCompat.STATE_FAST_FORWARDING -> "STATE_FAST_FORWARDING"
-            PlaybackStateCompat.STATE_REWINDING -> "STATE_REWINDING"
-            PlaybackStateCompat.STATE_BUFFERING -> "STATE_BUFFERING"
-            PlaybackStateCompat.STATE_ERROR -> "STATE_ERROR"
-            PlaybackStateCompat.STATE_CONNECTING -> "STATE_CONNECTING"
-            PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS -> "STATE_SKIPPING_TO_PREVIOUS"
-            PlaybackStateCompat.STATE_SKIPPING_TO_NEXT -> "STATE_SKIPPING_TO_NEXT"
-            PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM -> "STATE_SKIPPING_TO_QUEUE_ITEM"
-            else -> "!Unknown State!"
+    private fun logTestUpdate(logTag: String, message: String) {
+        runOnUiThread {
+            val date = DateFormat
+                    .getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG)
+                    .format(Date())
+            val update = "[$date] <$logTag>:\n$message"
+
+            Log.i(logTag, update)
+
+            val newLine = TextView(this)
+            newLine.text = update
+            newLine.setTextIsSelectable(true)
+            resultsContainer.addView(newLine, 0)
         }
     }
 
-    private fun actionsToString(actions: Long): String {
-        var s = "[\n"
-        if (actions and PlaybackStateCompat.ACTION_PREPARE != 0L) {
-            s += "\tACTION_PREPARE\n"
+    // Adapter to display test details
+    inner class TestOptionAdapter(
+            private val tests: Array<TestOptionDetails>
+    ) : RecyclerView.Adapter<TestOptionAdapter.ViewHolder>() {
+        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+
+        override fun onCreateViewHolder(
+                parent: ViewGroup,
+                viewType: Int
+        ): TestOptionAdapter.ViewHolder {
+            val cardView = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.media_test_option, parent, false) as CardView
+            return ViewHolder(cardView)
         }
-        if (actions and PlaybackStateCompat.ACTION_PREPARE_FROM_MEDIA_ID != 0L) {
-            s += "\tACTION_PREPARE_FROM_MEDIA_ID\n"
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.cardView.card_header.text = tests[position].name
+            holder.cardView.card_text.text = tests[position].desc
+
+            holder.cardView.card_button.setOnClickListener(
+                    { tests[position].runTest(testsQuery.text.toString()) }
+            )
         }
-        if (actions and PlaybackStateCompat.ACTION_PREPARE_FROM_SEARCH != 0L) {
-            s += "\tACTION_PREPARE_FROM_SEARCH\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_PREPARE_FROM_URI != 0L) {
-            s += "\tACTION_PREPARE_FROM_URI\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_PLAY != 0L) {
-            s += "\tACTION_PLAY\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID != 0L) {
-            s += "\tACTION_PLAY_FROM_MEDIA_ID\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH != 0L) {
-            s += "\tACTION_PLAY_FROM_SEARCH\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_PLAY_FROM_URI != 0L) {
-            s += "\tACTION_PLAY_FROM_URI\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_PLAY_PAUSE != 0L) {
-            s += "\tACTION_PLAY_PAUSE\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_PAUSE != 0L) {
-            s += "\tACTION_PAUSE\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_STOP != 0L) {
-            s += "\tACTION_STOP\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_SEEK_TO != 0L) {
-            s += "\tACTION_SEEK_TO\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_SKIP_TO_NEXT != 0L) {
-            s += "\tACTION_SKIP_TO_NEXT\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS != 0L) {
-            s += "\tACTION_SKIP_TO_PREVIOUS\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM != 0L) {
-            s += "\tACTION_SKIP_TO_QUEUE_ITEM\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_FAST_FORWARD != 0L) {
-            s += "\tACTION_FAST_FORWARD\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_REWIND != 0L) {
-            s += "\tACTION_REWIND\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_SET_RATING != 0L) {
-            s += "\tACTION_SET_RATING\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_SET_REPEAT_MODE != 0L) {
-            s += "\tACTION_SET_REPEAT_MODE\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_SET_SHUFFLE_MODE != 0L) {
-            s += "\tACTION_SET_SHUFFLE_MODE\n"
-        }
-        if (actions and PlaybackStateCompat.ACTION_SET_CAPTIONING_ENABLED != 0L) {
-            s += "\tACTION_SET_CAPTIONING_ENABLED\n"
-        }
-        s += "]"
-        return s
+
+        override fun getItemCount() = tests.size
     }
 
-    private fun errorCodeToName(code: Int): String {
-        return when (code) {
-            PlaybackStateCompat.ERROR_CODE_UNKNOWN_ERROR -> "ERROR_CODE_UNKNOWN_ERROR"
-            PlaybackStateCompat.ERROR_CODE_APP_ERROR -> "ERROR_CODE_APP_ERROR"
-            PlaybackStateCompat.ERROR_CODE_NOT_SUPPORTED -> "ERROR_CODE_NOT_SUPPORTED"
-            PlaybackStateCompat.ERROR_CODE_AUTHENTICATION_EXPIRED ->
-                "ERROR_CODE_AUTHENTICATION_EXPIRED"
-            PlaybackStateCompat.ERROR_CODE_PREMIUM_ACCOUNT_REQUIRED ->
-                "ERROR_CODE_PREMIUM_ACCOUNT_REQUIRED"
-            PlaybackStateCompat.ERROR_CODE_CONCURRENT_STREAM_LIMIT ->
-                "ERROR_CODE_CONCURRENT_STREAM_LIMIT"
-            PlaybackStateCompat.ERROR_CODE_PARENTAL_CONTROL_RESTRICTED ->
-                "ERROR_CODE_PARENTAL_CONTROL_RESTRICTED"
-            PlaybackStateCompat.ERROR_CODE_NOT_AVAILABLE_IN_REGION ->
-                "ERROR_CODE_NOT_AVAILABLE_IN_REGION"
-            PlaybackStateCompat.ERROR_CODE_CONTENT_ALREADY_PLAYING ->
-                "ERROR_CODE_CONTENT_ALREADY_PLAYING"
-            PlaybackStateCompat.ERROR_CODE_SKIP_LIMIT_REACHED -> "ERROR_CODE_SKIP_LIMIT_REACHED"
-            PlaybackStateCompat.ERROR_CODE_ACTION_ABORTED -> "ERROR_CODE_ACTION_ABORTED"
-            PlaybackStateCompat.ERROR_CODE_END_OF_QUEUE -> "ERROR_CODE_END_OF_QUEUE"
-            else -> "!Unknown Error!"
+    // Adapter to display Queue Item information
+    class QueueItemAdapter(
+            private val items: MutableList<MediaSessionCompat.QueueItem>
+    ) : RecyclerView.Adapter<QueueItemAdapter.ViewHolder>() {
+        class ViewHolder(val linearLayout: LinearLayout) : RecyclerView.ViewHolder(linearLayout)
+
+        override fun onCreateViewHolder(
+                parent: ViewGroup,
+                viewType: Int
+        ): QueueItemAdapter.ViewHolder {
+            val linearLayout = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.media_queue_item, parent, false) as LinearLayout
+            return ViewHolder(linearLayout)
         }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.linearLayout.queue_id.text =
+                    holder.linearLayout.context.getString(
+                            R.string.queue_item_id,
+                            items[position].queueId
+                    )
+
+            val description = items[position].description
+            holder.linearLayout.description_title.text =
+                    holder.linearLayout.context.getString(
+                            R.string.queue_item_title,
+                            description.title
+                    )
+            holder.linearLayout.description_subtitle.text =
+                    holder.linearLayout.context.getString(
+                            R.string.queue_item_subtitle,
+                            description.subtitle
+                    )
+            holder.linearLayout.description_id.text =
+                    holder.linearLayout.context.getString(
+                            R.string.queue_item_media_id,
+                            description.mediaId
+                    )
+            holder.linearLayout.description_uri.text =
+                    holder.linearLayout.context.getString(
+                            R.string.queue_item_media_uri,
+                            description.mediaUri.toString()
+                    )
+        }
+
+        override fun getItemCount() = items.size
     }
 
-    private fun repeatModeToName(mode: Int): String {
-        return when (mode) {
-            PlaybackStateCompat.REPEAT_MODE_ALL -> "ALL"
-            PlaybackStateCompat.REPEAT_MODE_GROUP -> "GROUP"
-            PlaybackStateCompat.REPEAT_MODE_INVALID -> "INVALID"
-            PlaybackStateCompat.REPEAT_MODE_NONE -> "NONE"
-            PlaybackStateCompat.REPEAT_MODE_ONE -> "ONE"
-            else -> "!Unknown!"
-        }
-    }
-
-    private fun shuffleModeToName(mode: Int): String {
-        return when (mode) {
-            PlaybackStateCompat.SHUFFLE_MODE_ALL -> "ALL"
-            PlaybackStateCompat.SHUFFLE_MODE_GROUP -> "GROUP"
-            PlaybackStateCompat.SHUFFLE_MODE_INVALID -> "INVALID"
-            PlaybackStateCompat.SHUFFLE_MODE_NONE -> "NONE"
-            else -> "!Unknown!"
-        }
-    }
-
-    private fun formatPlaybackState(state: PlaybackStateCompat): String {
-        var formattedString = "State:                     " + playbackStateToName(state.state)
-        if (state.state == PlaybackStateCompat.STATE_ERROR) {
-            formattedString += ("\nError Code:                " + errorCodeToName(state.errorCode)
-                    + "\nError Message:             " + state.errorMessage)
-        }
-        formattedString += ("\nPosition:                  " + state.position
-                + "\nBuffered Position:         " + state.bufferedPosition
-                + "\nLast Position Update Time: " + state.lastPositionUpdateTime
-                + "\nPlayback Speed:            " + state.playbackSpeed
-                + "\nActive Queue Item ID:      " + state.activeQueueItemId
-                + "\nActions: " + actionsToString(state.actions))
-        return formattedString
-    }
-
-    private fun getMetadataKey(metadata: MediaMetadataCompat, key: String, type: Int = 0): String? {
-        if (metadata.containsKey(key)) {
-            return when (type) {
-                0 -> metadata.getString(key)
-                1 -> metadata.getLong(key).toString()
-                2 -> "Bitmap" //metadata.getBitmap(key)
-                3 -> "Rating" //metadata.getRating(key)
-                else -> "!Unknown type!"
+    private fun populateQueue(queue: MutableList<MediaSessionCompat.QueueItem>) {
+        val queueItemAdapter = QueueItemAdapter(queue)
+        val queueList = queue_item_list
+        queueList.layoutManager = object : LinearLayoutManager(this) {
+            override fun canScrollVertically(): Boolean {
+                return false
             }
         }
-        return "!Not present!"
-    }
-
-    private fun formatMetadata(metadata: MediaMetadataCompat): String {
-        var s = "MEDIA_ID:            " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_MEDIA_ID)
-        s += "\nADVERTISEMENT:       " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ADVERTISEMENT)
-        s += "\nALBUM:               " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ALBUM)
-        s += "\nALBUM_ART:           " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ALBUM_ART, 2)
-        s += "\nALBUM_ART_URI:       " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI)
-        s += "\nALBUM_ARTIST:        " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ALBUM_ARTIST)
-        s += "\nART:                 " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ART, 2)
-        s += "\nART_URI:             " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ART_URI)
-        s += "\nARTIST:              " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ARTIST)
-        s += "\nAUTHOR:              " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_AUTHOR)
-        s += "\nBT_FOLDER_TYPE:      " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_BT_FOLDER_TYPE)
-        s += "\nCOMPILATION:         " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_COMPILATION)
-        s += "\nCOMPOSER:            " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_COMPOSER)
-        s += "\nDATE:                " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DATE)
-        s += "\nDISC_NUMBER:         " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISC_NUMBER, 1)
-        s += "\nDISPLAY_DESCRIPTION: " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION)
-        s += "\nDISPLAY_ICON:        " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, 2)
-        s += "\nDISPLAY_ICON_URI:    " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI)
-        s += "\nDISPLAY_SUBTITLE:    " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE)
-        s += "\nDISPLAY_TITLE:       " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE)
-        s += "\nDOWNLOAD_STATUS:     " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DOWNLOAD_STATUS)
-        s += "\nDURATION:            " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DURATION, 1)
-        s += "\nGENRE:               " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_GENRE)
-        s += "\nMEDIA_URI:           " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_MEDIA_URI)
-        s += "\nNUM_TRACKS:          " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, 1)
-        s += "\nRATING:              " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_RATING, 3)
-        s += "\nTITLE:               " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_TITLE)
-        s += "\nTRACK_NUMBER:        " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, 1)
-        s += "\nUSER_RATING:         " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_USER_RATING, 3)
-        s += "\nWRITER:              " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_WRITER)
-        s += "\nYEAR:                " +
-                getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_YEAR)
-
-        return s
+        queueList.adapter = queueItemAdapter
     }
 
     /**
@@ -647,223 +523,18 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     if (queue == null) {
                         Log.i(TAG, "<Queue>\nnull")
                         queueText.text = getString(R.string.tests_info_queue_null)
-                        return
+                        populateQueue(emptyList<MediaSessionCompat.QueueItem>().toMutableList())
+                    } else {
+                        Log.i(TAG, queueToString(queue))
+                        queueText.text = getString(R.string.queue_size, queue.size)
+                        populateQueue(queue)
                     }
-                    Log.i(TAG, "<Queue>\n${queue.size} items")
-                    //TODO(nevmital): Temporary text, add more useful Queue information
-                    queueText.text = "${queue.size} items"
                 }
             }
 
-    class TestOptionAdapter(
-            private val options: Array<TestOptionDetails>
-    ) : RecyclerView.Adapter<TestOptionAdapter.ViewHolder>() {
-        class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
-
-        override fun onCreateViewHolder(
-                parent: ViewGroup,
-                viewType: Int
-        ): TestOptionAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_test_option, parent, false) as CardView
-            return ViewHolder(cardView)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.cardView.card_header.text = options[position].name
-            holder.cardView.card_text.text = options[position].desc
-
-            holder.cardView.card_button.setOnClickListener({ options[position].runTest() })
-        }
-
-        override fun getItemCount() = options.size
-    }
-
-    class TestOptionDetails(testName: String, testDesc: String, private val test: () -> Unit) {
-        val name: String = testName
-        val desc: String = testDesc
-
-        fun runTest() {
-            test()
-        }
-    }
-
-    fun MediaMetadataCompat?.isContentSameAs(other: MediaMetadataCompat?): Boolean {
-        if (this == null || other == null) {
-            if (this == null && other == null) {
-                return true
-            }
-            return false
-        }
-        return (this.getString(MediaMetadataCompat.METADATA_KEY_TITLE)
-                == other.getString(MediaMetadataCompat.METADATA_KEY_TITLE)
-                && this.getString(MediaMetadataCompat.METADATA_KEY_ARTIST)
-                == other.getString(MediaMetadataCompat.METADATA_KEY_ARTIST)
-                && this.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
-                == other.getLong(MediaMetadataCompat.METADATA_KEY_DURATION))
-    }
-
-    private fun logUpdate(testName: String, message: String) {
-        val date = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG).format(Date())
-        val update = "[$date] <$testName Test>:\n\t$message"
-
-        Log.i(TAG, update)
-        val newLine = TextView(this)
-        newLine.text = update
-        resultsContainer.addView(newLine, 0)
-    }
-
-    private fun testPlay() {
-        mediaController?.let {
-            val originalState = it.playbackState
-            val originalMetadata = it.metadata
-
-            val testCallback: MediaControllerCompat.Callback =
-                    object : MediaControllerCompat.Callback() {
-                        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                            if (state == originalState || state == null) {
-                                return
-                            }
-
-                            when (state.state) {
-                                PlaybackStateCompat.STATE_PLAYING -> {
-                                    logUpdate("Play", "Succeeded!")
-                                    it.unregisterCallback(this)
-                                }
-                                PlaybackStateCompat.STATE_BUFFERING -> {
-                                    logUpdate(
-                                            "Play",
-                                            "Running: Valid intermediate state "
-                                                    + playbackStateToName(state.state)
-                                    )
-                                }
-                                else -> {
-                                    logUpdate(
-                                            "Play",
-                                            "Failed: Invalid state "
-                                                    + playbackStateToName(state.state)
-                                    )
-                                    if (state.state == PlaybackStateCompat.STATE_ERROR) {
-                                        logUpdate(
-                                                "Play",
-                                                "Error: ${errorCodeToName(state.errorCode)}"
-                                        )
-                                    }
-                                    it.unregisterCallback(this)
-                                }
-                            }
-                        }
-
-                        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-                            if (originalMetadata != null
-                                    && !metadata.isContentSameAs(originalMetadata)) {
-                                logUpdate("Play", "Failed: Media item changed")
-                                it.unregisterCallback(this)
-                            } else {
-                                logUpdate("Play", "Running: Media item updated")
-                            }
-                        }
-                    }
-
-            logUpdate("Play", "Started.")
-            it.transportControls.play()
-
-            if (originalState.state == PlaybackStateCompat.STATE_PLAYING) {
-                logUpdate("Play", "Ending: Already playing")
-                return
-            }
-
-            it.registerCallback(testCallback)
-        }
-    }
-
-    private fun testPlayFromSearch() {
-        mediaController?.let {
-            val originalState = it.playbackState
-            val originalMetadata = it.metadata
-
-            val testCallback: MediaControllerCompat.Callback =
-                    object : MediaControllerCompat.Callback() {
-                        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                            if (state == originalState || state == null) {
-                                return
-                            }
-
-                            when (state.state) {
-                                PlaybackStateCompat.STATE_PLAYING -> {
-                                    logUpdate("Play From Search", "Succeeded!")
-                                    it.unregisterCallback(this)
-                                }
-                                PlaybackStateCompat.STATE_BUFFERING -> {
-                                    logUpdate(
-                                            "Play From Search",
-                                            "Running: Valid intermediate state "
-                                                    + playbackStateToName(state.state)
-                                    )
-                                }
-                                else -> {
-                                    logUpdate(
-                                            "Play From Search",
-                                            "Failed: Invalid state "
-                                                    + playbackStateToName(state.state)
-                                    )
-                                    if (state.state == PlaybackStateCompat.STATE_ERROR) {
-                                        logUpdate(
-                                                "Play From Search",
-                                                "Error: ${errorCodeToName(state.errorCode)}"
-                                        )
-                                    }
-                                    it.unregisterCallback(this)
-                                }
-                            }
-                        }
-
-                        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-                            if (!metadata.isContentSameAs(originalMetadata)) {
-                                logUpdate("Play From Search", "Running: Media item changed")
-                            } else {
-                                logUpdate("Play From Search", "Running: Media item updated")
-                                if (originalState.state == PlaybackStateCompat.STATE_PLAYING) {
-                                    logUpdate(
-                                            "Play From Search",
-                                            "Ending: Already playing requested media item"
-                                    )
-                                    it.unregisterCallback(this)
-                                }
-                            }
-                        }
-                    }
-
-            logUpdate("Play From Search", "Started.")
-            val query = testsQuery.text.toString()
-            if (query == "") {
-                logUpdate("Play From Search", "Ending: Empty query")
-                return
-            }
-            it.transportControls.playFromSearch(query, null)
-
-            it.registerCallback(testCallback)
-        }
-    }
-
-    private fun testPause() {
-        logUpdate("Pause", "Not yet implemented.")
-    }
-
-    private fun testStop() {
-        logUpdate("Stop", "Not yet implemented.")
-    }
-
-    private fun testSeek() {
-        logUpdate("Seek", "Not yet implemented.")
-    }
-
-    private fun testSkip() {
-        logUpdate("Skip", "Not yet implemented.")
-    }
-
     companion object {
         private const val TAG = "MediaAppTestingActivity"
+        private const val TEST_TAG = "TestsManager"
 
         // Key names for external extras.
         private const val PACKAGE_NAME_EXTRA = "com.example.android.mediacontroller.PACKAGE_NAME"

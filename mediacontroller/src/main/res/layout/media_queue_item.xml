@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2018 The Android Open Source Project
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/margin_small"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/queue_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:maxLines="1"
+        android:singleLine="true"
+        android:textIsSelectable="true"
+        android:textColor="@color/text_dark"
+        android:textSize="@dimen/queue_item_id_size"
+        android:textStyle="bold"
+        android:typeface="monospace"
+        tools:text="Queue ID" />
+
+    <TextView
+        android:id="@+id/description_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textIsSelectable="true"
+        android:textColor="@color/text_dark"
+        android:textSize="@dimen/queue_item_title_size"
+        android:typeface="monospace"
+        tools:text="Title" />
+
+    <TextView
+        android:id="@+id/description_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:textIsSelectable="true"
+        android:textColor="@color/text_dark"
+        android:textSize="@dimen/queue_item_subtitle_size"
+        android:typeface="monospace"
+        tools:text="Subtitle" />
+
+    <TextView
+        android:id="@+id/description_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:textIsSelectable="true"
+        android:textColor="@color/text_light"
+        android:textSize="@dimen/queue_item_media_id_size"
+        android:typeface="monospace"
+        tools:text="Media ID" />
+
+    <TextView
+        android:id="@+id/description_uri"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:singleLine="true"
+        android:ellipsize="middle"
+        android:textIsSelectable="true"
+        android:textColor="@color/text_light"
+        android:textSize="@dimen/queue_item_media_uri_size"
+        android:textStyle="italic"
+        android:typeface="monospace"
+        tools:text="Media URI" />
+</LinearLayout>

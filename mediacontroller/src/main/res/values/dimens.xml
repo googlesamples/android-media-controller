@@ -48,4 +48,10 @@
     <dimen name="tv_banner_height">90dp</dimen>
     <dimen name="tv_icon_width">90dp</dimen>
     <dimen name="tv_icon_height">90dp</dimen>
+
+    <dimen name="queue_item_id_size">14sp</dimen>
+    <dimen name="queue_item_title_size">14sp</dimen>
+    <dimen name="queue_item_subtitle_size">12sp</dimen>
+    <dimen name="queue_item_media_id_size">12sp</dimen>
+    <dimen name="queue_item_media_uri_size">10sp</dimen>
 </resources>
