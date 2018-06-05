@@ -19,19 +19,12 @@ import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.pm.ResolveInfo;
-import android.content.res.Resources;
-import android.graphics.drawable.Drawable;
-import android.media.session.MediaController;
 import android.media.session.MediaSessionManager;
 import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.widget.ContentLoadingProgressBar;
@@ -42,10 +35,12 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+
+import com.example.android.mediacontroller.tasks.FindMediaAppsTask;
+import com.example.android.mediacontroller.tasks.FindMediaBrowserAppsTask;
+import com.example.android.mediacontroller.tasks.FindMediaSessionAppsTask;
+import com.example.android.mediacontroller.tasks.MediaAppControllerUtils;
 
 /**
  * App entry point. Presents a list of apps that implement a MediaBrowser interface
@@ -60,17 +55,10 @@ public class LaunchActivity extends AppCompatActivity {
     private MediaAppListAdapter.Section mMediaBrowserApps;
     private ContentLoadingProgressBar mSpinner;
 
-    /**
-     * Callback used by {@link FindMediaAppsTask}.
-     */
-    public interface AppListUpdatedCallback {
-
-        void onAppListUpdated(List<MediaAppDetails> mediaAppEntries);
-    }
-
-    private final AppListUpdatedCallback mBrowserAppsUpdated = new AppListUpdatedCallback() {
+    private final FindMediaAppsTask.AppListUpdatedCallback mBrowserAppsUpdated =
+            new FindMediaAppsTask.AppListUpdatedCallback() {
         @Override
-        public void onAppListUpdated(List<MediaAppDetails> mediaAppDetails) {
+        public void onAppListUpdated(@NonNull List<? extends MediaAppDetails> mediaAppDetails) {
             if (mediaAppDetails.isEmpty()) {
                 // Show an error if no apps were found.
                 mMediaBrowserApps.setError(
@@ -143,137 +131,6 @@ public class LaunchActivity extends AppCompatActivity {
     }
 
     /**
-     * Base class for an async task that fetches a list of media apps.
-     */
-    private static abstract class FindMediaAppsTask
-            extends AsyncTask<Void, Void, List<MediaAppDetails>> {
-
-        private final AppListUpdatedCallback mCallback;
-
-        private FindMediaAppsTask(AppListUpdatedCallback callback) {
-            mCallback = callback;
-        }
-
-        protected abstract List<MediaAppDetails> getMediaApps();
-
-        @Override
-        protected List<MediaAppDetails> doInBackground(Void... params) {
-            final List<MediaAppDetails> mediaApps = new ArrayList<>(getMediaApps());
-            // Sort the list by localized app name for convenience.
-            Collections.sort(mediaApps,
-                    (left, right) -> left.appName.compareToIgnoreCase(right.appName));
-            return mediaApps;
-        }
-
-        @Override
-        protected void onPostExecute(List<MediaAppDetails> mediaAppEntries) {
-            mCallback.onAppListUpdated(mediaAppEntries);
-        }
-    }
-
-    /**
-     * Implementation of {@link FindMediaAppsTask} that uses available implementations of
-     * MediaBrowser to populate the list of apps.
-     */
-    private static class FindMediaBrowserAppsTask extends FindMediaAppsTask {
-
-        private final PackageManager mPackageManager;
-        private final Resources mResources;
-
-        private FindMediaBrowserAppsTask(Context context, AppListUpdatedCallback callback) {
-            super(callback);
-            mPackageManager = context.getPackageManager();
-            mResources = context.getResources();
-        }
-
-        /**
-         * Finds installed packages that have registered a
-         * {@link android.service.media.MediaBrowserService} or
-         * {@link android.support.v4.media.MediaBrowserServiceCompat} service by
-         * looking for packages that have services that respond to the
-         * "android.media.browse.MediaBrowserService" action.
-         */
-        @Override
-        protected List<MediaAppDetails> getMediaApps() {
-            final List<MediaAppDetails> mediaApps = new ArrayList<>();
-
-            // Build an Intent that only has the MediaBrowserService action and query
-            // the PackageManager for apps that have services registered that can
-            // receive it.
-            final Intent mediaBrowserIntent =
-                    new Intent(MediaBrowserServiceCompat.SERVICE_INTERFACE);
-            final List<ResolveInfo> services =
-                    mPackageManager.queryIntentServices(mediaBrowserIntent,
-                            PackageManager.GET_RESOLVED_FILTER);
-
-            if (services != null && !services.isEmpty()) {
-                for (final ResolveInfo info : services) {
-                    mediaApps.add(
-                            new MediaAppDetails(info.serviceInfo, mPackageManager, mResources));
-                }
-            }
-            return mediaApps;
-        }
-    }
-
-    /**
-     * Implementation of {@link FindMediaAppsTask} that uses active media sessions to populate the
-     * list of media apps.
-     */
-    @TargetApi(VERSION_CODES.LOLLIPOP)
-    private static class FindMediaSessionAppsTask extends FindMediaAppsTask {
-
-        private final MediaSessionManager mMediaSessionManager;
-        private final ComponentName mListenerComponent;
-        private final PackageManager mPackageManager;
-        private final Resources mResources;
-
-        private FindMediaSessionAppsTask(MediaSessionManager mediaSessionManager,
-                                         ComponentName listenerComponent,
-                                         PackageManager packageManager,
-                                         Resources resources,
-                                         AppListUpdatedCallback callback) {
-            super(callback);
-            mMediaSessionManager = mediaSessionManager;
-            mListenerComponent = listenerComponent;
-            mPackageManager = packageManager;
-            mResources = resources;
-        }
-
-        @Override
-        protected List<MediaAppDetails> getMediaApps() {
-            return getMediaAppsFromControllers(
-                    mMediaSessionManager.getActiveSessions(mListenerComponent),
-                    mPackageManager, mResources);
-        }
-
-        static List<MediaAppDetails> getMediaAppsFromControllers(
-                Collection<MediaController> controllers,
-                PackageManager packageManager,
-                Resources resources) {
-            final List<MediaAppDetails> mediaApps = new ArrayList<>();
-            for (final MediaController controller : controllers) {
-                String packageName = controller.getPackageName();
-                ApplicationInfo info;
-                try {
-                    info = packageManager.getApplicationInfo(packageName, 0);
-                } catch (NameNotFoundException e) {
-                    // This should not happen. If we get a media session for a package, then the
-                    // package must be installed on the device.
-                    Log.e(TAG, "Unable to load package details", e);
-                    continue;
-                }
-                final Drawable icon = info.loadIcon(packageManager);
-                final String name = info.loadLabel(packageManager).toString();
-                mediaApps.add(new MediaAppDetails(packageName, name,
-                        BitmapUtils.convertDrawable(resources, icon),
-                        controller.getSessionToken()));
-            }
-            return mediaApps;
-        }
-    }
-
-    /**
      * Encapsulates the API 21+ functionality of looking for and observing updates to active media
      * sessions. We only construct an instance of this class if the device is running L or later,
      * to avoid any ClassNotFoundExceptions due to the use of MediaSession and related classes.
@@ -282,9 +139,10 @@ public class LaunchActivity extends AppCompatActivity {
     private final class MediaSessionListener {
         private MediaAppListAdapter.Section mMediaSessionApps;
 
-        private final AppListUpdatedCallback mSessionAppsUpdated = new AppListUpdatedCallback() {
+        private final FindMediaAppsTask.AppListUpdatedCallback mSessionAppsUpdated =
+                new FindMediaAppsTask.AppListUpdatedCallback() {
             @Override
-            public void onAppListUpdated(List<MediaAppDetails> mediaAppDetails) {
+            public void onAppListUpdated(@NonNull List<? extends MediaAppDetails> mediaAppDetails) {
                 if (mediaAppDetails.isEmpty()) {
                     // Show an error if no apps were found.
                     mMediaSessionApps.setError(
@@ -298,7 +156,7 @@ public class LaunchActivity extends AppCompatActivity {
 
         private final OnActiveSessionsChangedListener mSessionsChangedListener =
                 list -> mSessionAppsUpdated.onAppListUpdated(
-                        FindMediaSessionAppsTask.getMediaAppsFromControllers(
+                        MediaAppControllerUtils.getMediaAppsFromControllers(
                                 list, getPackageManager(), getResources()));
         private MediaSessionManager mMediaSessionManager;
 

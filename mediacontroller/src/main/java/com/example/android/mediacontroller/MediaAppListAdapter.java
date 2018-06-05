@@ -318,7 +318,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
             updateData();
         }
 
-        public void setAppsList(final List<MediaAppDetails> appEntries) {
+        public void setAppsList(@NonNull final List<? extends MediaAppDetails> appEntries) {
             mItems.clear();
             for (MediaAppDetails appEntry : appEntries) {
                 mItems.add(new AppEntry(appEntry, mMediaAppSelectedListener));
