@@ -26,21 +26,19 @@ import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
-
-import java.util.List;
 
 import com.example.android.mediacontroller.tasks.FindMediaAppsTask;
 import com.example.android.mediacontroller.tasks.FindMediaBrowserAppsTask;
 import com.example.android.mediacontroller.tasks.FindMediaSessionAppsTask;
 import com.example.android.mediacontroller.tasks.MediaAppControllerUtils;
+
+import java.util.List;
 
 /**
  * App entry point. Presents a list of apps that implement a MediaBrowser interface
