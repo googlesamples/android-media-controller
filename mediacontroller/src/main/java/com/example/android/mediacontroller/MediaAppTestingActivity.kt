@@ -360,6 +360,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
             return
         }
 
+        /**
+         * Tests the play() transport control. The test can start in any state, might transition
+         * to STATE_BUFFERING, but must eventually end in STATE_PLAYING. The test will fail for
+         * any state other than the starting state, STATE_BUFFERING, and STATE_PLAYING. The test
+         * will also fail if the metadata changes unless the test began with null metadata.
+         */
         val playTest = TestOptionDetails(
                 "Play",
                 getString(R.string.play_test_desc)
@@ -376,7 +382,85 @@ class MediaAppTestingActivity : AppCompatActivity() {
             }
         }
 
-        val testOptionAdapter = TestOptionAdapter(arrayOf(playTest))
+        /**
+         * Tests the skipToNext() transport control. The test can start in any state, might
+         * transition to STATE_BUFFERING or STATE_SKIPPING_TO_*, but must eventually end in
+         * STATE_PLAYING with the playback position at 0. The test will fail for any state other
+         * than the starting state, STATE_BUFFERING, STATE_SKIPPING_TO_*, and STATE_PLAYING.
+         * The metadata must change, but might just "change" to be the same as the original
+         * metadata (e.g. if the next media item is the same as the current one); the test will
+         * not pass if the metadata doesn't get updated at some point.
+         */
+        val skipToNextTest = TestOptionDetails(
+                "Skip To Next",
+                getString(R.string.skip_next_test_desc)
+        ) { _ ->
+            Test(
+                    "SkipToNext",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigureSkipToNext(this))
+                addStep(WaitForSkipPositionReset(this))
+                addStep(WaitForPlayingBeginning(this))
+                runTest()
+            }
+        }
+
+        /**
+         * Tests the skipToPrevious() transport control. The test can start in any state, might
+         * transition to STATE_BUFFERING or STATE_SKIPPING_TO_*, but must eventually end in
+         * the original state with the playback position at 0. The test will fail for any state
+         * other than the starting state, STATE_BUFFERING, and STATE_SKIPPING_TO_*. The metadata
+         * must change, but might just "change" to be the same as the original metadata (e.g. if
+         * the previous media item is the same as the current one); the test will not pass if the
+         * metadata doesn't get updated at some point.
+         */
+        val skipToPrevTest = TestOptionDetails(
+                "Skip To Previous",
+                getString(R.string.skip_prev_test_desc)
+        ) { _ ->
+            Test(
+                    "SkipToPrev",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigureSkipToPrevious(this))
+                addStep(WaitForSkipPositionReset(this))
+                addStep(WaitForOriginalBeginning(this))
+                runTest()
+            }
+        }
+
+        /**
+         * Tests the skipToQueueItem() transport control. The test can start in any state, might
+         * transition to STATE_BUFFERING or STATE_SKIPPING_TO_*, but must eventually end in
+         * STATE_PLAYING with the playback position at 0. The test will fail for any state other
+         * than the starting state, STATE_BUFFERING, STATE_SKIPPING_TO_*, and STATE_PLAYING.
+         * The metadata must change, but might just "change" to be the same as the original
+         * metadata (e.g. if the next media item is the same as the current one); the test will
+         * not pass if the metadata doesn't get updated at some point.
+         */
+        val skipToItemTest = TestOptionDetails(
+                "Skip To Queue Item",
+                getString(R.string.skip_item_test_desc)
+        ) { query ->
+            Test(
+                    "SkipToItem",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigureSkipToItem(this, query))
+                addStep(WaitForSkipPositionReset(this))
+                addStep(WaitForPlayingBeginning(this))
+                runTest()
+            }
+        }
+
+        val testOptionAdapter = TestOptionAdapter(
+                arrayOf(playTest, skipToNextTest, skipToPrevTest, skipToItemTest)
+        )
+
         val testList = test_options_list
         testList.layoutManager = LinearLayoutManager(this)
         testList.setHasFixedSize(true)
@@ -534,7 +618,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MediaAppTestingActivity"
-        private const val TEST_TAG = "TestsManager"
 
         // Key names for external extras.
         private const val PACKAGE_NAME_EXTRA = "com.example.android.mediacontroller.PACKAGE_NAME"
