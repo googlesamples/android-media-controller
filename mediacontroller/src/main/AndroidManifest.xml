@@ -65,6 +65,7 @@
 
         <activity
             android:name=".tv.TvLauncherActivity"
+            android:configChanges="keyboard|keyboardHidden"
             android:theme="@style/AppTheme.TV">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

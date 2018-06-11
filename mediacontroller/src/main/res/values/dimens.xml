@@ -43,4 +43,9 @@
     <dimen name="tests_header_text_size">24sp</dimen>
     <dimen name="tests_subheader_text_size">20sp</dimen>
     <dimen name="tests_details_text_size">12sp</dimen>
+
+    <dimen name="tv_banner_width">160dp</dimen>
+    <dimen name="tv_banner_height">90dp</dimen>
+    <dimen name="tv_icon_width">90dp</dimen>
+    <dimen name="tv_icon_height">90dp</dimen>
 </resources>

@@ -17,6 +17,7 @@ package com.example.android.mediacontroller;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageItemInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
@@ -24,8 +25,11 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.media.session.MediaSession;
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 
@@ -38,30 +42,48 @@ public class MediaAppDetails implements Parcelable {
     public final String packageName;
     public final String appName;
     public final Bitmap icon;
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    @Nullable
+    public Bitmap banner;
     public final MediaSessionCompat.Token sessionToken;
     public final ComponentName componentName;
 
     public MediaAppDetails(String packageName, String name, Bitmap appIcon,
-                           MediaSessionCompat.Token token) {
+                           @Nullable Bitmap appBanner, MediaSessionCompat.Token token) {
         this.packageName = packageName;
         appName = name;
         sessionToken = token;
         icon = appIcon;
+        // This TV app targets min sdk version 21, and a banner will only be present for the TV app
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            banner = appBanner;
+        }
         componentName = null;
     }
 
     public MediaAppDetails(String packageName, String name, Bitmap appIcon,
-                           MediaSession.Token token) {
-        this(packageName, name, appIcon, MediaSessionCompat.Token.fromToken(token));
+                           @Nullable Bitmap appBanner, MediaSession.Token token) {
+        this(packageName, name, appIcon, appBanner, MediaSessionCompat.Token.fromToken(token));
     }
 
-    public MediaAppDetails(ServiceInfo serviceInfo, PackageManager pm, Resources resources) {
-        packageName = serviceInfo.packageName;
-        appName = serviceInfo.loadLabel(pm).toString();
-        Drawable appIcon = serviceInfo.loadIcon(pm);
+    public MediaAppDetails(PackageItemInfo info, PackageManager pm, Resources resources,
+                           MediaSession.Token token) {
+        packageName = info.packageName;
+        appName = info.loadLabel(pm).toString();
+        Drawable appIcon = info.loadIcon(pm);
         icon = BitmapUtils.convertDrawable(resources, appIcon);
-        componentName = new ComponentName(serviceInfo.packageName, serviceInfo.name);
-        sessionToken = null;
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+            Drawable appBanner = info.loadBanner(pm);
+            if (appBanner != null) {
+                banner = BitmapUtils.convertDrawable(resources, appBanner);
+            }
+        }
+        componentName = new ComponentName(info.packageName, info.name);
+        sessionToken = MediaSessionCompat.Token.fromToken(token);
+    }
+
+    public MediaAppDetails(PackageItemInfo info, PackageManager pm, Resources resources) {
+        this(info, pm, resources, null);
     }
 
     /**
@@ -74,7 +96,7 @@ public class MediaAppDetails implements Parcelable {
                         PackageManager.GET_RESOLVED_FILTER);
         for (ResolveInfo info : services) {
             if (info.serviceInfo.packageName.equals(packageName)) {
-                return(info.serviceInfo);
+                return (info.serviceInfo);
             }
         }
         return null;

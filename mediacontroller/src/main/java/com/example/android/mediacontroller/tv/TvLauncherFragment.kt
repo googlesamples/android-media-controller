@@ -15,16 +15,94 @@
  */
 package com.example.android.mediacontroller.tv
 
+import android.annotation.TargetApi
+import android.os.Build
 import android.os.Bundle
 import android.support.v17.leanback.app.BrowseSupportFragment
-import android.view.View
+import android.support.v17.leanback.widget.ArrayObjectAdapter
+import android.support.v17.leanback.widget.DiffCallback
+import android.support.v17.leanback.widget.HeaderItem
+import android.support.v17.leanback.widget.ListRow
+import android.support.v17.leanback.widget.ListRowPresenter
+import android.support.v17.leanback.widget.ObjectAdapter
+import android.support.v17.leanback.widget.Presenter
+import android.text.TextUtils
+import com.example.android.mediacontroller.MediaAppDetails
+import com.example.android.mediacontroller.R
+import com.example.android.mediacontroller.tasks.FindMediaAppsTask
+import com.example.android.mediacontroller.tasks.FindMediaBrowserAppsTask
 
 /**
- * Displays a list of media apps that currently have an active media session and/or implement
- * MediaBrowserService.
+ * Displays a list of media apps that currently implement MediaBrowserService.
  */
 class TvLauncherFragment : BrowseSupportFragment() {
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    private val browserAppsUpdated = object : FindMediaAppsTask.AppListUpdatedCallback {
+        override fun onAppListUpdated(mediaAppEntries: List<MediaAppDetails>) {
+            listBrowserApps(mediaAppEntries)
+        }
+    }
+
+    private val mediaAppsRowAdapter = ArrayObjectAdapter(ListRowPresenter())
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setupUIElements()
+
+        adapter = mediaAppsRowAdapter
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        FindMediaBrowserAppsTask(requireContext(), browserAppsUpdated).execute()
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    private fun setupUIElements() {
+        badgeDrawable = activity?.resources?.getDrawable(R.drawable.tv_banner, null)
+        headersState = HEADERS_DISABLED
+    }
+
+    private inline fun <reified T> Collection<T>.toArrayObjectAdapter(
+            presenter: Presenter
+    ): ArrayObjectAdapter {
+        val adapter = ArrayObjectAdapter(presenter)
+        this.forEach { item -> adapter.add(item) }
+        return adapter
+    }
+
+    private fun listBrowserApps(apps: List<MediaAppDetails>) {
+        val listRowAdapter = apps.toArrayObjectAdapter(MediaAppCardPresenter())
+        val headerItem = HeaderItem(BROWSER_HEADER_ID, BROWSER_HEADER_NAME)
+        val diffCallback = object : DiffCallback<ListRow>() {
+            override fun areItemsTheSame(oldItem: ListRow, newItem: ListRow): Boolean {
+                return oldItem.headerItem.id == newItem.headerItem.id
+            }
+
+            override fun areContentsTheSame(oldItem: ListRow, newItem: ListRow): Boolean {
+                val oldAdapter = oldItem.adapter
+                val newAdapter = newItem.adapter
+                val sameSize = oldAdapter.size() == newAdapter.size()
+                if (!sameSize) {
+                    return false
+                }
+
+                for(i in 0 until oldAdapter.size()) {
+                    if(oldAdapter[i] as MediaAppDetails != newAdapter[i] as MediaAppDetails) {
+                        return false
+                    }
+                }
+                return true
+            }
+        }
+        mediaAppsRowAdapter.setItems(
+                mutableListOf(ListRow(headerItem, listRowAdapter)),
+                diffCallback
+        )
+    }
+
+    companion object {
+        private const val BROWSER_HEADER_ID = 1L
+        private const val BROWSER_HEADER_NAME = "MediaBrowserService Implementations"
     }
 }

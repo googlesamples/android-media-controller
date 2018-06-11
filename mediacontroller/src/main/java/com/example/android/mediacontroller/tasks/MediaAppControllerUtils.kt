@@ -23,7 +23,6 @@ import android.content.res.Resources
 import android.media.session.MediaController
 import android.os.Build
 import android.util.Log
-import com.example.android.mediacontroller.BitmapUtils
 import com.example.android.mediacontroller.MediaAppDetails
 import java.util.ArrayList
 
@@ -48,12 +47,8 @@ object MediaAppControllerUtils {
                 continue
             }
 
-            val icon = info.loadIcon(packageManager)
-            val name = info.loadLabel(packageManager).toString()
-            mediaApps.add(MediaAppDetails(packageName,
-                    name,
-                    BitmapUtils.convertDrawable(resources, icon),
-                    controller.sessionToken)
+            mediaApps.add(
+                    MediaAppDetails(info, packageManager, resources, controller.sessionToken)
             )
         }
         return mediaApps

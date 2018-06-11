@@ -26,7 +26,5 @@ class TvLauncherActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tv_launch)
-
-        supportFragmentManager.beginTransaction().add(R.id.container, TvLauncherFragment()).commit()
     }
 }
