@@ -44,6 +44,7 @@
     <string name="setup_media_controller_error_msg">setupMediaController() called with null %s object</string>
     <string name="setup_media_controller_error_hint">Missing MediaSession Token from %s object</string>
     <string name="setup_media_error_msg">setupMedia() called with null MediaAppDetails object</string>
+    <string name="media_app_details_update_failed">Couldn\'t update MediaAppDetails object</string>
     <string name="id_hint">URI, Media ID, or Query</string>
     <string name="search_hint">Query</string>
     <string name="update_media_info">Update Media Info</string>

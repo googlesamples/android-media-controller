@@ -37,6 +37,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaBrowserCompat.MediaItem;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -277,7 +278,18 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        final MediaAppDetails originalDetails = mMediaAppDetails;
+
         handleIntent(intent);
+        setupButtons();
+
+        // Redo setup for MediaBrowser and MediaController if MediaAppDetails is updated
+        if (mMediaAppDetails != null && mMediaAppDetails != originalDetails) {
+            setupMedia();
+            setupToolbar(mMediaAppDetails.appName, mMediaAppDetails.icon);
+        } else {
+            mViewPager.setVisibility(View.GONE);
+        }
     }
 
     /**
@@ -336,13 +348,24 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
         }
 
-        if (mMediaAppDetails == null && appPackageName != null) {
+        // Update MediaAppDetails object if needed (the if clause after the || handles the case when
+        // the object has already been set up before, but the Intent contains details for a
+        // different app)
+        if ((mMediaAppDetails == null && appPackageName != null)
+                || (mMediaAppDetails != null && appPackageName != null
+                && !appPackageName.equals(mMediaAppDetails.packageName))) {
             PackageManager pm = getPackageManager();
             ServiceInfo serviceInfo = MediaAppDetails.findServiceInfo(appPackageName, pm);
             if (serviceInfo != null) {
                 Resources res = getResources();
                 mMediaAppDetails = new MediaAppDetails(serviceInfo, pm, res);
             }
+        } else {
+            Toast.makeText(
+                    this,
+                    getString(R.string.media_app_details_update_failed),
+                    Toast.LENGTH_SHORT
+            ).show();
         }
     }
 
@@ -1073,7 +1096,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
      * Helper class which manages a MediaBrowser tree. Handles modifying the adapter when selecting
      * an item would cause the browse tree to change or play a media item. Only subscribes to a
      * single level at once.
-     *
+     * <p>
      * The class keeps track of two pieces of data. (1) The Items to be displayed in mItems and
      * (2) the stack of mNodes from the root to the current node. Depending on the current state
      * different values are displayed in the adapter.
@@ -1090,11 +1113,12 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         MediaBrowserCompat.SubscriptionCallback callback =
                 new MediaBrowserCompat.SubscriptionCallback() {
-            @Override
-            public void onChildrenLoaded(@NonNull String parentId,
-                                         @NonNull List<MediaBrowserCompat.MediaItem> children) {
-                updateItemsEmptyIfNull(children);
-            }};
+                    @Override
+                    public void onChildrenLoaded(@NonNull String parentId,
+                                                 @NonNull List<MediaItem> children) {
+                        updateItemsEmptyIfNull(children);
+                    }
+                };
 
         @NonNull
         @Override
@@ -1111,7 +1135,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 holder.name.setVisibility(View.VISIBLE);
                 holder.description.setVisibility(View.GONE);
                 holder.icon.setVisibility(View.GONE);
-                holder.itemView.setOnClickListener((v) -> {});
+                holder.itemView.setOnClickListener((v) -> {
+                });
                 return;
             }
             if (mItems == null) {
@@ -1119,7 +1144,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 holder.name.setVisibility(View.VISIBLE);
                 holder.description.setVisibility(View.GONE);
                 holder.icon.setVisibility(View.GONE);
-                holder.itemView.setOnClickListener((v) -> {});
+                holder.itemView.setOnClickListener((v) -> {
+                });
                 return;
             }
             if (mItems.size() == 0) {
@@ -1127,7 +1153,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 holder.name.setVisibility(View.VISIBLE);
                 holder.description.setVisibility(View.GONE);
                 holder.icon.setVisibility(View.GONE);
-                holder.itemView.setOnClickListener((v) -> {});
+                holder.itemView.setOnClickListener((v) -> {
+                });
                 return;
             }
 

@@ -203,7 +203,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         } else {
             Toast.makeText(
                     this,
-                    "Couldn't update MediaAppDetails object",
+                    getString(R.string.media_app_details_update_failed),
                     Toast.LENGTH_SHORT
             ).show()
         }
