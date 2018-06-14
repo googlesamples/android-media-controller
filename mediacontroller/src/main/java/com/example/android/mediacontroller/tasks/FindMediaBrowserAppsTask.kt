@@ -29,7 +29,7 @@ import java.util.ArrayList
  */
 class FindMediaBrowserAppsTask constructor(
         context: Context, callback: AppListUpdatedCallback
-) : FindMediaAppsTask(callback) {
+) : FindMediaAppsTask(callback, sortAlphabetical = true) {
 
     private val packageManager: PackageManager = context.packageManager
     private val resources: Resources = context.resources

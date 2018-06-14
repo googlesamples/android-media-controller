@@ -22,7 +22,7 @@ import com.example.android.mediacontroller.MediaAppDetails
  * Base class for an async task that fetches a list of media apps.
  */
 abstract class FindMediaAppsTask constructor(
-        private val callback: AppListUpdatedCallback
+        private val callback: AppListUpdatedCallback, private val sortAlphabetical: Boolean
 ) : AsyncTask<Void, Void, List<MediaAppDetails>>() {
 
     /**
@@ -36,10 +36,12 @@ abstract class FindMediaAppsTask constructor(
 
     override fun doInBackground(vararg params: Void): List<MediaAppDetails> {
         val mediaApps = ArrayList(mediaApps)
-        // Sort the list by localized app name for convenience.
-        mediaApps.sortWith(Comparator { left, right ->
-            left.appName.compareTo(right.appName, ignoreCase = true)
-        })
+        if(sortAlphabetical) {
+            // Sort the list by localized app name for convenience.
+            mediaApps.sortWith(Comparator { left, right ->
+                left.appName.compareTo(right.appName, ignoreCase = true)
+            })
+        }
         return mediaApps
     }
 

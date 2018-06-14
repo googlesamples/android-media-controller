@@ -34,7 +34,7 @@ class FindMediaSessionAppsTask constructor(
         private val packageManager: PackageManager,
         private val resources: Resources,
         callback: AppListUpdatedCallback
-) : FindMediaAppsTask(callback) {
+) : FindMediaAppsTask(callback, sortAlphabetical = false) {
 
     override val mediaApps: List<MediaAppDetails>
         get() = MediaAppControllerUtils.getMediaAppsFromControllers(
