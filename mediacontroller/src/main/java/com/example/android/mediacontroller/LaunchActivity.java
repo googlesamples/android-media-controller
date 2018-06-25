@@ -19,6 +19,9 @@ import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
+import android.content.res.Resources;
 import android.media.session.MediaSessionManager;
 import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener;
 import android.os.Build;
@@ -30,6 +33,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.example.android.mediacontroller.tasks.FindMediaAppsTask;
 import com.example.android.mediacontroller.tasks.FindMediaBrowserAppsTask;
@@ -44,6 +49,8 @@ import java.util.List;
  */
 public class LaunchActivity extends AppCompatActivity {
     private static final String TAG = LaunchActivity.class.getSimpleName();
+    private static final String PACKAGE_NAME_EXTRA =
+            "com.example.android.mediacontroller.PACKAGE_NAME";
 
     private Snackbar mSnackbar;
 
@@ -51,18 +58,20 @@ public class LaunchActivity extends AppCompatActivity {
 
     private final FindMediaAppsTask.AppListUpdatedCallback mBrowserAppsUpdated =
             new FindMediaAppsTask.AppListUpdatedCallback() {
-        @Override
-        public void onAppListUpdated(@NonNull List<? extends MediaAppDetails> mediaAppDetails) {
-            if (mediaAppDetails.isEmpty()) {
-                // Show an error if no apps were found.
-                mMediaBrowserApps.setError(
-                        R.string.no_apps_found,
-                        R.string.no_apps_reason_no_media_browser_service);
-                return;
-            }
-            mMediaBrowserApps.setAppsList(mediaAppDetails);
-        }
-    };
+                @Override
+                public void onAppListUpdated(
+                        @NonNull List<? extends MediaAppDetails> mediaAppDetails) {
+
+                    if (mediaAppDetails.isEmpty()) {
+                        // Show an error if no apps were found.
+                        mMediaBrowserApps.setError(
+                                R.string.no_apps_found,
+                                R.string.no_apps_reason_no_media_browser_service);
+                        return;
+                    }
+                    mMediaBrowserApps.setAppsList(mediaAppDetails);
+                }
+            };
 
     // MediaSessionManager is only supported on API 21+, so all related logic is bundled in a
     // separate inner class that's only instantiated if the device is running L or later.
@@ -74,6 +83,7 @@ public class LaunchActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_launch);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -99,6 +109,19 @@ public class LaunchActivity extends AppCompatActivity {
         mediaAppsList.setLayoutManager(new LinearLayoutManager(this));
         mediaAppsList.setHasFixedSize(true);
         mediaAppsList.setAdapter(mediaAppsAdapter);
+
+        if (getIntent() != null && getIntent().getExtras() != null) {
+            handleIntentExtras(getIntent().getExtras());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        if (intent.getExtras() != null) {
+            handleIntentExtras(intent.getExtras());
+        }
     }
 
     @Override
@@ -122,6 +145,32 @@ public class LaunchActivity extends AppCompatActivity {
         super.onStop();
     }
 
+    private void handleIntentExtras(@NonNull Bundle extras) {
+        if (extras.containsKey(PACKAGE_NAME_EXTRA)) {
+            String packageName = extras.getString(PACKAGE_NAME_EXTRA);
+            if (packageName != null && !packageName.isEmpty()) {
+                openAppWithPackage(packageName);
+            }
+        }
+    }
+
+    private void openAppWithPackage(@NonNull String packageName) {
+        PackageManager pm = getPackageManager();
+        ServiceInfo serviceInfo = MediaAppDetails.findServiceInfo(packageName, pm);
+        if (serviceInfo != null) {
+            Resources res = getResources();
+            MediaAppDetails app = new MediaAppDetails(serviceInfo, pm, res);
+
+            Intent intent =
+                    MediaAppControllerActivity.buildIntent(LaunchActivity.this, app);
+            startActivity(intent);
+        } else {
+            Toast.makeText(this,
+                    getString(R.string.no_app_for_package, packageName),
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
     /**
      * Encapsulates the API 21+ functionality of looking for and observing updates to active media
      * sessions. We only construct an instance of this class if the device is running L or later,
@@ -133,18 +182,20 @@ public class LaunchActivity extends AppCompatActivity {
 
         private final FindMediaAppsTask.AppListUpdatedCallback mSessionAppsUpdated =
                 new FindMediaAppsTask.AppListUpdatedCallback() {
-            @Override
-            public void onAppListUpdated(@NonNull List<? extends MediaAppDetails> mediaAppDetails) {
-                if (mediaAppDetails.isEmpty()) {
-                    // Show an error if no apps were found.
-                    mMediaSessionApps.setError(
-                            R.string.no_apps_found,
-                            R.string.no_apps_reason_no_active_sessions);
-                    return;
-                }
-                mMediaSessionApps.setAppsList(mediaAppDetails);
-            }
-        };
+                    @Override
+                    public void onAppListUpdated(
+                            @NonNull List<? extends MediaAppDetails> mediaAppDetails) {
+
+                        if (mediaAppDetails.isEmpty()) {
+                            // Show an error if no apps were found.
+                            mMediaSessionApps.setError(
+                                    R.string.no_apps_found,
+                                    R.string.no_apps_reason_no_active_sessions);
+                            return;
+                        }
+                        mMediaSessionApps.setAppsList(mediaAppDetails);
+                    }
+                };
 
         private final OnActiveSessionsChangedListener mSessionsChangedListener =
                 list -> mSessionAppsUpdated.onAppListUpdated(

@@ -20,7 +20,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -101,16 +100,9 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             "com.example.android.mediacontroller.STATE_URI_KEY";
 
     // Key names for external extras.
-    private static final String PACKAGE_NAME_EXTRA =
-            "com.example.android.mediacontroller.PACKAGE_NAME";
     private static final String SEARCH_EXTRA = "com.example.android.mediacontroller.SEARCH";
     private static final String URI_EXTRA = "com.example.android.mediacontroller.URI";
     private static final String MEDIA_ID_EXTRA = "com.example.android.mediacontroller.MEDIA_ID";
-
-    // Parameters for deep link URI.
-    private static final String SEARCH_PARAM = "search";
-    private static final String MEDIA_ID_PARAM = "id";
-    private static final String URI_PARAM = "uri";
 
     // Key name for Intent extras.
     private static final String APP_DETAILS_EXTRA =
@@ -188,19 +180,24 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
         }
 
-        handleIntent(getIntent());
+        mMediaAppDetails = handleIntent(getIntent());
         setupButtons();
 
         if (mMediaAppDetails != null) {
-            // mMediaAppDetails == null means that we received just a package name in the starting
-            // intent, (e.g. triggered through the URL scheme). If that happens, we need to wait
-            // for a media browser connection before we can set up the controller or toolbar, and
-            // that will be taken care of by #connectToMediaBrowserPackage in handleIntent.
             setupMedia();
             setupToolbar(mMediaAppDetails.appName, mMediaAppDetails.icon);
         } else {
-            // Wait to show the ViewPager until connected.
-            mViewPager.setVisibility(View.GONE);
+            // App details weren't passed in for some reason.
+            Toast.makeText(
+                    this,
+                    getString(R.string.media_app_details_update_failed),
+                    Toast.LENGTH_SHORT
+            ).show();
+
+            // Go back to the launcher ASAP.
+            startActivity(new Intent(this, LaunchActivity.class));
+            finish();
+            return;
         }
 
         final int[] pages = {
@@ -278,54 +275,16 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        final MediaAppDetails originalDetails = mMediaAppDetails;
 
         handleIntent(intent);
-        setupButtons();
-
-        // Redo setup for MediaBrowser and MediaController if MediaAppDetails is updated
-        if (mMediaAppDetails != null && mMediaAppDetails != originalDetails) {
-            setupMedia();
-            setupToolbar(mMediaAppDetails.appName, mMediaAppDetails.icon);
-        } else {
-            mViewPager.setVisibility(View.GONE);
-        }
     }
 
     /**
-     * This is the single point where the MediaBrowser and MediaController are setup. If there is
-     * previously a controller/browser, they are disconnected/unsubscribed.
+     * This is the single point where the MediaBrowser and MediaController are setup.
      */
-    private void handleIntent(Intent intent) {
+    private MediaAppDetails handleIntent(Intent intent) {
         if (intent == null) {
-            return;
-        }
-
-        if (mBrowser != null && mBrowser.isConnected()) {
-            mBrowser.disconnect();
-        }
-        mBrowser = null;
-
-        final Uri data = intent.getData();
-        final String appPackageName;
-        if (data != null) {
-            appPackageName = data.getHost();
-
-            final Set<String> params = data.getQueryParameterNames();
-            if (params.contains(SEARCH_PARAM)) {
-                mInputTypeView.setSelection(SEARCH_INDEX);
-                mUriInput.setText(data.getQueryParameter(SEARCH_PARAM));
-            } else if (params.contains(MEDIA_ID_PARAM)) {
-                mInputTypeView.setSelection(MEDIA_ID_INDEX);
-                mUriInput.setText(data.getQueryParameter(MEDIA_ID_PARAM));
-            } else if (params.contains(URI_PARAM)) {
-                mInputTypeView.setSelection(URI_INDEX);
-                mUriInput.setText(data.getQueryParameter(URI_PARAM));
-            }
-        } else if (intent.hasExtra(PACKAGE_NAME_EXTRA)) {
-            appPackageName = intent.getStringExtra(PACKAGE_NAME_EXTRA);
-        } else {
-            appPackageName = null;
+            return null;
         }
 
         final Bundle extras = intent.getExtras();
@@ -344,29 +303,20 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
             // It's also possible we're here from LaunchActivity, which did all this work for us.
             if (extras.containsKey(APP_DETAILS_EXTRA)) {
-                mMediaAppDetails = extras.getParcelable(APP_DETAILS_EXTRA);
+                return extras.getParcelable(APP_DETAILS_EXTRA);
             }
         }
 
-        // Update MediaAppDetails object if needed (the if clause after the || handles the case when
-        // the object has already been set up before, but the Intent contains details for a
-        // different app)
-        if ((mMediaAppDetails == null && appPackageName != null)
-                || (mMediaAppDetails != null && appPackageName != null
-                && !appPackageName.equals(mMediaAppDetails.packageName))) {
-            PackageManager pm = getPackageManager();
-            ServiceInfo serviceInfo = MediaAppDetails.findServiceInfo(appPackageName, pm);
-            if (serviceInfo != null) {
-                Resources res = getResources();
-                mMediaAppDetails = new MediaAppDetails(serviceInfo, pm, res);
-            }
-        } else {
+        // If we get here and don't have app details, something went wrong.
+        if (mMediaAppDetails == null) {
             Toast.makeText(
                     this,
                     getString(R.string.media_app_details_update_failed),
                     Toast.LENGTH_SHORT
             ).show();
         }
+
+        return null;
     }
 
     @Override
@@ -583,8 +533,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         final StringBuilder stringBuilder = new StringBuilder();
 
-        final List<String> sortedKeys = new ArrayList<>();
-        sortedKeys.addAll(mediaInfos.keySet());
+        final List<String> sortedKeys = new ArrayList<>(mediaInfos.keySet());
         Collections.sort(sortedKeys, new KeyComparator());
 
         for (final String key : sortedKeys) {

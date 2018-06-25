@@ -34,26 +34,20 @@ Via ADB
 
 It's also possible to launch the app via ADB and the Activity manager (am).
 
-Usage: ```adb shell am start mediacontroller://<package name>?[search|id|uri=<value>]```
+Parameter | Extra Name
+----------|-----------
+Package name | `com.example.android.mediacontroller.PACKAGE_NAME`
+Search term | `com.example.android.mediacontroller.SEARCH`
+Media ID | `com.example.android.mediacontroller.MEDIA_ID`
+URI | `com.example.android.mediacontroller.URI`
 
-For example, to set up to play "Awakening" by _Silent Partner_ in UAMP, the following command
-could be used:
+To start the app and connect to UAMP:
 
-```adb shell am start "mediacontroller://com.example.android.uamp?id=__BY_GENRE__/Rock\|-1679589699"```
+`adb shell am start -n com.example.android.mediacontroller/.LaunchActivity --es com.example.android.mediacontroller.PACKAGE_NAME "com.example.android.uamp"`
 
-Alternatively, it's possible to use extras to pass parameters, which is recommended when passing
-parameters that include URI-like components:
+To perform a search with the term "jazz?" one would use:
 
-Extra names:
-
-- Package name : ```com.example.android.mediacontroller.PACKAGE_NAME```
-- Search term : ```com.example.android.mediacontroller.SEARCH```
-- Media ID : ```com.example.android.mediacontroller.MEDIA_ID```
-- URI : ```com.example.android.mediacontroller.URI```
-
-Another example with UAMP is to perform a search with the term "jazz?" one would use:
-
-```adb shell am start -n com.example.android.mediacontroller/.MediaAppControllerActivity --es com.example.android.mediacontroller.PACKAGE_NAME "com.example.android.uamp" --es com.example.android.mediacontroller.SEARCH "jazz?"```
+`adb shell am start -n com.example.android.mediacontroller/.MediaAppControllerActivity --es com.example.android.mediacontroller.SEARCH "jazz?"`
 
 Verification
 ============
