@@ -28,6 +28,7 @@ import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -149,12 +150,16 @@ public class LaunchActivity extends AppCompatActivity {
         if (extras.containsKey(PACKAGE_NAME_EXTRA)) {
             String packageName = extras.getString(PACKAGE_NAME_EXTRA);
             if (packageName != null && !packageName.isEmpty()) {
-                openAppWithPackage(packageName);
+                openAppWithPackage(packageName, extras);
             }
         }
     }
 
     private void openAppWithPackage(@NonNull String packageName) {
+        openAppWithPackage(packageName, Bundle.EMPTY);
+    }
+
+    private void openAppWithPackage(@NonNull String packageName, @NonNull Bundle extras) {
         PackageManager pm = getPackageManager();
         ServiceInfo serviceInfo = MediaAppDetails.findServiceInfo(packageName, pm);
         if (serviceInfo != null) {
@@ -163,6 +168,7 @@ public class LaunchActivity extends AppCompatActivity {
 
             Intent intent =
                     MediaAppControllerActivity.buildIntent(LaunchActivity.this, app);
+            intent.putExtras(extras);
             startActivity(intent);
         } else {
             Toast.makeText(this,
