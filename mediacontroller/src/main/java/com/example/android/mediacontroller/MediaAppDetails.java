@@ -78,8 +78,18 @@ public class MediaAppDetails implements Parcelable {
                 banner = BitmapUtils.convertDrawable(resources, appBanner);
             }
         }
-        componentName = new ComponentName(info.packageName, info.name);
-        sessionToken = MediaSessionCompat.Token.fromToken(token);
+
+        if (token != null) {
+            // If we have a MediaSession Token, then we don't need to connect to the
+            // MediaBrowserService implementation, so componentName is null.
+            componentName = null;
+            sessionToken = MediaSessionCompat.Token.fromToken(token);
+        } else {
+            // If we don't have a MediaSession Token, then we need to connect to the
+            // MediaBrowserService implementation.
+            componentName = new ComponentName(info.packageName, info.name);
+            sessionToken = null;
+        }
     }
 
     public MediaAppDetails(PackageItemInfo info, PackageManager pm, Resources resources) {
