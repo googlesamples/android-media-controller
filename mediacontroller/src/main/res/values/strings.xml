@@ -147,11 +147,14 @@
     <string name="tests_query_hint">Query</string>
 
     <string name="play_test_desc">This tests the \'play\' functionality.</string>
+    <string name="play_search_test_desc">This tests the \'play from search\' functionality. Enter the search query in the query field.</string>
+    <string name="play_media_id_test_desc">This tests the \'play from media id\' functionality. Enter the Media ID of the desired media item in the query field.</string>
+    <string name="play_uri_test_desc">This tests the \'play from uri\' functionality. Enter the URI of the desired media item in the query field.</string>
+    <string name="pause_test_desc">This tests the \'pause\' functionality.</string>
+    <string name="stop_test_desc">This tests the \'stop\' functionality.</string>
     <string name="skip_next_test_desc">This tests the \'skip to next\' functionality.</string>
     <string name="skip_prev_test_desc">This tests the \'skip to previous\' functionality.</string>
     <string name="skip_item_test_desc">This tests the \'skip to queue item\' functionality. Enter a Queue ID number in the query field to skip the according queue item.</string>
-    <string name="stop_test_desc">This tests the \'stop\' functionality.</string>
-    <string name="pause_test_desc">This tests the \'pause\' functionality.</string>
 
     <!--
     The order of these strings must match the order of the constants

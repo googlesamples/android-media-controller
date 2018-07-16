@@ -15,6 +15,7 @@
  */
 package com.example.android.mediacontroller
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -101,6 +102,12 @@ class Test(
                     }
                 }
 
+                if (state.state == PlaybackStateCompat.STATE_ERROR) {
+                    testLogger(
+                            name,
+                            "${errorCodeToName(state.errorCode)}: ${state.errorMessage}"
+                    )
+                }
                 // Process TestStep result
                 when (status) {
                     TestStepStatus.STEP_PASS -> {
@@ -121,14 +128,10 @@ class Test(
                         )
                     }
                     TestStepStatus.STEP_FAIL -> {
-                        testLogger(
-                                currentStep.logTag,
-                                "Failed: ${playbackStateToName(state.state)}"
-                        )
-                        if (state.state == PlaybackStateCompat.STATE_ERROR) {
+                        if(msg.what != TIMED_OUT) {
                             testLogger(
-                                    name,
-                                    "${errorCodeToName(state.errorCode)}: ${state.errorMessage}"
+                                    currentStep.logTag,
+                                    "Failed: ${playbackStateToName(state.state)}"
                             )
                         }
                         endTest()
@@ -253,6 +256,91 @@ class ConfigurePlay(override val test: Test) : TestStep {
     }
 }
 
+fun makePlayFromBundle(query: String): Bundle {
+    val extras = Bundle()
+    extras.putString("android.intent.extra.user_query_language", "en-US")
+    extras.putString("query", query)
+    extras.putString(
+            "android.intent.extra.REFERRER_NAME",
+            "android-app://com.google.android.googlequicksearchbox/https/www.google.com"
+    )
+    extras.putString("android.intent.extra.user_query", query)
+    extras.putString("android.intent.extra.focus", "vnd.android.cursor.item/*")
+    extras.putString("android.intent.extra.title", query)
+    return extras
+}
+
+/**
+ * The query is a search phrase to be used to find a media item to play. This step checks if
+ * ACTION_PLAY_FROM_SEARCH is supported and sends the playFromSearch() request. Always returns
+ * STEP_PASS. Note that for an empty/null query, this request should be treated as a request to
+ * play any music.
+ */
+class ConfigurePlayFromSearch(override val test: Test, private val query: String) : TestStep {
+    override val logTag = "${test.name}.CPFS"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        val extras = makePlayFromBundle(query)
+
+        checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH)
+        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.mediaController.transportControls.playFromSearch(query, extras)
+        return TestStepStatus.STEP_PASS
+    }
+}
+
+/**
+ * The query is expected to be the media id of a media item to play. This step checks if
+ * ACTION_PLAY_FROM_MEDIA_ID is supported and sends the playFromMediaId() request. Returns STEP_FAIL
+ * if the query is empty/null, otherwise returns STEP_PASS.
+ */
+class ConfigurePlayFromMediaId(override val test: Test, private val query: String) : TestStep {
+    override val logTag = "${test.name}.CPFMI"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        if (query == "") {
+            test.testLogger(logTag, "Error: empty query")
+            return TestStepStatus.STEP_FAIL
+        }
+
+        val extras = makePlayFromBundle(query)
+
+        checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID)
+        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.mediaController.transportControls.playFromMediaId(query, extras)
+        return TestStepStatus.STEP_PASS
+    }
+}
+
+/**
+ * The query is expected to be the uri of a media item to play. This step checks if
+ * ACTION_PLAY_FROM_URI is supported and sends the playFromUri() request. Returns STEP_FAIL if the
+ * query is empty/null, otherwise returns STEP_PASS.
+ */
+class ConfigurePlayFromUri(override val test: Test, private val query: String) : TestStep {
+    override val logTag = "${test.name}.CPFU"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        if (query == "") {
+            test.testLogger(logTag, "Error: empty query")
+            return TestStepStatus.STEP_FAIL
+        }
+
+        val extras = makePlayFromBundle(query)
+
+        checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_URI)
+        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.mediaController.transportControls.playFromUri(Uri.parse(query), extras)
+        return TestStepStatus.STEP_PASS
+    }
+}
+
 /**
  * No query input. This step checks if ACTION_PAUSE is supported and sends the pause() request.
  * Always returns STEP_PASS.
@@ -340,7 +428,7 @@ class ConfigureSkipToItem(override val test: Test, private val query: String) : 
     ): TestStepStatus {
         val itemId = query.toLongOrNull()
         if (itemId == null) {
-            test.testLogger(logTag, "Failed: Couldn't parse query [$query]")
+            test.testLogger(logTag, "Error: Couldn't parse query [$query]")
             return TestStepStatus.STEP_FAIL
         }
 
@@ -371,7 +459,7 @@ class WaitForPlaying(override val test: Test) : TestStep {
         // Metadata should not change for this step, but some apps "update" the Metadata with the
         // same media item.
         if (test.origMetadata != null && !test.origMetadata.isContentSameAs(currMetadata)) {
-            test.testLogger(logTag, "Failed: Metadata changed")
+            test.testLogger(logTag, "Error: Metadata changed")
             return TestStepStatus.STEP_FAIL
         }
 
@@ -484,7 +572,7 @@ class WaitForStopped(override val test: Test) : TestStep {
         // item, but Metadata should not change to a different media item.
         if (currMetadata != null && test.origMetadata != null
                 && !test.origMetadata.isContentSameAs(currMetadata)) {
-            test.testLogger(logTag, "Failed: Metadata changed")
+            test.testLogger(logTag, "Error: Metadata changed")
             return TestStepStatus.STEP_FAIL
         }
 
@@ -531,7 +619,7 @@ class WaitForPaused(override val test: Test) : TestStep {
         // Metadata should not change for this step, but some apps "update" the Metadata with the
         // same media item.
         if (test.origMetadata != null && !test.origMetadata.isContentSameAs(currMetadata)) {
-            test.testLogger(logTag, "Failed: Metadata changed")
+            test.testLogger(logTag, "Error: Metadata changed")
             return TestStepStatus.STEP_FAIL
         }
 
@@ -567,8 +655,9 @@ class WaitForPaused(override val test: Test) : TestStep {
 
 /**
  * PASS: state must be STATE_PLAYING and playback position must be at the start of the media item
- * CONTINUE: null or original state, STATE_PLAYING but non-zero playback position
- * FAIL: any other state
+ * CONTINUE: null state, original state, STATE_PLAYING but non-zero playback position, transition
+ *           states
+ * FAIL: any other terminal state
  *
  * Note: No metadata checks
  */
@@ -578,27 +667,27 @@ class WaitForPlayingBeginning(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
-        return when (currState?.state) {
-            null -> {
-                test.testLogger(logTag, "Continuing: null")
+        return when {
+            currState?.state == null -> {
+                test.testLogger(logTag, "Warning: PlaybackState is null")
                 TestStepStatus.STEP_CONTINUE
             }
-            PlaybackStateCompat.STATE_PLAYING -> {
+            currState.state == PlaybackStateCompat.STATE_PLAYING -> {
                 if (abs(currState.position) < Test.POSITION_LENIENCY) {
-                    test.testLogger(logTag, "Passed: STATE_PLAYING")
                     TestStepStatus.STEP_PASS
                 } else {
-                    test.testLogger(logTag, "Continuing: Playing, but not at beginning")
+                    test.testLogger(logTag, "Running: Not at beginning")
                     TestStepStatus.STEP_CONTINUE
                 }
             }
-            test.origState?.state -> {
-                // Sometimes apps "update" the Playback State without any changes
-                test.testLogger(logTag, "Continuing: ${playbackStateToName(currState.state)}")
+            currState.state == test.origState?.state
+                    || transitionStates.contains(currState.state) -> {
+                // Sometimes apps "update" the Playback State without any changes or may enter an
+                // unexpected transition state
                 TestStepStatus.STEP_CONTINUE
             }
             else -> {
-                test.testLogger(logTag, "Failed: ${playbackStateToName(currState.state)}")
+                // All terminal states other than STATE_PLAYING
                 TestStepStatus.STEP_FAIL
             }
         }

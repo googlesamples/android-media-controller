@@ -361,9 +361,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         /**
-         * Tests the play() transport control. The test can start in any state, might transition
-         * to STATE_BUFFERING, but must eventually end in STATE_PLAYING. The test will fail for
-         * any state other than the starting state, STATE_BUFFERING, and STATE_PLAYING. The test
+         * Tests the play() transport control. The test can start in any state, might enter a
+         * transition state, but must eventually end in STATE_PLAYING. The test will fail for
+         * any terminal state other than the starting state and STATE_PLAYING. The test
          * will also fail if the metadata changes unless the test began with null metadata.
          */
         val playTest = TestOptionDetails(
@@ -381,11 +381,73 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         /**
+         * Tests the playFromSearch() transport control. The test can start in any state, might
+         * enter a transition state, but must eventually end in STATE_PLAYING with playback
+         * position at 0. The test will fail for any terminal state other than the starting state
+         * and STATE_PLAYING. This test does not perform any metadata checks.
+         */
+        val playFromSearch = TestOptionDetails(
+                "Play From Search",
+                getString(R.string.play_search_test_desc)
+        ) { query ->
+            Test(
+                    "PlaySearch",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigurePlayFromSearch(this, query))
+                addStep(WaitForPlayingBeginning(this))
+            }.runTest()
+        }
+
+        /**
+         * Tests the playFromMediaId() transport control. The test can start in any state, might
+         * enter a transition state, but must eventually end in STATE_PLAYING with playback
+         * position at 0. The test will fail for any terminal state other than the starting state
+         * and STATE_PLAYING. The test will also fail if query is empty/null. This test does not
+         * perform any metadata checks.
+         */
+        val playFromMediaId = TestOptionDetails(
+                "Play From Media ID",
+                getString(R.string.play_media_id_test_desc)
+        ) { query ->
+            Test(
+                    "PlayMediaId",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigurePlayFromMediaId(this, query))
+                addStep(WaitForPlayingBeginning(this))
+            }.runTest()
+        }
+
+        /**
+         * Tests the playFromUri() transport control. The test can start in any state, might
+         * enter a transition state, but must eventually end in STATE_PLAYING with playback
+         * position at 0. The test will fail for any terminal state other than the starting state
+         * and STATE_PLAYING. The test will also fail if query is empty/null. This test does not
+         * perform any metadata checks.
+         */
+        val playFromUri = TestOptionDetails(
+                "Play From URI",
+                getString(R.string.play_uri_test_desc)
+        ) { query ->
+            Test(
+                    "PlayUri",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigurePlayFromUri(this, query))
+                addStep(WaitForPlayingBeginning(this))
+            }.runTest()
+        }
+
+        /**
          * Tests the pause() transport control. The test can start in any state, but must end in
          * STATE_PAUSED (but STATE_STOPPED is also okay if that is the state the test started with).
-         * The test will fail for any state other than the starting state, STATE_PAUSED, and
-         * STATE_STOPPED. The test will also fail if the metadata changes unless the test began with
-         * null metadata.
+         * The test will fail for any terminal state other than the starting state, STATE_PAUSED,
+         * and STATE_STOPPED. The test will also fail if the metadata changes unless the test began
+         * with null metadata.
          */
         val pauseTest = TestOptionDetails(
                 "Pause",
@@ -403,9 +465,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         /**
          * Tests the stop() transport control. The test can start in any state, but must end in
-         * STATE_STOPPED or STATE_NONE. The test will fail for any state other than the starting
-         * state, STATE_STOPPED, and STATE_NONE. The test will also fail if the metadata changes
-         * to a non-null media item different from the original media item.
+         * STATE_STOPPED or STATE_NONE. The test will fail for any terminal state other than the
+         * starting state, STATE_STOPPED, and STATE_NONE. The test will also fail if the metadata
+         * changes to a non-null media item different from the original media item.
          */
         val stopTest = TestOptionDetails(
                 "Stop",
@@ -423,12 +485,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         /**
          * Tests the skipToNext() transport control. The test can start in any state, might
-         * transition to STATE_BUFFERING or STATE_SKIPPING_TO_*, but must eventually end in
-         * STATE_PLAYING with the playback position at 0. The test will fail for any state other
-         * than the starting state, STATE_BUFFERING, STATE_SKIPPING_TO_*, and STATE_PLAYING.
-         * The metadata must change, but might just "change" to be the same as the original
-         * metadata (e.g. if the next media item is the same as the current one); the test will
-         * not pass if the metadata doesn't get updated at some point.
+         * enter a transition state, but must eventually end in STATE_PLAYING with the playback
+         * position at 0 if a new media item is started or in the starting state if the media item
+         * doesn't change. The test will fail for any terminal state other than the starting state
+         * and STATE_PLAYING. The metadata must change, but might just "change" to be the same as
+         * the original metadata (e.g. if the next media item is the same as the current one); the
+         * test will not pass if the metadata doesn't get updated at some point.
          */
         val skipToNextTest = TestOptionDetails(
                 "Skip To Next",
@@ -446,12 +508,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         /**
          * Tests the skipToPrevious() transport control. The test can start in any state, might
-         * transition to STATE_BUFFERING or STATE_SKIPPING_TO_*, but must eventually end in
-         * the original state with the playback position at 0. The test will fail for any state
-         * other than the starting state, STATE_BUFFERING, and STATE_SKIPPING_TO_*. The metadata
-         * must change, but might just "change" to be the same as the original metadata (e.g. if
-         * the previous media item is the same as the current one); the test will not pass if the
-         * metadata doesn't get updated at some point.
+         * enter a transition state, but must eventually end in STATE_PLAYING with the playback
+         * position at 0 if a new media item is started or in the starting state if the media item
+         * doesn't change. The test will fail for any terminal state other than the starting state
+         * and STATE_PLAYING. The metadata must change, but might just "change" to be the same as
+         * the original metadata (e.g. if the previous media item is the same as the current one);
+         * the test will not pass if the metadata doesn't get updated at some point.
          */
         val skipToPrevTest = TestOptionDetails(
                 "Skip To Previous",
@@ -469,12 +531,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         /**
          * Tests the skipToQueueItem() transport control. The test can start in any state, might
-         * transition to STATE_BUFFERING or STATE_SKIPPING_TO_*, but must eventually end in
-         * STATE_PLAYING with the playback position at 0. The test will fail for any state other
-         * than the starting state, STATE_BUFFERING, STATE_SKIPPING_TO_*, and STATE_PLAYING.
-         * The metadata must change, but might just "change" to be the same as the original
-         * metadata (e.g. if the next media item is the same as the current one); the test will
-         * not pass if the metadata doesn't get updated at some point.
+         * enter a transition state, but must eventually end in STATE_PLAYING with the playback
+         * position at 0 if a new media item is started or in the starting state if the media item
+         * doesn't change. The test will fail for any terminal state other than the starting state
+         * and STATE_PLAYING. The metadata must change, but might just "change" to be the same as
+         * the original metadata (e.g. if the next media item is the same as the current one); the
+         * test will not pass if the metadata doesn't get updated at some point.
          */
         val skipToItemTest = TestOptionDetails(
                 "Skip To Queue Item",
@@ -491,12 +553,15 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         val testOptionAdapter = TestOptionAdapter(arrayOf(
-                        playTest,
-                        pauseTest,
-                        stopTest,
-                        skipToNextTest,
-                        skipToPrevTest,
-                        skipToItemTest
+                playTest,
+                playFromSearch,
+                playFromMediaId,
+                playFromUri,
+                pauseTest,
+                stopTest,
+                skipToNextTest,
+                skipToPrevTest,
+                skipToItemTest
         ))
 
         val testList = test_options_list
