@@ -381,6 +381,27 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         /**
+         * Tests the pause() transport control. The test can start in any state, but must end in
+         * STATE_PAUSED (but STATE_STOPPED is also okay if that is the state the test started with).
+         * The test will fail for any state other than the starting state, STATE_PAUSED, and
+         * STATE_STOPPED. The test will also fail if the metadata changes unless the test began with
+         * null metadata.
+         */
+        val pauseTest = TestOptionDetails(
+                "Pause",
+                getString(R.string.pause_test_desc)
+        ) { _ ->
+            Test(
+                    "Pause",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigurePause(this))
+                addStep(WaitForPaused(this))
+            }.runTest()
+        }
+
+        /**
          * Tests the stop() transport control. The test can start in any state, but must end in
          * STATE_STOPPED or STATE_NONE. The test will fail for any state other than the starting
          * state, STATE_STOPPED, and STATE_NONE. The test will also fail if the metadata changes
@@ -469,9 +490,14 @@ class MediaAppTestingActivity : AppCompatActivity() {
             }.runTest()
         }
 
-        val testOptionAdapter = TestOptionAdapter(
-                arrayOf(playTest, stopTest, skipToNextTest, skipToPrevTest, skipToItemTest)
-        )
+        val testOptionAdapter = TestOptionAdapter(arrayOf(
+                        playTest,
+                        pauseTest,
+                        stopTest,
+                        skipToNextTest,
+                        skipToPrevTest,
+                        skipToItemTest
+        ))
 
         val testList = test_options_list
         testList.layoutManager = LinearLayoutManager(this)

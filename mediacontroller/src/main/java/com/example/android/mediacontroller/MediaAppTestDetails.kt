@@ -254,6 +254,23 @@ class ConfigurePlay(override val test: Test) : TestStep {
 }
 
 /**
+ * No query input. This step checks if ACTION_PAUSE is supported and sends the pause() request.
+ * Always returns STEP_PASS.
+ */
+class ConfigurePause(override val test: Test) : TestStep {
+    override val logTag = "${test.name}.CP"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        checkActionSupported(currState, PlaybackStateCompat.ACTION_PAUSE)
+        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.mediaController.transportControls.pause()
+        return TestStepStatus.STEP_PASS
+    }
+}
+
+/**
  * No query input. This step checks if ACTION_STOP is supported and sends the stop() request.
  * Always returns STEP_PASS.
  */
@@ -450,7 +467,7 @@ class WaitForSkip(override val test: Test) : TestStep {
 /**
  * PASS: metadata may change to null and state must be STATE_STOPPED or STATE_NONE
  * CONTINUE: null or original state
- * FAIL: metadata changes to non-null or non-original metadata or any other state
+ * FAIL: any other state, or metadata changes to non-original, non-null metadata
  */
 class WaitForStopped(override val test: Test) : TestStep {
     override val logTag = "${test.name}.WFS"
@@ -481,13 +498,67 @@ class WaitForStopped(override val test: Test) : TestStep {
                 TestStepStatus.STEP_PASS
             }
             currState.state == test.origState?.state
-                    || transitionStates.contains(currState.state)-> {
+                    || transitionStates.contains(currState.state) -> {
                 // Sometimes apps "update" the Playback State without any changes or may enter an
                 // unexpected transition state
                 TestStepStatus.STEP_CONTINUE
             }
             else -> {
                 // All terminal states other than STATE_NONE and STATE_STOPPED
+                TestStepStatus.STEP_FAIL
+            }
+        }
+    }
+}
+
+/**
+ * PASS: metadata must not change and state must be STATE_PAUSED (if the test began with
+ *       STATE_STOPPED, it is also acceptable to end with STATE_STOPPED)
+ * CONTINUE: null state, original state, or transition state
+ * FAIL: metadata changes or any other terminal state
+ */
+class WaitForPaused(override val test: Test) : TestStep {
+    override val logTag = "${test.name}.WFP"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        test.testLogger(
+                logTag,
+                "Comparing original metadata ${test.origMetadata.toBasicString()} to current "
+                        + "metadata ${currMetadata.toBasicString()}"
+        )
+        // Metadata should not change for this step, but some apps "update" the Metadata with the
+        // same media item.
+        if (test.origMetadata != null && !test.origMetadata.isContentSameAs(currMetadata)) {
+            test.testLogger(logTag, "Failed: Metadata changed")
+            return TestStepStatus.STEP_FAIL
+        }
+
+        return when {
+            currState?.state == null -> {
+                test.testLogger(logTag, "Warning: PlaybackState is null")
+                TestStepStatus.STEP_CONTINUE
+            }
+            currState.state == PlaybackStateCompat.STATE_PAUSED -> {
+                TestStepStatus.STEP_PASS
+            }
+            currState.state == PlaybackStateCompat.STATE_STOPPED -> {
+                val origState = test.origState
+                if (origState == null || origState.state != PlaybackStateCompat.STATE_STOPPED) {
+                    TestStepStatus.STEP_FAIL
+                } else {
+                    TestStepStatus.STEP_PASS
+                }
+            }
+            currState.state == test.origState?.state
+                    || transitionStates.contains(currState.state) -> {
+                // Sometimes apps "update" the Playback State without any changes or may enter an
+                // unexpected transition state
+                TestStepStatus.STEP_CONTINUE
+            }
+            else -> {
+                // All terminal states other than STATE_PAUSED and STATE_STOPPED
                 TestStepStatus.STEP_FAIL
             }
         }
