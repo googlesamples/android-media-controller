@@ -254,6 +254,23 @@ class ConfigurePlay(override val test: Test) : TestStep {
 }
 
 /**
+ * No query input. This step checks if ACTION_STOP is supported and sends the stop() request.
+ * Always returns STEP_PASS.
+ */
+class ConfigureStop(override val test: Test) : TestStep {
+    override val logTag = "${test.name}.CS"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        checkActionSupported(currState, PlaybackStateCompat.ACTION_STOP)
+        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.mediaController.transportControls.stop()
+        return TestStepStatus.STEP_PASS
+    }
+}
+
+/**
  * No query input. This step checks if ACTION_SKIP_TO_NEXT is supported and sends the skipToNext()
  * request. This request requires that the metadata changes, so it initializes the METADATA_CHANGED
  * key in the Test's extras Bundle to false. Always returns STEP_PASS.
@@ -424,6 +441,53 @@ class WaitForSkip(override val test: Test) : TestStep {
             }
             else -> {
                 // All terminal states other than STATE_PLAYING and STATE_PAUSED
+                TestStepStatus.STEP_FAIL
+            }
+        }
+    }
+}
+
+/**
+ * PASS: metadata may change to null and state must be STATE_STOPPED or STATE_NONE
+ * CONTINUE: null or original state
+ * FAIL: metadata changes to non-null or non-original metadata or any other state
+ */
+class WaitForStopped(override val test: Test) : TestStep {
+    override val logTag = "${test.name}.WFS"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        test.testLogger(
+                logTag,
+                "Comparing original metadata ${test.origMetadata.toBasicString()} to current "
+                        + "metadata ${currMetadata.toBasicString()}"
+        )
+        // Metadata may change to null, and some apps "update" the Metadata with the same media
+        // item, but Metadata should not change to a different media item.
+        if (currMetadata != null && test.origMetadata != null
+                && !test.origMetadata.isContentSameAs(currMetadata)) {
+            test.testLogger(logTag, "Failed: Metadata changed")
+            return TestStepStatus.STEP_FAIL
+        }
+
+        return when {
+            currState?.state == null -> {
+                test.testLogger(logTag, "Warning: PlaybackState is null")
+                TestStepStatus.STEP_CONTINUE
+            }
+            currState.state == PlaybackStateCompat.STATE_NONE
+                    || currState.state == PlaybackStateCompat.STATE_STOPPED -> {
+                TestStepStatus.STEP_PASS
+            }
+            currState.state == test.origState?.state
+                    || transitionStates.contains(currState.state)-> {
+                // Sometimes apps "update" the Playback State without any changes or may enter an
+                // unexpected transition state
+                TestStepStatus.STEP_CONTINUE
+            }
+            else -> {
+                // All terminal states other than STATE_NONE and STATE_STOPPED
                 TestStepStatus.STEP_FAIL
             }
         }

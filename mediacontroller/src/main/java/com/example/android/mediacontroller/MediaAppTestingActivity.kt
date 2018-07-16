@@ -377,8 +377,27 @@ class MediaAppTestingActivity : AppCompatActivity() {
             ).apply {
                 addStep(ConfigurePlay(this))
                 addStep(WaitForPlaying(this))
-                runTest()
-            }
+            }.runTest()
+        }
+
+        /**
+         * Tests the stop() transport control. The test can start in any state, but must end in
+         * STATE_STOPPED or STATE_NONE. The test will fail for any state other than the starting
+         * state, STATE_STOPPED, and STATE_NONE. The test will also fail if the metadata changes
+         * to a non-null media item different from the original media item.
+         */
+        val stopTest = TestOptionDetails(
+                "Stop",
+                getString(R.string.stop_test_desc)
+        ) { _ ->
+            Test(
+                    "Stop",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigureStop(this))
+                addStep(WaitForStopped(this))
+            }.runTest()
         }
 
         /**
@@ -401,8 +420,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             ).apply {
                 addStep(ConfigureSkipToNext(this))
                 addStep(WaitForSkip(this))
-                runTest()
-            }
+            }.runTest()
         }
 
         /**
@@ -425,8 +443,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             ).apply {
                 addStep(ConfigureSkipToPrevious(this))
                 addStep(WaitForSkip(this))
-                runTest()
-            }
+            }.runTest()
         }
 
         /**
@@ -449,12 +466,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
             ).apply {
                 addStep(ConfigureSkipToItem(this, query))
                 addStep(WaitForSkip(this))
-                runTest()
-            }
+            }.runTest()
         }
 
         val testOptionAdapter = TestOptionAdapter(
-                arrayOf(playTest, skipToNextTest, skipToPrevTest, skipToItemTest)
+                arrayOf(playTest, stopTest, skipToNextTest, skipToPrevTest, skipToItemTest)
         )
 
         val testList = test_options_list

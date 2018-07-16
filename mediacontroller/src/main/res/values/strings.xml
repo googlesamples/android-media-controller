@@ -150,6 +150,7 @@
     <string name="skip_next_test_desc">This tests the \'skip to next\' functionality.</string>
     <string name="skip_prev_test_desc">This tests the \'skip to previous\' functionality.</string>
     <string name="skip_item_test_desc">This tests the \'skip to queue item\' functionality. Enter a Queue ID number in the query field to skip the according queue item.</string>
+    <string name="stop_test_desc">This tests the \'stop\' functionality.</string>
 
     <!--
     The order of these strings must match the order of the constants
