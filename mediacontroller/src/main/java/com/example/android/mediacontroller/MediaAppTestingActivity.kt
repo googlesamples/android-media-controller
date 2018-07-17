@@ -552,6 +552,30 @@ class MediaAppTestingActivity : AppCompatActivity() {
             }.runTest()
         }
 
+        /**
+         * Tests the seekTo() transport control. The test can start in any state, might enter a
+         * transition state, but must eventually end in a terminal state with playback position at
+         * the requested timestamp. While not required, it is expected that the test will end in
+         * the same state as it started. Metadata might change for this test if the requested
+         * timestamp is outside the bounds of the current media item. The query should either be
+         * a position in seconds or a change in position (number of seconds prepended by '+' to go
+         * forward or '-' to go backwards). The test will fail if the query can't be parsed to a
+         * Long.
+         */
+        val seekToTest = TestOptionDetails(
+                "Seek To",
+                getString(R.string.seek_test_desc)
+        ) { query ->
+            Test(
+                    "SeekTo",
+                    controller,
+                    ::logTestUpdate
+            ).apply {
+                addStep(ConfigureSeekTo(this, query))
+                addStep(WaitForTerminalAtTarget(this))
+            }.runTest()
+        }
+
         val testOptionAdapter = TestOptionAdapter(arrayOf(
                 playTest,
                 playFromSearch,
@@ -561,7 +585,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 stopTest,
                 skipToNextTest,
                 skipToPrevTest,
-                skipToItemTest
+                skipToItemTest,
+                seekToTest
         ))
 
         val testList = test_options_list

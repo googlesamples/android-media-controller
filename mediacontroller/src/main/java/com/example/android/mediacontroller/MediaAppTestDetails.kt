@@ -128,7 +128,7 @@ class Test(
                         )
                     }
                     TestStepStatus.STEP_FAIL -> {
-                        if(msg.what != TIMED_OUT) {
+                        if (msg.what != TIMED_OUT) {
                             testLogger(
                                     currentStep.logTag,
                                     "Failed: ${playbackStateToName(state.state)}"
@@ -168,7 +168,7 @@ class Test(
         const val METADATA_CHANGED = 3
 
         const val TEST_TIMEOUT = 5000L // 5 seconds
-        const val POSITION_LENIENCY = 2000L // 2 seconds
+        const val POSITION_LENIENCY = 200L // 0.2 seconds
     }
 }
 
@@ -250,7 +250,7 @@ class ConfigurePlay(override val test: Test) : TestStep {
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.testLogger(logTag, "Running: Sending play() TransportControl request")
         test.mediaController.transportControls.play()
         return TestStepStatus.STEP_PASS
     }
@@ -285,7 +285,10 @@ class ConfigurePlayFromSearch(override val test: Test, private val query: String
         val extras = makePlayFromBundle(query)
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.testLogger(
+                logTag,
+                "Running: Sending playFromSearch($query, $extras) TransportControl request"
+        )
         test.mediaController.transportControls.playFromSearch(query, extras)
         return TestStepStatus.STEP_PASS
     }
@@ -310,7 +313,10 @@ class ConfigurePlayFromMediaId(override val test: Test, private val query: Strin
         val extras = makePlayFromBundle(query)
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.testLogger(
+                logTag,
+                "Running: Sending playFromMediaId($query, $extras) TransportControl request"
+        )
         test.mediaController.transportControls.playFromMediaId(query, extras)
         return TestStepStatus.STEP_PASS
     }
@@ -332,11 +338,15 @@ class ConfigurePlayFromUri(override val test: Test, private val query: String) :
             return TestStepStatus.STEP_FAIL
         }
 
+        val uri = Uri.parse(query)
         val extras = makePlayFromBundle(query)
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_URI)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
-        test.mediaController.transportControls.playFromUri(Uri.parse(query), extras)
+        test.testLogger(
+                logTag,
+                "Running: Sending playFromUri($uri, $extras) TransportControl request"
+        )
+        test.mediaController.transportControls.playFromUri(uri, extras)
         return TestStepStatus.STEP_PASS
     }
 }
@@ -352,7 +362,7 @@ class ConfigurePause(override val test: Test) : TestStep {
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PAUSE)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.testLogger(logTag, "Running: Sending pause() TransportControl request")
         test.mediaController.transportControls.pause()
         return TestStepStatus.STEP_PASS
     }
@@ -369,7 +379,7 @@ class ConfigureStop(override val test: Test) : TestStep {
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
         checkActionSupported(currState, PlaybackStateCompat.ACTION_STOP)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.testLogger(logTag, "Running: Sending stop() TransportControl request")
         test.mediaController.transportControls.stop()
         return TestStepStatus.STEP_PASS
     }
@@ -388,7 +398,7 @@ class ConfigureSkipToNext(override val test: Test) : TestStep {
     ): TestStepStatus {
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
         test.extras.putBoolean("METADATA_CHANGED", false)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.testLogger(logTag, "Running: Sending skipToNext() TransportControl request")
         test.mediaController.transportControls.skipToNext()
         return TestStepStatus.STEP_PASS
     }
@@ -407,7 +417,7 @@ class ConfigureSkipToPrevious(override val test: Test) : TestStep {
     ): TestStepStatus {
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
         test.extras.putBoolean("METADATA_CHANGED", false)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.testLogger(logTag, "Running: Sending skipToPrevious() TransportControl request")
         test.mediaController.transportControls.skipToPrevious()
         return TestStepStatus.STEP_PASS
     }
@@ -434,8 +444,49 @@ class ConfigureSkipToItem(override val test: Test, private val query: String) : 
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM)
         test.extras.putBoolean("METADATA_CHANGED", false)
-        test.testLogger(logTag, "Running: Sending TransportControl request")
+        test.testLogger(
+                logTag,
+                "Running: Sending skipToQueueItem($itemId) TransportControl request"
+        )
         test.mediaController.transportControls.skipToQueueItem(itemId)
+        return TestStepStatus.STEP_PASS
+    }
+}
+
+/**
+ * Expects query to be either a timestamp to seek to, or a change in position (prepended with a '+'
+ * to seek forward or a '-' to seek backwards, e.g. +30 will seek 30 seconds ahead). This step
+ * checks if ACTION_SEEK_TO is supported and sends the seekTo() request. Returns STEP_FAIL if the
+ * query isn't a Long (potentially prepended by '+' or '-') or if the current state is null,
+ * returns STEP_PASS otherwise. For later steps to verify that playback is at the desired position,
+ * this step initializes the TARGET_POSITION key in the Test's extras Bundle.
+ */
+class ConfigureSeekTo(override val test: Test, private val query: String) : TestStep {
+    override val logTag = "${test.name}.CST"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        val currentTime = currState?.position
+        if (currentTime == null) {
+            test.testLogger(logTag, "Failed: Can't determine current position")
+            return TestStepStatus.STEP_FAIL
+        }
+        var newTime = query.toLongOrNull()
+        if (query == "" || newTime == null) {
+            test.testLogger(logTag, "Failed: Couldn't parse query [$query]")
+            return TestStepStatus.STEP_FAIL
+        }
+        if (query[0] == '+' || query[0] == '-') {
+            newTime = currentTime + newTime * 1000
+        } else {
+            newTime *= 1000
+        }
+
+        checkActionSupported(currState, PlaybackStateCompat.ACTION_SEEK_TO)
+        test.extras.putLong("TARGET_POSITION", newTime)
+        test.testLogger(logTag, "Running: Sending seekTo($newTime) TransportControl request")
+        test.mediaController.transportControls.seekTo(newTime)
         return TestStepStatus.STEP_PASS
     }
 }
@@ -688,6 +739,91 @@ class WaitForPlayingBeginning(override val test: Test) : TestStep {
             }
             else -> {
                 // All terminal states other than STATE_PLAYING
+                TestStepStatus.STEP_FAIL
+            }
+        }
+    }
+}
+
+/**
+ * PASS: terminal state and playback position at target, metadata might change if target is outside
+ *       the bounds of the media item duration (in which case state must be STATE_PLAYING)
+ * CONTINUE: null state, transition state, terminal state but either incorrect playback position
+ *           or not STATE_PLAYING for new media item
+ * FAIL: metadata changes when target is within media item duration, any other state
+ *
+ * Note: This test issues a warning if the ending state is not the same as the original state (e.g.
+ *       if the test starts with STATE_PLAYING, it is expected though not required that the test
+ *       also ends in STATE_PLAYING).
+ */
+class WaitForTerminalAtTarget(override val test: Test) : TestStep {
+    override val logTag = "${test.name}.WFTAT"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        val target = test.extras.getLong("TARGET_POSITION")
+        val dur = test.origMetadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
+        if (dur == null) {
+            test.testLogger(logTag, "Failed: null original metadata")
+            return TestStepStatus.STEP_FAIL
+        }
+        // Metadata might change for this step (if the seek position is outside the bounds of the
+        // media item).
+        val isNewItem = !test.origMetadata.isContentSameAs(currMetadata)
+        if (test.origMetadata != null && isNewItem) {
+            if (target < 0 || target > (dur - Test.POSITION_LENIENCY)) {
+                test.testLogger(logTag, "Running: Media item ended, metadata changed")
+            } else {
+                test.testLogger(logTag, "Failed: Metadata changed")
+                return TestStepStatus.STEP_FAIL
+            }
+        }
+
+        return when {
+            currState?.state == null -> {
+                test.testLogger(logTag, "Continuing: null")
+                TestStepStatus.STEP_CONTINUE
+            }
+            terminalStates.contains(currState.state) -> {
+                val boundedTarget = when {
+                    target <= 0L || target >= dur -> 0L
+                    else -> target
+                }
+                return if (abs(currState.position - boundedTarget) < Test.POSITION_LENIENCY) {
+                    if(!isNewItem) {
+                        // valid end state and correct position
+                        val origState = test.origState
+                        if (origState != null && currState.state != origState.state) {
+                            test.testLogger(
+                                    logTag,
+                                    "Warning: Step did not end with the same state,"
+                                            + " ${playbackStateToName(currState.state)}, in which"
+                                            + " it began, ${playbackStateToName(origState.state)}"
+                            )
+                        }
+                        TestStepStatus.STEP_PASS
+                    } else {
+                        // if metadata changed, state must be playing
+                        if(currState.state == PlaybackStateCompat.STATE_PLAYING) {
+                            TestStepStatus.STEP_PASS
+                        } else {
+                            TestStepStatus.STEP_CONTINUE
+                        }
+                    }
+                } else {
+                    // valid end state, but incorrect position
+                    test.testLogger(
+                            logTag,
+                            "Running: Incorrect position ${currState.position}"
+                    )
+                    TestStepStatus.STEP_CONTINUE
+                }
+            }
+            transitionStates.contains(currState.state) -> {
+                TestStepStatus.STEP_CONTINUE
+            }
+            else -> {
                 TestStepStatus.STEP_FAIL
             }
         }
