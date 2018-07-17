@@ -376,7 +376,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     ::logTestUpdate
             ).apply {
                 addStep(ConfigurePlay(this))
-                addStep(WaitForBufferingOrPlaying(this))
                 addStep(WaitForPlaying(this))
                 runTest()
             }

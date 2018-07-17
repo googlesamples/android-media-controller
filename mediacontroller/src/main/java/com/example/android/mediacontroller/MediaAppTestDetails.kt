@@ -82,14 +82,14 @@ class Test(
                     return
                 }
 
+                val currentStep = steps[stepIndex]
+                val state = mediaController.playbackState
+                val metadata = mediaController.metadata
                 // Process received message
                 val status = when (msg.what) {
                     STATE_CHANGED, METADATA_CHANGED, RUN_STEP -> {
                         extras.putInt("STEP_TRIGGER", msg.what)
-                        steps[stepIndex].execute(
-                                mediaController.playbackState,
-                                mediaController.metadata
-                        )
+                        currentStep.execute(state, metadata)
                     }
                     TIMED_OUT -> {
                         testLogger(name, "Failed: Test timed out")
@@ -104,6 +104,10 @@ class Test(
                 // Process TestStep result
                 when (status) {
                     TestStepStatus.STEP_PASS -> {
+                        testLogger(
+                                currentStep.logTag,
+                                "Passed: ${playbackStateToName(state.state)}"
+                        )
                         // Move to next step
                         ++stepIndex
                         // Run step
@@ -111,9 +115,22 @@ class Test(
                     }
                     TestStepStatus.STEP_CONTINUE -> {
                         // No op
+                        testLogger(
+                                currentStep.logTag,
+                                "Continuing: ${playbackStateToName(state.state)}"
+                        )
                     }
                     TestStepStatus.STEP_FAIL -> {
-                        testLogger(name, "Test failed")
+                        testLogger(
+                                currentStep.logTag,
+                                "Failed: ${playbackStateToName(state.state)}"
+                        )
+                        if (state.state == PlaybackStateCompat.STATE_ERROR) {
+                            testLogger(
+                                    name,
+                                    "${errorCodeToName(state.errorCode)}: ${state.errorMessage}"
+                            )
+                        }
                         endTest()
                     }
                 }
@@ -157,6 +174,32 @@ class TestOptionDetails(val name: String, val desc: String, val runTest: (query:
 enum class TestStepStatus {
     STEP_PASS, STEP_CONTINUE, STEP_FAIL
 }
+
+/**
+ * In these states, a TestStep should return STEP_PASS if the other requirements for the test are
+ * met, otherwise it should return STEP_FAIL.
+ */
+val terminalStates = intArrayOf(
+        PlaybackStateCompat.STATE_ERROR,
+        PlaybackStateCompat.STATE_NONE,
+        PlaybackStateCompat.STATE_PAUSED,
+        PlaybackStateCompat.STATE_PLAYING,
+        PlaybackStateCompat.STATE_STOPPED
+)
+
+/**
+ * In these states, a TestStep should log the state along with any warnings (e.g. if the state is
+ * STATE_SKIPPING_TO_NEXT but the request was skipToPrevious), and return STEP_CONTINUE.
+ */
+val transitionStates = intArrayOf(
+        PlaybackStateCompat.STATE_BUFFERING,
+        PlaybackStateCompat.STATE_CONNECTING,
+        PlaybackStateCompat.STATE_FAST_FORWARDING,
+        PlaybackStateCompat.STATE_REWINDING,
+        PlaybackStateCompat.STATE_SKIPPING_TO_NEXT,
+        PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS,
+        PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM
+)
 
 interface TestStep {
     val test: Test
@@ -276,58 +319,9 @@ class ConfigureSkipToItem(override val test: Test, private val query: String) : 
 }
 
 /**
- * PASS: metadata must not change and state must be STATE_PLAYING or STATE_BUFFERING
- * CONTINUE: null or original state
- * FAIL: metadata changes or any other state
- */
-class WaitForBufferingOrPlaying(override val test: Test) : TestStep {
-    override val logTag = "${test.name}.WFBOP"
-    override fun execute(
-            currState: PlaybackStateCompat?,
-            currMetadata: MediaMetadataCompat?
-    ): TestStepStatus {
-        test.testLogger(
-                logTag,
-                "Comparing original metadata ${test.origMetadata.toBasicString()} to current "
-                        + "metadata ${currMetadata.toBasicString()}"
-        )
-        // Metadata should not change for this step, but some apps "update" the Metadata with the
-        // same media item.
-        if (test.origMetadata != null && !test.origMetadata.isContentSameAs(currMetadata)) {
-            test.testLogger(logTag, "Failed: Metadata changed")
-            return TestStepStatus.STEP_FAIL
-        }
-
-        return when (currState?.state) {
-            null -> {
-                test.testLogger(logTag, "Warning: PlaybackState is null")
-                TestStepStatus.STEP_CONTINUE
-            }
-            PlaybackStateCompat.STATE_BUFFERING -> {
-                test.testLogger(logTag, "Passed: STATE_BUFFERING")
-                TestStepStatus.STEP_PASS
-            }
-            PlaybackStateCompat.STATE_PLAYING -> {
-                test.testLogger(logTag, "Passed: STATE_PLAYING")
-                TestStepStatus.STEP_PASS
-            }
-            test.origState?.state -> {
-                // Sometimes apps "update" the Playback State without any changes
-                test.testLogger(logTag, "Continuing: ${playbackStateToName(currState.state)}")
-                TestStepStatus.STEP_CONTINUE
-            }
-            else -> {
-                test.testLogger(logTag, "Failed: ${playbackStateToName(currState.state)}")
-                TestStepStatus.STEP_FAIL
-            }
-        }
-    }
-}
-
-/**
- * PASS: metadata must not change and state must be STATE_PLAYING
- * CONTINUE: null or original state
- * FAIL: metadata changes or any other state
+ * PASS: metadata must not change, and state must be STATE_PLAYING
+ * CONTINUE: null state, original state, transition states
+ * FAIL: metadata changes, any other terminal state
  */
 class WaitForPlaying(override val test: Test) : TestStep {
     override val logTag = "${test.name}.WFP"
@@ -347,22 +341,22 @@ class WaitForPlaying(override val test: Test) : TestStep {
             return TestStepStatus.STEP_FAIL
         }
 
-        return when (currState?.state) {
-            null -> {
+        return when {
+            currState?.state == null -> {
                 test.testLogger(logTag, "Warning: PlaybackState is null")
                 TestStepStatus.STEP_CONTINUE
             }
-            PlaybackStateCompat.STATE_PLAYING -> {
-                test.testLogger(logTag, "Passed: STATE_PLAYING")
+            currState.state == PlaybackStateCompat.STATE_PLAYING -> {
                 TestStepStatus.STEP_PASS
             }
-            test.origState?.state -> {
-                // Sometimes apps "update" the Playback State without any changes
-                test.testLogger(logTag, "Continuing: ${playbackStateToName(currState.state)}")
+            currState.state == test.origState?.state
+                    || transitionStates.contains(currState.state) -> {
+                // Sometimes apps "update" the Playback State without any changes or may enter an
+                // unexpected transition state
                 TestStepStatus.STEP_CONTINUE
             }
             else -> {
-                test.testLogger(logTag, "Failed: ${playbackStateToName(currState.state)}")
+                // All terminal states other than STATE_PLAYING
                 TestStepStatus.STEP_FAIL
             }
         }
