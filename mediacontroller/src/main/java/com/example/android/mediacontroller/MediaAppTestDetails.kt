@@ -364,6 +364,73 @@ class WaitForPlaying(override val test: Test) : TestStep {
 }
 
 /**
+ * PASS: Metadata must change. If metadata changes to a new media item then state must be
+ *       STATE_PLAYING, if metadata just updates to the same media item then state must be the same
+ *       as it originally was. In both cases, playback position must be at 0
+ * CONTINUE: null state, original state, transition states
+ * FAIL: metadata doesn't change, any other state where all pass conditions aren't met
+ */
+class WaitForSkip(override val test: Test) : TestStep {
+    override val logTag = "${test.name}.WFS"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        var itemChanged = test.extras.getBoolean("METADATA_CHANGED")
+        val stepTrigger = test.extras.getInt("STEP_TRIGGER")
+        val isNewItem = !test.origMetadata.isContentSameAs(currMetadata)
+
+        test.testLogger(
+                logTag,
+                "Comparing original metadata ${test.origMetadata.toBasicString()} to current "
+                        + "metadata ${currMetadata.toBasicString()}"
+        )
+        // Metadata needs to change for this step, but it might "change" to the same item. There
+        // must be at least one metadata update for the step to pass
+        if (isNewItem) {
+            // Skipped to new media item
+            itemChanged = true
+            test.testLogger(logTag, "Running: Metadata changed")
+        } else if (stepTrigger == Test.METADATA_CHANGED) {
+            // Skipped to same media item
+            itemChanged = true
+            test.testLogger(logTag, "Running: Metadata updated")
+        }
+        test.extras.putBoolean("METADATA_CHANGED", itemChanged)
+
+        return when {
+            currState?.state == null -> {
+                test.testLogger(logTag, "Warning: PlaybackState is null")
+                TestStepStatus.STEP_CONTINUE
+            }
+            (isNewItem && currState.state == PlaybackStateCompat.STATE_PLAYING)
+                    || (!isNewItem && currState.state == test.origState?.state) -> {
+                if (itemChanged && (abs(currState.position) <= Test.POSITION_LENIENCY)) {
+                    // All conditions satisfied
+                    TestStepStatus.STEP_PASS
+                } else {
+                    test.testLogger(
+                            logTag,
+                            "Running: Either metadata is unchanged or position is non-zero"
+                    )
+                    TestStepStatus.STEP_CONTINUE
+                }
+            }
+            currState.state == test.origState?.state
+                    || transitionStates.contains(currState.state) -> {
+                // Sometimes apps "update" the Playback State without any changes or may enter an
+                // unexpected transition state
+                TestStepStatus.STEP_CONTINUE
+            }
+            else -> {
+                // All terminal states other than STATE_PLAYING and STATE_PAUSED
+                TestStepStatus.STEP_FAIL
+            }
+        }
+    }
+}
+
+/**
  * PASS: state must be STATE_PLAYING and playback position must be at the start of the media item
  * CONTINUE: null or original state, STATE_PLAYING but non-zero playback position
  * FAIL: any other state
@@ -391,115 +458,6 @@ class WaitForPlayingBeginning(override val test: Test) : TestStep {
                 }
             }
             test.origState?.state -> {
-                // Sometimes apps "update" the Playback State without any changes
-                test.testLogger(logTag, "Continuing: ${playbackStateToName(currState.state)}")
-                TestStepStatus.STEP_CONTINUE
-            }
-            else -> {
-                test.testLogger(logTag, "Failed: ${playbackStateToName(currState.state)}")
-                TestStepStatus.STEP_FAIL
-            }
-        }
-    }
-}
-
-/**
- * PASS: state must be the same as when the test began and playback position must be at the start
- *       of the media item
- * CONTINUE: null state, original state but non-zero playback position
- * FAIL: any other state
- *
- * Note: No metadata checks
- */
-class WaitForOriginalBeginning(override val test: Test) : TestStep {
-    override val logTag = "${test.name}.WFOB"
-    override fun execute(
-            currState: PlaybackStateCompat?,
-            currMetadata: MediaMetadataCompat?
-    ): TestStepStatus {
-        return when (currState?.state) {
-            null -> {
-                test.testLogger(logTag, "Continuing: null")
-                TestStepStatus.STEP_CONTINUE
-            }
-            test.origState?.state -> {
-                if (abs(currState.position) < Test.POSITION_LENIENCY) {
-                    test.testLogger(logTag, "Passed: ${playbackStateToName(currState.state)}")
-                    TestStepStatus.STEP_PASS
-                } else {
-                    test.testLogger(logTag, "Continuing: ${playbackStateToName(currState.state)}"
-                            + ", but not at beginning")
-                    TestStepStatus.STEP_CONTINUE
-                }
-            }
-            else -> {
-                test.testLogger(logTag, "Failed: ${playbackStateToName(currState.state)}")
-                TestStepStatus.STEP_FAIL
-            }
-        }
-    }
-}
-
-/**
- * PASS: metadata must change and playback position must be at the start of the media item
- * CONTINUE: playback position is 0 but metadata hasn't changed, null or original state,
- *           STATE_SKIPPING_TO_*, STATE_BUFFERING, STATE_PLAYING
- * FAIL: any other state
- */
-class WaitForSkipPositionReset(override val test: Test) : TestStep {
-    override val logTag = "${test.name}.WFSPR"
-    override fun execute(
-            currState: PlaybackStateCompat?,
-            currMetadata: MediaMetadataCompat?
-    ): TestStepStatus {
-        var metadataChanged = test.extras.getBoolean("METADATA_CHANGED")
-        val stepTrigger = test.extras.getInt("STEP_TRIGGER")
-
-        test.testLogger(
-                logTag,
-                "Comparing original metadata ${test.origMetadata.toBasicString()} to current "
-                        + "metadata ${currMetadata.toBasicString()}"
-        )
-        // Metadata needs to change for this step, but it might "change" to the same item. There
-        // must be at least one metadata update for the step to pass
-        if (test.origMetadata != null && !test.origMetadata.isContentSameAs(currMetadata)) {
-            // Skipped to new media item
-            metadataChanged = true
-            test.testLogger(logTag, "Running: Metadata changed")
-        } else if (stepTrigger == Test.METADATA_CHANGED) {
-            // Skipped to same media item
-            metadataChanged = true
-            test.testLogger(logTag, "Running: Metadata updated")
-        }
-        test.extras.putBoolean("METADATA_CHANGED", metadataChanged)
-
-        val validStates = intArrayOf(
-                PlaybackStateCompat.STATE_SKIPPING_TO_NEXT,
-                PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS,
-                PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM,
-                PlaybackStateCompat.STATE_BUFFERING,
-                PlaybackStateCompat.STATE_PLAYING
-        )
-
-        return when {
-            currState?.state == null -> {
-                test.testLogger(logTag, "Continuing: null")
-                TestStepStatus.STEP_CONTINUE
-            }
-            abs(currState.position) < Test.POSITION_LENIENCY -> {
-                if (metadataChanged) {
-                    test.testLogger(logTag, "Passed: Position reset")
-                    TestStepStatus.STEP_PASS
-                } else {
-                    test.testLogger(logTag, "Continuing: Position reset but old metadata")
-                    TestStepStatus.STEP_CONTINUE
-                }
-            }
-            validStates.contains(currState.state) -> {
-                test.testLogger(logTag, "Continuing: ${playbackStateToName(currState.state)}")
-                TestStepStatus.STEP_CONTINUE
-            }
-            currState.state == test.origState?.state -> {
                 // Sometimes apps "update" the Playback State without any changes
                 test.testLogger(logTag, "Continuing: ${playbackStateToName(currState.state)}")
                 TestStepStatus.STEP_CONTINUE

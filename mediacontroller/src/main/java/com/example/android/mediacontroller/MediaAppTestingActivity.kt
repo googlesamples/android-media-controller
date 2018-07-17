@@ -400,8 +400,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     ::logTestUpdate
             ).apply {
                 addStep(ConfigureSkipToNext(this))
-                addStep(WaitForSkipPositionReset(this))
-                addStep(WaitForPlayingBeginning(this))
+                addStep(WaitForSkip(this))
                 runTest()
             }
         }
@@ -425,8 +424,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     ::logTestUpdate
             ).apply {
                 addStep(ConfigureSkipToPrevious(this))
-                addStep(WaitForSkipPositionReset(this))
-                addStep(WaitForOriginalBeginning(this))
+                addStep(WaitForSkip(this))
                 runTest()
             }
         }
@@ -450,8 +448,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     ::logTestUpdate
             ).apply {
                 addStep(ConfigureSkipToItem(this, query))
-                addStep(WaitForSkipPositionReset(this))
-                addStep(WaitForPlayingBeginning(this))
+                addStep(WaitForSkip(this))
                 runTest()
             }
         }
