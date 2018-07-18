@@ -18,11 +18,13 @@ package com.example.android.mediacontroller
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import org.json.JSONObject
 
 /**
  * Central location for utility functions that will be used throughout testing
  */
 
+const val METADATA_KEY_PREFIX = "android.media.metadata."
 
 // Title, Artist, and Duration seem to always be present for a given Media Item, so these
 // three Metadata Keys are used to identify unique Media Items
@@ -50,8 +52,9 @@ fun MediaMetadataCompat?.toBasicString(): String {
             + this.getLong(MediaMetadataCompat.METADATA_KEY_DURATION) + "}")
 }
 
-fun playbackStateToName(playbackState: Int): String {
+fun playbackStateToName(playbackState: Int?): String {
     return when (playbackState) {
+        null -> "!null!"
         PlaybackStateCompat.STATE_NONE -> "STATE_NONE"
         PlaybackStateCompat.STATE_STOPPED -> "STATE_STOPPED"
         PlaybackStateCompat.STATE_PAUSED -> "STATE_PAUSED"
@@ -68,8 +71,9 @@ fun playbackStateToName(playbackState: Int): String {
     }
 }
 
-fun errorCodeToName(code: Int): String {
+fun errorCodeToName(code: Int?): String {
     return when (code) {
+        null -> "!null!"
         PlaybackStateCompat.ERROR_CODE_UNKNOWN_ERROR -> "ERROR_CODE_UNKNOWN_ERROR"
         PlaybackStateCompat.ERROR_CODE_APP_ERROR -> "ERROR_CODE_APP_ERROR"
         PlaybackStateCompat.ERROR_CODE_NOT_SUPPORTED -> "ERROR_CODE_NOT_SUPPORTED"
@@ -92,8 +96,9 @@ fun errorCodeToName(code: Int): String {
     }
 }
 
-fun actionToString(action: Long): String {
+fun actionToString(action: Long?): String {
     return when (action) {
+        null -> "!null!"
         PlaybackStateCompat.ACTION_PREPARE -> "ACTION_PREPARE"
         PlaybackStateCompat.ACTION_PREPARE_FROM_MEDIA_ID -> "ACTION_PREPARE_FROM_MEDIA_ID"
         PlaybackStateCompat.ACTION_PREPARE_FROM_SEARCH -> "ACTION_PREPARE_FROM_SEARCH"
@@ -188,8 +193,9 @@ fun actionsToString(actions: Long): String {
     return s
 }
 
-fun repeatModeToName(mode: Int): String {
+fun repeatModeToName(mode: Int?): String {
     return when (mode) {
+        null -> "!null!"
         PlaybackStateCompat.REPEAT_MODE_ALL -> "ALL"
         PlaybackStateCompat.REPEAT_MODE_GROUP -> "GROUP"
         PlaybackStateCompat.REPEAT_MODE_INVALID -> "INVALID"
@@ -199,8 +205,9 @@ fun repeatModeToName(mode: Int): String {
     }
 }
 
-fun shuffleModeToName(mode: Int): String {
+fun shuffleModeToName(mode: Int?): String {
     return when (mode) {
+        null -> "!null!"
         PlaybackStateCompat.SHUFFLE_MODE_ALL -> "ALL"
         PlaybackStateCompat.SHUFFLE_MODE_GROUP -> "GROUP"
         PlaybackStateCompat.SHUFFLE_MODE_INVALID -> "INVALID"
@@ -209,99 +216,103 @@ fun shuffleModeToName(mode: Int): String {
     }
 }
 
-fun formatPlaybackState(state: PlaybackStateCompat): String {
-    var formattedString = "State:                     " + playbackStateToName(state.state)
-    if (state.state == PlaybackStateCompat.STATE_ERROR) {
-        formattedString += ("\nError Code:                " + errorCodeToName(state.errorCode)
-                + "\nError Message:             " + state.errorMessage)
+fun formatPlaybackState(state: PlaybackStateCompat?): String {
+    if (state == null) {
+        return "!null!"
     }
-    formattedString += ("\nPosition:                  " + state.position
+
+    val errorCode: String
+    val errorMessage: String
+    if (state.state == PlaybackStateCompat.STATE_ERROR) {
+        errorCode = errorCodeToName(state.errorCode)
+        errorMessage = state.errorMessage.toString()
+    } else {
+        errorCode = "N/A"
+        errorMessage = "N/A"
+    }
+
+    return ("State:                     " + playbackStateToName(state.state)
+            + "\nError Code:                " + errorCode
+            + "\nError Message:             " + errorMessage
+            + "\nPosition:                  " + state.position
             + "\nBuffered Position:         " + state.bufferedPosition
             + "\nLast Position Update Time: " + state.lastPositionUpdateTime
             + "\nPlayback Speed:            " + state.playbackSpeed
             + "\nActive Queue Item ID:      " + state.activeQueueItemId
             + "\nActions: " + actionsToString(state.actions))
-    return formattedString
 }
 
-fun getMetadataKey(metadata: MediaMetadataCompat, key: String, type: Int = 0): String? {
+fun formatPlaybackStateParsable(state: PlaybackStateCompat?): String {
+    if (state == null) {
+        return "null,null,null,null,null,null,null,null,null"
+    }
+
+    return ("${state.state},${state.errorCode},${state.errorMessage},${state.position},"
+            + "${state.bufferedPosition},${state.lastPositionUpdateTime},"
+            + "${state.playbackSpeed},${state.activeQueueItemId},${state.actions}")
+}
+
+fun getMetadataKey(metadata: MediaMetadataCompat?, key: String): String {
+    if (metadata == null) {
+        return "!null!"
+    }
+
+    val longValues = arrayOf(
+            MediaMetadataCompat.METADATA_KEY_DISC_NUMBER,
+            MediaMetadataCompat.METADATA_KEY_DURATION,
+            MediaMetadataCompat.METADATA_KEY_NUM_TRACKS,
+            MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER
+    )
+    val bitmapValues = arrayOf(
+            MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+            MediaMetadataCompat.METADATA_KEY_ART,
+            MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON
+    )
+    val ratingValues = arrayOf(
+            MediaMetadataCompat.METADATA_KEY_RATING,
+            MediaMetadataCompat.METADATA_KEY_USER_RATING
+    )
+
     if (metadata.containsKey(key)) {
-        return when (type) {
-            0 -> metadata.getString(key)
-            1 -> metadata.getLong(key).toString()
-            2 -> "Bitmap" //metadata.getBitmap(key)
-            3 -> "Rating" //metadata.getRating(key)
-            else -> "!Unknown type!"
+        return when {
+            longValues.contains(key) -> metadata.getLong(key).toString()
+            bitmapValues.contains(key) -> "Bitmap" //metadata.getBitmap(key)
+            ratingValues.contains(key) -> "Rating" //metadata.getRating(key)
+            else -> metadata.getString(key)
         }
     }
     return "!Not present!"
 }
 
-fun formatMetadata(metadata: MediaMetadataCompat): String {
-    var s = ("MEDIA_ID:            "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_MEDIA_ID))
-    s += ("\nADVERTISEMENT:       "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ADVERTISEMENT))
-    s += ("\nALBUM:               "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ALBUM))
-    s += ("\nALBUM_ART:           "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ALBUM_ART, 2))
-    s += ("\nALBUM_ART_URI:       "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI))
-    s += ("\nALBUM_ARTIST:        "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ALBUM_ARTIST))
-    s += ("\nART:                 "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ART, 2))
-    s += ("\nART_URI:             "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ART_URI))
-    s += ("\nARTIST:              "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_ARTIST))
-    s += ("\nAUTHOR:              "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_AUTHOR))
-    s += ("\nBT_FOLDER_TYPE:      "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_BT_FOLDER_TYPE))
-    s += ("\nCOMPILATION:         "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_COMPILATION))
-    s += ("\nCOMPOSER:            "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_COMPOSER))
-    s += ("\nDATE:                "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DATE))
-    s += ("\nDISC_NUMBER:         "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISC_NUMBER, 1))
-    s += ("\nDISPLAY_DESCRIPTION: "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION))
-    s += ("\nDISPLAY_ICON:        "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, 2))
-    s += ("\nDISPLAY_ICON_URI:    "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI))
-    s += ("\nDISPLAY_SUBTITLE:    "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE))
-    s += ("\nDISPLAY_TITLE:       "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE))
-    s += ("\nDOWNLOAD_STATUS:     "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DOWNLOAD_STATUS))
-    s += ("\nDURATION:            "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_DURATION, 1))
-    s += ("\nGENRE:               "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_GENRE))
-    s += ("\nMEDIA_URI:           "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_MEDIA_URI))
-    s += ("\nNUM_TRACKS:          "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, 1))
-    s += ("\nRATING:              "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_RATING, 3))
-    s += ("\nTITLE:               "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_TITLE))
-    s += ("\nTRACK_NUMBER:        "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, 1))
-    s += ("\nUSER_RATING:         "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_USER_RATING, 3))
-    s += ("\nWRITER:              "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_WRITER))
-    s += ("\nYEAR:                "
-            + getMetadataKey(metadata, MediaMetadataCompat.METADATA_KEY_YEAR))
+fun formatMetadata(metadata: MediaMetadataCompat?): String {
+    if (metadata == null) {
+        return "!null!"
+    }
 
-    return s
+    val keys = metadata.keySet()
+    var s = ""
+    keys.forEach { key ->
+        val label = if (key.startsWith(METADATA_KEY_PREFIX)) {
+            "${key.substringAfter(METADATA_KEY_PREFIX)}:".padEnd(20, ' ')
+        } else {
+            "$key:".padEnd(20, ' ')
+        }
+        s += "$label ${getMetadataKey(metadata, key)}\n"
+    }
+    return s.substringBeforeLast("\n")
+}
+
+fun formatMetadataParsable(metadata: MediaMetadataCompat?): String {
+    if (metadata == null) {
+        return "!null!"
+    }
+
+    val keys = metadata.keySet()
+    val map: MutableMap<String, String> = mutableMapOf()
+    keys.forEach { key ->
+        map.put(key, getMetadataKey(metadata, key))
+    }
+    return JSONObject(map).toString()
 }
 
 fun queueToString(queue: MutableList<MediaSessionCompat.QueueItem>): String {
@@ -310,6 +321,15 @@ fun queueToString(queue: MutableList<MediaSessionCompat.QueueItem>): String {
         val desc = item.description
         s += ("\nQueue ID: ${item.queueId}, Title: ${desc.title}, Subtitle: ${desc.subtitle}, "
                 + "Media ID: ${desc.mediaId}, Media URI: ${desc.mediaUri}")
+    }
+    return s
+}
+
+fun queueToStringParsable(queue: MutableList<MediaSessionCompat.QueueItem>): String {
+    var s = "${queue.size}"
+    for (item in queue) {
+        val desc = item.description
+        s += ",${item.queueId}|${desc.title}|${desc.subtitle}|${desc.mediaId}|${desc.mediaUri}"
     }
     return s
 }

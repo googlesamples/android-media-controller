@@ -22,6 +22,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.os.RemoteException
 import android.support.design.widget.TabLayout
+import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -36,6 +37,8 @@ import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -73,6 +76,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
     private var mediaAppDetails: MediaAppDetails? = null
     private var mediaController: MediaControllerCompat? = null
     private var mediaBrowser: MediaBrowserCompat? = null
+
+    private var printLogsFormatted: Boolean = true
 
     private lateinit var viewPager: ViewPager
     private lateinit var testsQuery: EditText
@@ -234,6 +239,29 @@ class MediaAppTestingActivity : AppCompatActivity() {
     private fun showError(message: String) {
         connectionErrorText.text = message
         connectionErrorText.visibility = View.VISIBLE
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.testing, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        if (item != null && item.itemId == R.id.logs_toggle) {
+            if (printLogsFormatted) {
+                item.icon = ContextCompat.getDrawable(this, R.drawable.ic_parsable_logs_24dp)
+                Log.i(TAG, getString(R.string.logs_activate_parsable))
+                showToast(getString(R.string.logs_activate_parsable))
+                printLogsFormatted = false
+            } else {
+                item.icon = ContextCompat.getDrawable(this, R.drawable.ic_formatted_logs_24dp)
+                Log.i(TAG, getString(R.string.logs_activate_formatted))
+                showToast(getString(R.string.logs_activate_formatted))
+                printLogsFormatted = true
+            }
+        }
+
+        return true
     }
 
     private fun setupToolbar(name: String, icon: Bitmap) {
@@ -602,7 +630,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     .format(Date())
             val update = "[$date] <$logTag>:\n$message"
 
-            Log.i(logTag, update)
+            if (printLogsFormatted) {
+                Log.i(logTag, update)
+            } else {
+                Log.i(logTag, "<$logTag> [$date] $message")
+            }
 
             val newLine = TextView(this)
             newLine.text = update
@@ -703,41 +735,69 @@ class MediaAppTestingActivity : AppCompatActivity() {
     private var controllerCallback: MediaControllerCompat.Callback =
             object : MediaControllerCompat.Callback() {
                 override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                    val s = if (state == null) "!null!" else formatPlaybackState(state)
-                    Log.i(TAG, "<PlaybackState>\n$s")
+                    val s = formatPlaybackState(state)
+                    if (printLogsFormatted) {
+                        Log.i(TAG, "<PlaybackState>\n$s")
+                    } else {
+                        Log.i(TAG, "<PlaybackState>,${formatPlaybackStateParsable(state)}")
+                    }
                     playbackStateText.text = s
                 }
 
                 override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-                    val s = if (metadata == null) "!null!" else formatMetadata(metadata)
-                    Log.i(TAG, "<Metadata>\n$s")
+                    val s = formatMetadata(metadata)
+                    if (printLogsFormatted) {
+                        Log.i(TAG, "<Metadata>\n$s")
+                    } else {
+                        Log.i(TAG, "<Metadata>,${formatMetadataParsable(metadata)}")
+                    }
                     metadataText.text = s
                 }
 
                 override fun onRepeatModeChanged(repeatMode: Int) {
                     val s = repeatModeToName(repeatMode)
-                    Log.i(TAG, "<RepeatMode>\n$s")
+                    if (printLogsFormatted) {
+                        Log.i(TAG, "<RepeatMode>\n$s")
+                    } else {
+                        Log.i(TAG, "<RepeatMode>,$repeatMode")
+                    }
                     repeatModeText.text = s
                 }
 
                 override fun onShuffleModeChanged(shuffleMode: Int) {
                     val s = shuffleModeToName(shuffleMode)
-                    Log.i(TAG, "<ShuffleMode>\n$s")
+                    if (printLogsFormatted) {
+                        Log.i(TAG, "<ShuffleMode>\n$s")
+                    } else {
+                        Log.i(TAG, "<ShuffleMode>,$shuffleMode")
+                    }
                     shuffleModeText.text = s
                 }
 
                 override fun onQueueTitleChanged(title: CharSequence?) {
-                    Log.i(TAG, "<QueueTitle>\n$title")
+                    if (printLogsFormatted) {
+                        Log.i(TAG, "<QueueTitle>\n$title")
+                    } else {
+                        Log.i(TAG, "<QueueTitle>,$title")
+                    }
                     queueTitleText.text = title
                 }
 
                 override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
                     if (queue == null) {
-                        Log.i(TAG, "<Queue>\nnull")
+                        if (printLogsFormatted) {
+                            Log.i(TAG, "<Queue>\nnull")
+                        } else {
+                            Log.i(TAG, "<Queue>,0")
+                        }
                         queueText.text = getString(R.string.tests_info_queue_null)
                         populateQueue(emptyList<MediaSessionCompat.QueueItem>().toMutableList())
                     } else {
-                        Log.i(TAG, queueToString(queue))
+                        if (printLogsFormatted) {
+                            Log.i(TAG, "<Queue>\n${queueToString(queue)}")
+                        } else {
+                            Log.i(TAG, "<Queue>,${queueToStringParsable(queue)}")
+                        }
                         queueText.text = getString(R.string.queue_size, queue.size)
                         populateQueue(queue)
                     }

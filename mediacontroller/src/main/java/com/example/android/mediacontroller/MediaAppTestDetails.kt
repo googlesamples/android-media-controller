@@ -57,7 +57,10 @@ class Test(
     }
 
     fun runTest() {
-        currentTest?.endTest()
+        currentTest?.run {
+            testLogger(name, "Interrupted: Ending")
+            endTest()
+        }
         currentTest = this
         origState = mediaController.playbackState
         origMetadata = mediaController.metadata
@@ -158,6 +161,7 @@ class Test(
 
     fun endTest() {
         mediaController.unregisterCallback(callback)
+        currentTest = null
         quit()
     }
 

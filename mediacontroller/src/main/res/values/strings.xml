@@ -146,6 +146,12 @@
     <string name="tests_results_header">Results</string>
     <string name="tests_query_hint">Query</string>
 
+    <string name="logs_toggle_title">Logs Toggle</string>
+    <string name="logs_formatted">Formatted</string>
+    <string name="logs_parsable">Parsable</string>
+    <string name="logs_activate_formatted">Formatted logs activated.</string>
+    <string name="logs_activate_parsable">Parsable logs activated.</string>
+
     <string name="play_test_desc">This tests the \'play\' functionality.</string>
     <string name="play_search_test_desc">This tests the \'play from search\' functionality. Enter the search query in the query field.</string>
     <string name="play_media_id_test_desc">This tests the \'play from media id\' functionality. Enter the Media ID of the desired media item in the query field.</string>
