@@ -62,16 +62,15 @@ class Test(
             endTest()
         }
         currentTest = this
-        origState = mediaController.playbackState
-        origMetadata = mediaController.metadata
 
         // Start Looper
         start()
         testLogger(
                 name,
                 "Starting test with state " + playbackStateToName(
-                        origState?.state ?: PlaybackStateCompat.STATE_NONE
-                ) + " and metadata ${origMetadata.toBasicString()}"
+                        mediaController.playbackState?.state
+                                ?: PlaybackStateCompat.STATE_NONE
+                ) + " and metadata ${mediaController.metadata.toBasicString()}"
         )
 
         handler = object : Handler(this.looper) {
@@ -232,15 +231,17 @@ interface TestStep {
 
 /*
  * "Configure" steps will:
- * 1. (if applicable) parse the query text into a value usable by the transport control request
- * 2. Check if the action to be tested is marked as supported
- * 3. Send the appropriate transport control request
+ * 1. Populate the Test's original state and original metadata variables
+ * 2. (If applicable) parse the query text into a value usable by the transport control request
+ * 3. Check if the action to be tested is marked as supported
+ * 4. Send the appropriate transport control request
  * If the query is unable to be parsed into a usable format, the step will FAIL.
  * Otherwise, the step will always PASS. The transport control request will be sent regardless of
  * whether or not the action is in the supported actions list (for the case where the supported
  * actions list is mis-configured). The assumption is that the MediaController will successfully
  * send the transport control request to the MediaSession, since this communication is handled by
  * Android libraries.
+ * Configure steps should only run once (i.e. never return CONTINUE).
  */
 
 /**
@@ -253,6 +254,9 @@ class ConfigurePlay(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY)
         test.testLogger(logTag, "Running: Sending play() TransportControl request")
         test.mediaController.transportControls.play()
@@ -286,6 +290,8 @@ class ConfigurePlayFromSearch(override val test: Test, private val query: String
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
         val extras = makePlayFromBundle(query)
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH)
@@ -309,6 +315,9 @@ class ConfigurePlayFromMediaId(override val test: Test, private val query: Strin
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         if (query == "") {
             test.testLogger(logTag, "Error: empty query")
             return TestStepStatus.STEP_FAIL
@@ -337,6 +346,9 @@ class ConfigurePlayFromUri(override val test: Test, private val query: String) :
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         if (query == "") {
             test.testLogger(logTag, "Error: empty query")
             return TestStepStatus.STEP_FAIL
@@ -365,6 +377,9 @@ class ConfigurePause(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PAUSE)
         test.testLogger(logTag, "Running: Sending pause() TransportControl request")
         test.mediaController.transportControls.pause()
@@ -382,6 +397,9 @@ class ConfigureStop(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         checkActionSupported(currState, PlaybackStateCompat.ACTION_STOP)
         test.testLogger(logTag, "Running: Sending stop() TransportControl request")
         test.mediaController.transportControls.stop()
@@ -400,6 +418,9 @@ class ConfigureSkipToNext(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
         test.extras.putBoolean("METADATA_CHANGED", false)
         test.testLogger(logTag, "Running: Sending skipToNext() TransportControl request")
@@ -419,6 +440,9 @@ class ConfigureSkipToPrevious(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
         test.extras.putBoolean("METADATA_CHANGED", false)
         test.testLogger(logTag, "Running: Sending skipToPrevious() TransportControl request")
@@ -440,6 +464,9 @@ class ConfigureSkipToItem(override val test: Test, private val query: String) : 
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         val itemId = query.toLongOrNull()
         if (itemId == null) {
             test.testLogger(logTag, "Error: Couldn't parse query [$query]")
@@ -471,6 +498,9 @@ class ConfigureSeekTo(override val test: Test, private val query: String) : Test
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
+        test.origState = test.mediaController.playbackState
+        test.origMetadata = test.mediaController.metadata
+
         val currentTime = currState?.position
         if (currentTime == null) {
             test.testLogger(logTag, "Failed: Can't determine current position")
