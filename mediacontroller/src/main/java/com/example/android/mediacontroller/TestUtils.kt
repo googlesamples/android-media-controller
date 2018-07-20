@@ -315,7 +315,8 @@ fun formatMetadataParsable(metadata: MediaMetadataCompat?): String {
     return JSONObject(map).toString()
 }
 
-fun queueToString(queue: MutableList<MediaSessionCompat.QueueItem>): String {
+fun queueToString(_queue: MutableList<MediaSessionCompat.QueueItem>?): String {
+    val queue = _queue ?: emptyList<MediaSessionCompat.QueueItem>().toMutableList()
     var s = "${queue.size} items in the queue"
     for (item in queue) {
         val desc = item.description
@@ -325,7 +326,8 @@ fun queueToString(queue: MutableList<MediaSessionCompat.QueueItem>): String {
     return s
 }
 
-fun queueToStringParsable(queue: MutableList<MediaSessionCompat.QueueItem>): String {
+fun queueToStringParsable(_queue: MutableList<MediaSessionCompat.QueueItem>?): String {
+    val queue = _queue ?: emptyList<MediaSessionCompat.QueueItem>().toMutableList()
     var s = "${queue.size}"
     for (item in queue) {
         val desc = item.description

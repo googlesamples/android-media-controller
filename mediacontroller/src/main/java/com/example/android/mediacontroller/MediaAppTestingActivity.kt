@@ -96,6 +96,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val toolbar: Toolbar = toolbar
         setSupportActionBar(toolbar)
 
+        Test.androidResources = resources
+
         viewPager = view_pager
         testsQuery = tests_query
         resultsContainer = test_results_container
@@ -323,7 +325,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
     private fun setupMediaController(useTokenFromBrowser: Boolean) {
         try {
-            lateinit var token: MediaSessionCompat.Token
+            val token: MediaSessionCompat.Token
             // setupMediaController() is only called either immediately after the mediaBrowser is
             // connected or if mediaAppDetails contains a sessionToken.
             if (useTokenFromBrowser) {
@@ -371,21 +373,20 @@ class MediaAppTestingActivity : AppCompatActivity() {
             // Ensure views are visible
             viewPager.visibility = View.VISIBLE
 
-            Log.d(TAG, "MediaControllerCompat created")
+            Log.d(TAG, getString(R.string.media_controller_created))
         } catch (remoteException: RemoteException) {
             Log.e(TAG, getString(R.string.media_controller_failed_msg), remoteException)
             showToast(getString(R.string.media_controller_failed_msg))
         }
     }
 
-    // TODO(nevmital): Temporary descriptions, add more details
     private fun setupTests() {
         // setupTests() should only be called after the mediaController is connected, so this
         // should never enter the if block
         val controller = mediaController
         if (controller == null) {
-            Log.e(TAG, "Unable to setup tests")
-            showToast("Unable to setup tests")
+            Log.e(TAG, getString(R.string.setup_tests_error_msg))
+            showToast(getString(R.string.setup_tests_error_msg))
             return
         }
 
@@ -396,11 +397,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * will also fail if the metadata changes unless the test began with null metadata.
          */
         val playTest = TestOptionDetails(
-                "Play",
+                getString(R.string.play_test_title),
                 getString(R.string.play_test_desc)
         ) { _ ->
             Test(
-                    "Play",
+                    getString(R.string.play_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -416,11 +417,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * and STATE_PLAYING. This test does not perform any metadata checks.
          */
         val playFromSearch = TestOptionDetails(
-                "Play From Search",
+                getString(R.string.play_search_test_title),
                 getString(R.string.play_search_test_desc)
         ) { query ->
             Test(
-                    "PlaySearch",
+                    getString(R.string.play_search_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -437,11 +438,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * perform any metadata checks.
          */
         val playFromMediaId = TestOptionDetails(
-                "Play From Media ID",
+                getString(R.string.play_media_id_test_title),
                 getString(R.string.play_media_id_test_desc)
         ) { query ->
             Test(
-                    "PlayMediaId",
+                    getString(R.string.play_media_id_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -458,11 +459,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * perform any metadata checks.
          */
         val playFromUri = TestOptionDetails(
-                "Play From URI",
+                getString(R.string.play_uri_test_title),
                 getString(R.string.play_uri_test_desc)
         ) { query ->
             Test(
-                    "PlayUri",
+                    getString(R.string.play_uri_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -479,11 +480,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * with null metadata.
          */
         val pauseTest = TestOptionDetails(
-                "Pause",
+                getString(R.string.pause_test_title),
                 getString(R.string.pause_test_desc)
         ) { _ ->
             Test(
-                    "Pause",
+                    getString(R.string.pause_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -499,11 +500,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * changes to a non-null media item different from the original media item.
          */
         val stopTest = TestOptionDetails(
-                "Stop",
+                getString(R.string.stop_test_title),
                 getString(R.string.stop_test_desc)
         ) { _ ->
             Test(
-                    "Stop",
+                    getString(R.string.stop_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -522,11 +523,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * test will not pass if the metadata doesn't get updated at some point.
          */
         val skipToNextTest = TestOptionDetails(
-                "Skip To Next",
+                getString(R.string.skip_next_test_title),
                 getString(R.string.skip_next_test_desc)
         ) { _ ->
             Test(
-                    "SkipToNext",
+                    getString(R.string.skip_next_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -545,11 +546,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * the test will not pass if the metadata doesn't get updated at some point.
          */
         val skipToPrevTest = TestOptionDetails(
-                "Skip To Previous",
+                getString(R.string.skip_prev_test_title),
                 getString(R.string.skip_prev_test_desc)
         ) { _ ->
             Test(
-                    "SkipToPrev",
+                    getString(R.string.skip_prev_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -568,11 +569,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * test will not pass if the metadata doesn't get updated at some point.
          */
         val skipToItemTest = TestOptionDetails(
-                "Skip To Queue Item",
+                getString(R.string.skip_item_test_title),
                 getString(R.string.skip_item_test_desc)
         ) { query ->
             Test(
-                    "SkipToItem",
+                    getString(R.string.skip_item_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -592,11 +593,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * Long.
          */
         val seekToTest = TestOptionDetails(
-                "Seek To",
+                getString(R.string.seek_test_title),
                 getString(R.string.seek_test_desc)
         ) { query ->
             Test(
-                    "SeekTo",
+                    getString(R.string.seek_test_logs_title),
                     controller,
                     ::logTestUpdate
             ).apply {
@@ -719,7 +720,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
         override fun getItemCount() = items.size
     }
 
-    private fun populateQueue(queue: MutableList<MediaSessionCompat.QueueItem>) {
+    private fun populateQueue(_queue: MutableList<MediaSessionCompat.QueueItem>?) {
+        val queue = _queue ?: emptyList<MediaSessionCompat.QueueItem>().toMutableList()
         val queueItemAdapter = QueueItemAdapter(queue)
         val queueList = queue_item_list
         queueList.layoutManager = object : LinearLayoutManager(this) {
@@ -754,9 +756,17 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                     val s = formatPlaybackState(state)
                     if (printLogsFormatted) {
-                        Log.i(TAG, "<PlaybackState>\n$s")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_formatted,
+                                getString(R.string.tests_info_state),
+                                s
+                        ))
                     } else {
-                        Log.i(TAG, "<PlaybackState>,${formatPlaybackStateParsable(state)}")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_parsable,
+                                getString(R.string.tests_info_state),
+                                formatPlaybackStateParsable(state)
+                        ))
                     }
                     playbackStateText.text = s
                 }
@@ -764,9 +774,17 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
                     val s = formatMetadata(metadata)
                     if (printLogsFormatted) {
-                        Log.i(TAG, "<Metadata>\n$s")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_formatted,
+                                getString(R.string.tests_info_metadata),
+                                s
+                        ))
                     } else {
-                        Log.i(TAG, "<Metadata>,${formatMetadataParsable(metadata)}")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_parsable,
+                                getString(R.string.tests_info_metadata),
+                                formatMetadataParsable(metadata)
+                        ))
                     }
                     metadataText.text = s
                 }
@@ -774,9 +792,17 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 override fun onRepeatModeChanged(repeatMode: Int) {
                     val s = repeatModeToName(repeatMode)
                     if (printLogsFormatted) {
-                        Log.i(TAG, "<RepeatMode>\n$s")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_formatted,
+                                getString(R.string.tests_info_repeat),
+                                s
+                        ))
                     } else {
-                        Log.i(TAG, "<RepeatMode>,$repeatMode")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_parsable,
+                                getString(R.string.tests_info_repeat),
+                                repeatMode.toString()
+                        ))
                     }
                     repeatModeText.text = s
                 }
@@ -784,40 +810,54 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 override fun onShuffleModeChanged(shuffleMode: Int) {
                     val s = shuffleModeToName(shuffleMode)
                     if (printLogsFormatted) {
-                        Log.i(TAG, "<ShuffleMode>\n$s")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_formatted,
+                                getString(R.string.tests_info_shuffle),
+                                s
+                        ))
                     } else {
-                        Log.i(TAG, "<ShuffleMode>,$shuffleMode")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_parsable,
+                                getString(R.string.tests_info_shuffle),
+                                shuffleMode.toString()
+                        ))
                     }
                     shuffleModeText.text = s
                 }
 
                 override fun onQueueTitleChanged(title: CharSequence?) {
                     if (printLogsFormatted) {
-                        Log.i(TAG, "<QueueTitle>\n$title")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_formatted,
+                                getString(R.string.tests_info_queue_title),
+                                title
+                        ))
                     } else {
-                        Log.i(TAG, "<QueueTitle>,$title")
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_parsable,
+                                getString(R.string.tests_info_queue_title),
+                                title
+                        ))
                     }
                     queueTitleText.text = title
                 }
 
                 override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
-                    if (queue == null) {
-                        if (printLogsFormatted) {
-                            Log.i(TAG, "<Queue>\nnull")
-                        } else {
-                            Log.i(TAG, "<Queue>,0")
-                        }
-                        queueText.text = getString(R.string.tests_info_queue_null)
-                        populateQueue(emptyList<MediaSessionCompat.QueueItem>().toMutableList())
+                    if (printLogsFormatted) {
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_formatted,
+                                getString(R.string.tests_info_queue),
+                                queueToString(queue)
+                        ))
                     } else {
-                        if (printLogsFormatted) {
-                            Log.i(TAG, "<Queue>\n${queueToString(queue)}")
-                        } else {
-                            Log.i(TAG, "<Queue>,${queueToStringParsable(queue)}")
-                        }
-                        queueText.text = getString(R.string.queue_size, queue.size)
-                        populateQueue(queue)
+                        Log.i(TAG, getString(
+                                R.string.logs_controller_info_parsable,
+                                getString(R.string.tests_info_queue),
+                                queueToStringParsable(queue)
+                        ))
                     }
+                    queueText.text = getString(R.string.queue_size, queue?.size ?: 0)
+                    populateQueue(queue)
                 }
             }
 
