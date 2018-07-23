@@ -151,6 +151,8 @@
     <string name="logs_parsable">Parsable</string>
     <string name="logs_activate_formatted">Formatted logs activated.</string>
     <string name="logs_activate_parsable">Parsable logs activated.</string>
+    <string name="logs_trigger_title">Refresh Controller Info</string>
+    <string name="logs_triggered">Updating current controller info.</string>
 
     <string name="play_test_desc">This tests the \'play\' functionality.</string>
     <string name="play_search_test_desc">This tests the \'play from search\' functionality. Enter the search query in the query field.</string>

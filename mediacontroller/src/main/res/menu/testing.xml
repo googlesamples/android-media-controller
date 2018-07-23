@@ -25,6 +25,15 @@
         android:icon="@drawable/ic_formatted_logs_24dp"
         android:title="@string/logs_toggle_title"
         app:iconTint="@color/appBarIconTint"
-        app:showAsAction="always"/>
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/logs_trigger"
+        android:enabled="true"
+        android:visible="true"
+        android:icon="@drawable/ic_refresh_controller_24dp"
+        android:title="@string/logs_trigger_title"
+        app:iconTint="@color/appBarIconTint"
+        app:showAsAction="ifRoom"/>
 
 </menu>

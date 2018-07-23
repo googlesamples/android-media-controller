@@ -247,7 +247,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (item != null && item.itemId == R.id.logs_toggle) {
+        if (item == null) {
+            return true
+        }
+
+        if (item.itemId == R.id.logs_toggle) {
             if (printLogsFormatted) {
                 item.icon = ContextCompat.getDrawable(this, R.drawable.ic_parsable_logs_24dp)
                 Log.i(TAG, getString(R.string.logs_activate_parsable))
@@ -259,6 +263,10 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 showToast(getString(R.string.logs_activate_formatted))
                 printLogsFormatted = true
             }
+        } else if (item.itemId == R.id.logs_trigger) {
+            logCurrentController()
+            Log.i(TAG, getString(R.string.logs_triggered))
+            showToast(getString(R.string.logs_triggered))
         }
 
         return true
@@ -354,14 +362,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 it.registerCallback(controllerCallback)
 
                 // Force update on connect
-                controllerCallback.run {
-                    onPlaybackStateChanged(it.playbackState)
-                    onMetadataChanged(it.metadata)
-                    onRepeatModeChanged(it.repeatMode)
-                    onShuffleModeChanged(it.shuffleMode)
-                    onQueueTitleChanged(it.queueTitle)
-                    onQueueChanged(it.queue)
-                }
+                logCurrentController(it)
             }
 
             // Setup tests once media controller is connected
@@ -727,6 +728,22 @@ class MediaAppTestingActivity : AppCompatActivity() {
             }
         }
         queueList.adapter = queueItemAdapter
+    }
+
+    private fun logCurrentController(controller: MediaControllerCompat? = mediaController) {
+        if (controller == null) {
+            showToast("Null MediaController")
+            return
+        }
+
+        controllerCallback.run {
+            onPlaybackStateChanged(controller.playbackState)
+            onMetadataChanged(controller.metadata)
+            onRepeatModeChanged(controller.repeatMode)
+            onShuffleModeChanged(controller.shuffleMode)
+            onQueueTitleChanged(controller.queueTitle)
+            onQueueChanged(controller.queue)
+        }
     }
 
     /**
