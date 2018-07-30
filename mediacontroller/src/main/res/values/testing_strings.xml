@@ -125,4 +125,9 @@
     <!-- Test Message Errors -->
     <string name="test_message_empty">Received empty message</string>
     <string name="test_message_invalid">Invalid message received</string>
+
+    <!-- TV UI Messages -->
+    <string name="tv_intro_description">Choose a test to run.</string>
+    <string name="tv_intro_breadcrumb">Testing</string>
+    <string name="tv_invalid_test">Error: Unknown test selected</string>
 </resources>

@@ -400,14 +400,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_test_title),
                 getString(R.string.play_test_desc)
         ) { _ ->
-            Test(
-                    getString(R.string.play_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigurePlay(this))
-                addStep(WaitForPlaying(this))
-            }.runTest()
+            runPlayTest(controller, ::logTestUpdate)
         }
 
         /**

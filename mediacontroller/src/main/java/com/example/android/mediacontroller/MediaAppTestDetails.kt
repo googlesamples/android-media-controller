@@ -187,6 +187,10 @@ class Test(
         const val TARGET_KEY = "TARGET_POSITION"
         const val ITEM_CHANGED_KEY = "METADATA_CHANGED"
 
+        /**
+         * TODO (b/112546844): Provide better abstraction for testing-related strings. (e.g. some
+         * sort of string provider class?)
+         */
         lateinit var androidResources: Resources
     }
 }

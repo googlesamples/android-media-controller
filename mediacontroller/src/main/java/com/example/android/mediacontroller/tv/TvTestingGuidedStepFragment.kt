@@ -24,9 +24,12 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import com.example.android.mediacontroller.MediaAppDetails
+import com.example.android.mediacontroller.R
 import com.example.android.mediacontroller.Test
 import com.example.android.mediacontroller.formatTvDetailsString
+import com.example.android.mediacontroller.runPlayTest
 
 /**
  * Lists test options and displays selected MediaController details
@@ -51,7 +54,7 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
         Test.androidResources = resources
 
         activity?.let {
-            if(it is TvTestingActivity) {
+            if (it is TvTestingActivity) {
                 mediaBrowser = it.getBrowser()
                 mediaController = it.getController()
             }
@@ -61,24 +64,45 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
     override fun onCreateGuidance(savedInstanceState: Bundle?): GuidanceStylist.Guidance {
         return GuidanceStylist.Guidance(
                 mediaAppDetails?.appName,
-                "Started",
-                "Testing",
+                getString(R.string.tv_intro_description),
+                getString(R.string.tv_intro_breadcrumb),
                 null
         )
-    }
-
-    override fun onGuidedActionClicked(action: GuidedAction?) {
-        super.onGuidedActionClicked(action)
-        guidanceStylist.descriptionView.text = mediaController?.formatTvDetailsString() ?: "Null"
-
     }
 
     override fun onCreateActions(actions: MutableList<GuidedAction>, savedInstanceState: Bundle?) {
         super.onCreateActions(actions, savedInstanceState)
         actions.add(GuidedAction.Builder(context)
-                .title("Test Action")
-                .description("Click Me")
+                .title(getString(R.string.play_test_title))
+                .description(getString(R.string.play_test_desc))
+                .id(PLAY_TEST)
                 .build()
         )
+    }
+
+    override fun onGuidedActionClicked(action: GuidedAction?) {
+        super.onGuidedActionClicked(action)
+        mediaController?.let {
+            when (action?.id) {
+                PLAY_TEST -> runPlayTest(it, ::logTestUpdate)
+                else -> Toast.makeText(
+                        activity,
+                        getString(R.string.tv_invalid_test),
+                        Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+
+    }
+
+    private fun logTestUpdate(logTag: String, message: String) {
+        activity?.runOnUiThread {
+            guidanceStylist.descriptionView.text = mediaController?.formatTvDetailsString()
+            guidanceStylist.breadcrumbView.text = message
+        }
+    }
+
+    companion object {
+        const val PLAY_TEST = 0L
     }
 }

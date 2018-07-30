@@ -279,12 +279,14 @@ fun getMetadataKey(metadata: MediaMetadataCompat?, key: String): String {
             longValues.contains(key) -> metadata.getLong(key).toString()
             bitmapValues.contains(key) -> "Bitmap" //metadata.getBitmap(key)
             ratingValues.contains(key) -> "Rating" //metadata.getRating(key)
-            // TODO(b/112436855): cleanup
-            else -> metadata.getString(key) ?: (if (metadata.getLong(key) == 0L) {
-                "!null or unknown type!"
-            } else {
-                metadata.getLong(key).toString()
-            })
+            else -> {
+                // TODO(b/112436855): cleanup
+                metadata.getString(key) ?: (if (metadata.getLong(key) == 0L) {
+                    "!null or unknown type!"
+                } else {
+                    metadata.getLong(key).toString()
+                })
+            }
         }
     }
     return "!Not present!"
@@ -342,7 +344,14 @@ fun queueToStringParsable(_queue: MutableList<MediaSessionCompat.QueueItem>?): S
     return s
 }
 
-fun MediaControllerCompat.formatTvDetailsString(): String {
+/**
+ * The Guided Step Fragment's description holds a maximum of 6 lines of text, so this method
+ * formats selected Media Controller details to display.
+ */
+fun MediaControllerCompat?.formatTvDetailsString(): String {
+    if (this == null) {
+        return "Null MediaController"
+    }
     val state = this.playbackState
     val metadata = this.metadata
     return ("State: ${playbackStateToName(state?.state)}\n"
@@ -350,6 +359,6 @@ fun MediaControllerCompat.formatTvDetailsString(): String {
             + "Title: ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)}\n"
             + "Artist: ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_ARTIST)}\n"
             + "Duration: ${metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)}\n"
-            + "See Logcat for more details.")
+            + "*See Logcat for more details.")
 }
 
