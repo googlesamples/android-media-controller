@@ -16,7 +16,6 @@
 package com.example.android.mediacontroller.tv
 
 import android.annotation.TargetApi
-import android.content.Context
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.support.v17.leanback.widget.ImageCardView
@@ -38,13 +37,16 @@ class MediaAppCardPresenter : Presenter() {
             return ViewHolder(null)
         }
 
-        val card = ImageCardView(parent.context)
-        card.isFocusable = true
-        card.isFocusableInTouchMode = true
-        val titleField: TextView = card.findViewById(R.id.title_text)
-        titleField.ellipsize = TextUtils.TruncateAt.END
-        val contentField: TextView = card.findViewById(R.id.content_text)
-        contentField.ellipsize = TextUtils.TruncateAt.MIDDLE
+        val card = ImageCardView(parent.context).apply {
+            isFocusable = true
+            isFocusableInTouchMode = true
+            findViewById<TextView>(R.id.title_text).apply {
+                ellipsize = TextUtils.TruncateAt.END
+            }
+            findViewById<TextView>(R.id.content_text).apply {
+                ellipsize = TextUtils.TruncateAt.MIDDLE
+            }
+        }
         return ViewHolder(card)
     }
 
@@ -54,30 +56,31 @@ class MediaAppCardPresenter : Presenter() {
         }
 
         val appDetails = item as MediaAppDetails
-        val card = viewHolder?.view as ImageCardView
+        (viewHolder?.view as ImageCardView).apply {
+            titleText = appDetails.appName
+            contentText = appDetails.packageName
 
-        card.titleText = appDetails.appName
-        card.contentText = appDetails.packageName
-
-        val hasBanner = (appDetails.banner != null)
-        val image = appDetails.banner ?: appDetails.icon
-        card.mainImage = BitmapDrawable(viewHolder.view.context.resources, image)
-        if (hasBanner) {
-            val width = card.resources.getDimensionPixelSize(R.dimen.tv_banner_width)
-            val height = card.resources.getDimensionPixelSize(R.dimen.tv_banner_height)
-            card.setMainImageDimensions(width, height)
-        } else {
-            val width = card.resources.getDimensionPixelSize(R.dimen.tv_icon_width)
-            val height = card.resources.getDimensionPixelSize(R.dimen.tv_icon_height)
-            card.setMainImageDimensions(width, height)
+            val hasBanner = (appDetails.banner != null)
+            val image = appDetails.banner ?: appDetails.icon
+            mainImage = BitmapDrawable(viewHolder.view.context.resources, image)
+            if (hasBanner) {
+                val width = resources.getDimensionPixelSize(R.dimen.tv_banner_width)
+                val height = resources.getDimensionPixelSize(R.dimen.tv_banner_height)
+                setMainImageDimensions(width, height)
+            } else {
+                val width = resources.getDimensionPixelSize(R.dimen.tv_icon_width)
+                val height = resources.getDimensionPixelSize(R.dimen.tv_icon_height)
+                setMainImageDimensions(width, height)
+            }
+            // FIT_XY scales the icon/banner such that it fills the ImageView; the dimensions of the
+            // ImageView are set above to ensure that the image retains its original aspect ratio
+            setMainImageScaleType(ImageView.ScaleType.FIT_XY)
         }
-        // FIT_XY scales the icon/banner such that it fills the ImageView; the dimensions of the
-        // ImageView are set above to ensure that the image retains its original aspect ratio
-        card.setMainImageScaleType(ImageView.ScaleType.FIT_XY)
     }
 
     override fun onUnbindViewHolder(viewHolder: ViewHolder?) {
-        val card = viewHolder?.view as ImageCardView
-        card.mainImage = null
+        (viewHolder?.view as ImageCardView).apply {
+            mainImage = null
+        }
     }
 }

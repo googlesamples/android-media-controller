@@ -725,9 +725,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val queueItemAdapter = QueueItemAdapter(queue)
         val queueList = queue_item_list
         queueList.layoutManager = object : LinearLayoutManager(this) {
-            override fun canScrollVertically(): Boolean {
-                return false
-            }
+            override fun canScrollVertically(): Boolean = false
         }
         queueList.adapter = queueItemAdapter
     }

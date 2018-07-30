@@ -67,10 +67,23 @@
             android:name=".tv.TvLauncherActivity"
             android:configChanges="keyboard|keyboardHidden"
             android:theme="@style/AppTheme.TV">
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".tv.TvTestingActivity"
+            android:configChanges="orientation|keyboard|keyboardHidden"
+            android:theme="@style/AppTheme.TV">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>

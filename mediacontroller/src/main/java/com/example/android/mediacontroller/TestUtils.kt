@@ -16,6 +16,7 @@
 package com.example.android.mediacontroller
 
 import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import org.json.JSONObject
@@ -278,7 +279,12 @@ fun getMetadataKey(metadata: MediaMetadataCompat?, key: String): String {
             longValues.contains(key) -> metadata.getLong(key).toString()
             bitmapValues.contains(key) -> "Bitmap" //metadata.getBitmap(key)
             ratingValues.contains(key) -> "Rating" //metadata.getRating(key)
-            else -> metadata.getString(key)
+            // TODO(b/112436855): cleanup
+            else -> metadata.getString(key) ?: (if (metadata.getLong(key) == 0L) {
+                "!null or unknown type!"
+            } else {
+                metadata.getLong(key).toString()
+            })
         }
     }
     return "!Not present!"
@@ -335,3 +341,15 @@ fun queueToStringParsable(_queue: MutableList<MediaSessionCompat.QueueItem>?): S
     }
     return s
 }
+
+fun MediaControllerCompat.formatTvDetailsString(): String {
+    val state = this.playbackState
+    val metadata = this.metadata
+    return ("State: ${playbackStateToName(state?.state)}\n"
+            + "Position: ${state?.position}\n"
+            + "Title: ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)}\n"
+            + "Artist: ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_ARTIST)}\n"
+            + "Duration: ${metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)}\n"
+            + "See Logcat for more details.")
+}
+

@@ -24,6 +24,7 @@ import android.support.v17.leanback.widget.DiffCallback
 import android.support.v17.leanback.widget.HeaderItem
 import android.support.v17.leanback.widget.ListRow
 import android.support.v17.leanback.widget.ListRowPresenter
+import android.support.v17.leanback.widget.OnItemViewClickedListener
 import android.support.v17.leanback.widget.Presenter
 import com.example.android.mediacontroller.MediaAppDetails
 import com.example.android.mediacontroller.R
@@ -41,12 +42,20 @@ class TvLauncherFragment : BrowseSupportFragment() {
     }
 
     private val mediaAppsRowAdapter = ArrayObjectAdapter(ListRowPresenter())
+    private val mediaAppClickedListener = OnItemViewClickedListener { _, item, _, _ ->
+        if (item is MediaAppDetails) {
+            activity?.let {
+                startActivity(TvTestingActivity.buildIntent(it, item))
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setupUIElements()
 
         adapter = mediaAppsRowAdapter
+        onItemViewClickedListener = mediaAppClickedListener
     }
 
     override fun onStart() {
@@ -85,12 +94,9 @@ class TvLauncherFragment : BrowseSupportFragment() {
                     return false
                 }
 
-                for(i in 0 until oldAdapter.size()) {
-                    if(oldAdapter[i] as MediaAppDetails != newAdapter[i] as MediaAppDetails) {
-                        return false
-                    }
+                return (0 until oldAdapter.size()).none {
+                    oldAdapter[it] as MediaAppDetails != newAdapter[it] as MediaAppDetails
                 }
-                return true
             }
         }
         mediaAppsRowAdapter.setItems(
