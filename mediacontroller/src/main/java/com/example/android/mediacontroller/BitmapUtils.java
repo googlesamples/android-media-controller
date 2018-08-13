@@ -37,11 +37,13 @@ public final class BitmapUtils {
      * Converts a {@link Drawable} to an appropriately sized {@link Bitmap}.
      *
      * @param resources Resources for the current {@link android.content.Context}.
-     * @param drawable The {@link Drawable} to convert to a Bitmap.
-     * @return A scaled Bitmap that's no larger than {@code R.dimen.app_icon_size} dp.
+     * @param drawable  The {@link Drawable} to convert to a Bitmap.
+     * @param downScale Will downscale the Bitmap to {@code R.dimen.app_icon_size} dp.
+     * @return A Bitmap, no larger than {@code R.dimen.app_icon_size} dp if desired.
      */
     public static Bitmap convertDrawable(@NonNull final Resources resources,
-                                  @NonNull final Drawable drawable) {
+                                         @NonNull final Drawable drawable,
+                                         final boolean downScale) {
 
         final Bitmap bitmap;
         if (drawable instanceof BitmapDrawable) {
@@ -53,6 +55,10 @@ public final class BitmapUtils {
             final Canvas canvas = new Canvas(bitmap);
             drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
             drawable.draw(canvas);
+        }
+
+        if (!downScale) {
+            return bitmap;
         }
 
         final int iconSize = resources.getDimensionPixelSize(R.dimen.app_icon_size);
@@ -70,7 +76,7 @@ public final class BitmapUtils {
                 scaleWidth = (int) (width * ((float) iconSize) / height);
             } else {
                 scaleWidth = iconSize;
-                scaleHeight = (int) (width * ((float) iconSize) / height);
+                scaleHeight = (int) (height * ((float) iconSize) / width);
             }
 
             return Bitmap.createScaledBitmap(bitmap, scaleWidth, scaleHeight, false);
@@ -84,7 +90,7 @@ public final class BitmapUtils {
      * from a given full sized icon.
      *
      * @param resources Resources for the current {@link android.content.Context}.
-     * @param icon The bitmap to convert.
+     * @param icon      The bitmap to convert.
      * @return A scaled Bitmap of the appropriate size and in-built padding.
      */
     public static Bitmap createToolbarIcon(@NonNull Resources resources,

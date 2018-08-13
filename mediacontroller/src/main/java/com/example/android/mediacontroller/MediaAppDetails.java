@@ -71,11 +71,11 @@ public class MediaAppDetails implements Parcelable {
         packageName = info.packageName;
         appName = info.loadLabel(pm).toString();
         Drawable appIcon = info.loadIcon(pm);
-        icon = BitmapUtils.convertDrawable(resources, appIcon);
+        icon = BitmapUtils.convertDrawable(resources, appIcon, true);
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
             Drawable appBanner = info.loadBanner(pm);
             if (appBanner != null) {
-                banner = BitmapUtils.convertDrawable(resources, appBanner);
+                banner = BitmapUtils.convertDrawable(resources, appBanner, false);
             }
         }
 
