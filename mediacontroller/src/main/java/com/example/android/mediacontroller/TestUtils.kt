@@ -226,7 +226,7 @@ fun formatPlaybackState(state: PlaybackStateCompat?): String {
     val errorMessage: String
     if (state.state == PlaybackStateCompat.STATE_ERROR) {
         errorCode = errorCodeToName(state.errorCode)
-        errorMessage = state.errorMessage.toString()
+        errorMessage = state.errorMessage?.toString() ?: "!null!"
     } else {
         errorCode = "N/A"
         errorMessage = "N/A"

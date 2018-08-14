@@ -399,9 +399,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val playTest = TestOptionDetails(
                 getString(R.string.play_test_title),
                 getString(R.string.play_test_desc)
-        ) { _ ->
-            runPlayTest(controller, ::logTestUpdate)
-        }
+        ) { _ -> runPlayTest(controller, ::logTestUpdate) }
 
         /**
          * Tests the playFromSearch() transport control. The test can start in any state, might
@@ -412,16 +410,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val playFromSearch = TestOptionDetails(
                 getString(R.string.play_search_test_title),
                 getString(R.string.play_search_test_desc)
-        ) { query ->
-            Test(
-                    getString(R.string.play_search_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigurePlayFromSearch(this, query))
-                addStep(WaitForPlayingBeginning(this))
-            }.runTest()
-        }
+        ) { query -> runPlayFromSearchTest(query, controller, ::logTestUpdate) }
 
         /**
          * Tests the playFromMediaId() transport control. The test can start in any state, might
@@ -433,16 +422,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val playFromMediaId = TestOptionDetails(
                 getString(R.string.play_media_id_test_title),
                 getString(R.string.play_media_id_test_desc)
-        ) { query ->
-            Test(
-                    getString(R.string.play_media_id_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigurePlayFromMediaId(this, query))
-                addStep(WaitForPlayingBeginning(this))
-            }.runTest()
-        }
+        ) { query -> runPlayFromMediaIdTest(query, controller, ::logTestUpdate) }
 
         /**
          * Tests the playFromUri() transport control. The test can start in any state, might
@@ -454,16 +434,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val playFromUri = TestOptionDetails(
                 getString(R.string.play_uri_test_title),
                 getString(R.string.play_uri_test_desc)
-        ) { query ->
-            Test(
-                    getString(R.string.play_uri_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigurePlayFromUri(this, query))
-                addStep(WaitForPlayingBeginning(this))
-            }.runTest()
-        }
+        ) { query -> runPlayFromUriTest(query, controller, ::logTestUpdate) }
 
         /**
          * Tests the pause() transport control. The test can start in any state, but must end in
@@ -475,16 +446,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val pauseTest = TestOptionDetails(
                 getString(R.string.pause_test_title),
                 getString(R.string.pause_test_desc)
-        ) { _ ->
-            Test(
-                    getString(R.string.pause_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigurePause(this))
-                addStep(WaitForPaused(this))
-            }.runTest()
-        }
+        ) { _ -> runPauseTest(controller, ::logTestUpdate) }
 
         /**
          * Tests the stop() transport control. The test can start in any state, but must end in
@@ -495,16 +457,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val stopTest = TestOptionDetails(
                 getString(R.string.stop_test_title),
                 getString(R.string.stop_test_desc)
-        ) { _ ->
-            Test(
-                    getString(R.string.stop_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigureStop(this))
-                addStep(WaitForStopped(this))
-            }.runTest()
-        }
+        ) { _ -> runStopTest(controller, ::logTestUpdate) }
 
         /**
          * Tests the skipToNext() transport control. The test can start in any state, might
@@ -518,16 +471,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val skipToNextTest = TestOptionDetails(
                 getString(R.string.skip_next_test_title),
                 getString(R.string.skip_next_test_desc)
-        ) { _ ->
-            Test(
-                    getString(R.string.skip_next_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigureSkipToNext(this))
-                addStep(WaitForSkip(this))
-            }.runTest()
-        }
+        ) { _ -> runSkipToNextTest(controller, ::logTestUpdate) }
 
         /**
          * Tests the skipToPrevious() transport control. The test can start in any state, might
@@ -541,16 +485,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val skipToPrevTest = TestOptionDetails(
                 getString(R.string.skip_prev_test_title),
                 getString(R.string.skip_prev_test_desc)
-        ) { _ ->
-            Test(
-                    getString(R.string.skip_prev_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigureSkipToPrevious(this))
-                addStep(WaitForSkip(this))
-            }.runTest()
-        }
+        ) { _ -> runSkipToPrevTest(controller, ::logTestUpdate) }
 
         /**
          * Tests the skipToQueueItem() transport control. The test can start in any state, might
@@ -564,16 +499,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val skipToItemTest = TestOptionDetails(
                 getString(R.string.skip_item_test_title),
                 getString(R.string.skip_item_test_desc)
-        ) { query ->
-            Test(
-                    getString(R.string.skip_item_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigureSkipToItem(this, query))
-                addStep(WaitForSkip(this))
-            }.runTest()
-        }
+        ) { query -> runSkipToItemTest(query, controller, ::logTestUpdate) }
 
         /**
          * Tests the seekTo() transport control. The test can start in any state, might enter a
@@ -588,16 +514,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val seekToTest = TestOptionDetails(
                 getString(R.string.seek_test_title),
                 getString(R.string.seek_test_desc)
-        ) { query ->
-            Test(
-                    getString(R.string.seek_test_logs_title),
-                    controller,
-                    ::logTestUpdate
-            ).apply {
-                addStep(ConfigureSeekTo(this, query))
-                addStep(WaitForTerminalAtTarget(this))
-            }.runTest()
-        }
+        ) { query -> runSeekToTest(query, controller, ::logTestUpdate) }
 
         val testOptionAdapter = TestOptionAdapter(arrayOf(
                 playTest,
