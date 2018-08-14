@@ -39,4 +39,14 @@
 
     <style name="AppTheme.TV" parent="Theme.Leanback" />
 
+    <style name="Widget.Leanback.GuidedActionItemChevronStyle" parent="@style/Widget.Leanback">
+        <item name="android:layout_gravity">top</item>
+        <item name="android:visibility">gone</item>
+        <item name="android:layout_width">20.0dip</item>
+        <item name="android:layout_height">20.0dip</item>
+        <item name="android:src">@drawable/ic_keyboard_white_24dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:layout_marginStart">@dimen/margin_inner_drawable</item>
+    </style>
+
 </resources>
