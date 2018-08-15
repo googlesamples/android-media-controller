@@ -352,13 +352,23 @@ fun MediaControllerCompat?.formatTvDetailsString(): String {
     if (this == null) {
         return "Null MediaController"
     }
+
     val state = this.playbackState
     val metadata = this.metadata
+
+    val duration = metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
+
     return ("State: ${playbackStateToName(state?.state)}\n"
-            + "Position: ${state?.position}\n"
+            + "Position: ${formatMillisToSeconds(state?.position)}\n"
             + "Title: ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)}\n"
             + "Artist: ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_ARTIST)}\n"
-            + "Duration: ${metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)}\n"
+            + "Duration: ${formatMillisToSeconds(duration)}\n"
             + "*See Logcat for more details.")
+}
+
+fun formatMillisToSeconds(value: Long?): String {
+    return value?.let {
+        "%.2fs".format(it / 1000f)
+    } ?: "null"
 }
 
