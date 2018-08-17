@@ -172,27 +172,22 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
             query = action?.editTitle.toString()
             when (action?.id) {
                 PLAY_FROM_SEARCH_TEST -> {
-                    action.title = getString(R.string.play_search_test_title)
                     action.description = getQueryTestDesc(R.string.play_search_test_desc, query)
                     runPlayFromSearchTest(query, it, ::logTestUpdate)
                 }
                 PLAY_FROM_MEDIA_ID_TEST -> {
-                    action.title = getString(R.string.play_media_id_test_title)
                     action.description = getQueryTestDesc(R.string.play_media_id_test_desc, query)
                     runPlayFromMediaIdTest(query, it, ::logTestUpdate)
                 }
                 PLAY_FROM_URI_TEST -> {
-                    action.title = getString(R.string.play_uri_test_title)
                     action.description = getQueryTestDesc(R.string.play_uri_test_desc, query)
                     runPlayFromUriTest(query, it, ::logTestUpdate)
                 }
                 SKIP_TO_ITEM_TEST -> {
-                    action.title = getString(R.string.skip_item_test_title)
                     action.description = getQueryTestDesc(R.string.skip_item_test_desc, query)
                     runSkipToItemTest(query, it, ::logTestUpdate)
                 }
                 SEEK_TO_TEST -> {
-                    action.title = getString(R.string.seek_test_title)
                     action.description = getQueryTestDesc(R.string.seek_test_desc, query)
                     runSeekToTest(query, it, ::logTestUpdate)
                 }
@@ -213,23 +208,18 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
         query = ""
         when (action?.id) {
             PLAY_FROM_SEARCH_TEST -> {
-                action.title = getString(R.string.play_search_test_title)
                 action.description = getQueryTestDesc(R.string.play_search_test_desc)
             }
             PLAY_FROM_MEDIA_ID_TEST -> {
-                action.title = getString(R.string.play_media_id_test_title)
                 action.description = getQueryTestDesc(R.string.play_media_id_test_desc)
             }
             PLAY_FROM_URI_TEST -> {
-                action.title = getString(R.string.play_uri_test_title)
                 action.description = getQueryTestDesc(R.string.play_uri_test_desc)
             }
             SKIP_TO_ITEM_TEST -> {
-                action.title = getString(R.string.skip_item_test_title)
                 action.description = getQueryTestDesc(R.string.skip_item_test_desc)
             }
             SEEK_TO_TEST -> {
-                action.title = getString(R.string.seek_test_title)
                 action.description = getQueryTestDesc(R.string.seek_test_desc)
             }
             else -> Toast.makeText(
@@ -268,7 +258,6 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
                 }
             }
         }
-
     }
 
     private fun logTestUpdate(logTag: String, message: String) {
