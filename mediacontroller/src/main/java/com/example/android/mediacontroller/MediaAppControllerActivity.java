@@ -697,6 +697,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             onUpdate();
         }
 
+        @Override
+        public void onSessionDestroyed() {
+            showToastAndFinish("MediaSession has been released");
+        }
+
         private void onUpdate() {
             String mediaInfoStr = fetchMediaInfo();
             if (mediaInfoStr != null) {
@@ -911,7 +916,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
                 @Override
                 public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                    return actions.get(oldItemPosition).getAction()
+                    return actions.size() == mActions.size() &&
+                            actions.get(oldItemPosition).getAction()
                             .equals(mActions.get(newItemPosition).getAction());
                 }
 
