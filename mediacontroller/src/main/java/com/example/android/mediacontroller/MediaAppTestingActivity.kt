@@ -21,20 +21,11 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.os.RemoteException
-import android.support.design.widget.TabLayout
-import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v4.view.PagerAdapter
-import android.support.v4.view.ViewPager
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.CardView
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.Toolbar
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
@@ -45,6 +36,18 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager.widget.PagerAdapter
+import androidx.viewpager.widget.ViewPager
+
+import com.google.android.material.tabs.TabLayout
+
 import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_info_page
 import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_page
 import kotlinx.android.synthetic.main.activity_media_app_testing.page_indicator
@@ -69,6 +72,7 @@ import kotlinx.android.synthetic.main.media_test_option.view.card_text
 import kotlinx.android.synthetic.main.media_tests.test_options_list
 import kotlinx.android.synthetic.main.media_tests.test_results_container
 import kotlinx.android.synthetic.main.media_tests.tests_query
+
 import java.text.DateFormat
 import java.util.Date
 

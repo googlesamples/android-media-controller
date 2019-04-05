@@ -16,10 +16,6 @@
 package com.example.android.mediacontroller;
 
 import android.annotation.SuppressLint;
-import android.support.annotation.IdRes;
-import android.support.design.widget.TextInputLayout;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.text.Editable;
@@ -27,6 +23,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
+
+import androidx.annotation.IdRes;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
+
+import com.google.android.material.textfield.TextInputLayout;
 
 /**
  * Helper class to manage displaying and setting different kinds of media {@link RatingCompat}s.

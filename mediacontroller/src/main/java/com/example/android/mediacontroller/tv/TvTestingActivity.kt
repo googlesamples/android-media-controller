@@ -19,13 +19,13 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.os.RemoteException
-import android.support.v17.leanback.app.GuidedStepSupportFragment
-import android.support.v4.app.FragmentActivity
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.util.Log
 import android.widget.Toast
+import androidx.fragment.app.FragmentActivity
+import androidx.leanback.app.GuidedStepSupportFragment
 import com.example.android.mediacontroller.MediaAppDetails
 import com.example.android.mediacontroller.R
 

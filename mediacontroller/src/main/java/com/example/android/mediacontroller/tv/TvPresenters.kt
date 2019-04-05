@@ -18,8 +18,8 @@ package com.example.android.mediacontroller.tv
 import android.annotation.TargetApi
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
-import android.support.v17.leanback.widget.ImageCardView
-import android.support.v17.leanback.widget.Presenter
+import androidx.leanback.widget.ImageCardView
+import androidx.leanback.widget.Presenter
 import android.text.TextUtils
 import android.view.ViewGroup
 import android.widget.ImageView

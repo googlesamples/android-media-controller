@@ -19,7 +19,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build.VERSION_CODES;
 import android.service.notification.NotificationListenerService;
-import android.support.v4.app.NotificationManagerCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 /**
  * A notification listener service to allows us to grab active media sessions from their

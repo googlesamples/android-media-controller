@@ -85,7 +85,7 @@
         android:contentDescription="@string/rating_star_5"
         app:srcCompat="@drawable/ic_star_black_32dp" />
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/rating_percentage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
@@ -97,7 +97,7 @@
             android:maxEms="6"
             android:minEms="4" />
 
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/rating_percentage_set"

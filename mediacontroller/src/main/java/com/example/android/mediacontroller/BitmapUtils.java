@@ -22,7 +22,8 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.support.annotation.NonNull;
+
+import androidx.annotation.NonNull;
 
 /**
  * Utility class for {@link Bitmap}s.
@@ -86,7 +87,7 @@ public final class BitmapUtils {
     }
 
     /**
-     * Creates a Material Design compliant {@link android.support.v7.widget.Toolbar} icon
+     * Creates a Material Design compliant {@link androidx.appcompat.widget.Toolbar} icon
      * from a given full sized icon.
      *
      * @param resources Resources for the current {@link android.content.Context}.

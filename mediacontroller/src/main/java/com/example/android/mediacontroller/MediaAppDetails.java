@@ -28,9 +28,9 @@ import android.media.session.MediaSession;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.v4.media.MediaBrowserServiceCompat;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.media.MediaBrowserServiceCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 
 import java.util.List;
