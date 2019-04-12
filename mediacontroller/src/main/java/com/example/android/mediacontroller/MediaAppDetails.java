@@ -112,6 +112,15 @@ public class MediaAppDetails implements Parcelable {
         return null;
     }
 
+    public static ResolveInfo findPreferenceResolveInfo(String packageName, PackageManager pm) {
+        if (packageName != null) {
+            Intent prefsIntent = new Intent(Intent.ACTION_APPLICATION_PREFERENCES);
+            prefsIntent.setPackage(packageName);
+            return pm.resolveActivity(prefsIntent, 0);
+        }
+        return null;
+    }
+
     private MediaAppDetails(final Parcel parcel) {
         packageName = parcel.readString();
         appName = parcel.readString();

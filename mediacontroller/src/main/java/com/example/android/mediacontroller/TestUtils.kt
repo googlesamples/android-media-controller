@@ -15,6 +15,7 @@
  */
 package com.example.android.mediacontroller
 
+import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -217,6 +218,28 @@ fun shuffleModeToName(mode: Int?): String {
     }
 }
 
+fun formatPlaybackStateExtras(extras: Bundle?): String {
+    if (extras == null) {
+        return "null"
+    }
+
+    var out = ""
+    for (key in extras.keySet()) {
+        out += "${key}: ${extras.get(key)} \n"
+    }
+
+    return out
+}
+
+fun formatActions(actions: List<PlaybackStateCompat.CustomAction>): String {
+    var out = ""
+    for (action in actions) {
+        out += "${action.icon} "
+    }
+
+    return out
+}
+
 fun formatPlaybackState(state: PlaybackStateCompat?): String {
     if (state == null) {
         return "!null!"
@@ -240,7 +263,9 @@ fun formatPlaybackState(state: PlaybackStateCompat?): String {
             + "\nLast Position Update Time: " + state.lastPositionUpdateTime
             + "\nPlayback Speed:            " + state.playbackSpeed
             + "\nActive Queue Item ID:      " + state.activeQueueItemId
-            + "\nActions: " + actionsToString(state.actions))
+            + "\nActions:                   " + actionsToString(state.actions)
+            + "\nExtras:                    " + formatPlaybackStateExtras(state.extras)
+            + "\nCustomActions:             " + formatActions(state.customActions))
 }
 
 fun formatPlaybackStateParsable(state: PlaybackStateCompat?): String {

@@ -15,6 +15,8 @@
  */
 package com.example.android.mediacontroller
 
+import android.content.Context
+import android.content.pm.PackageManager
 import android.support.v4.media.session.MediaControllerCompat
 
 /**
@@ -116,4 +118,35 @@ fun runSeekToTest(
         .apply {
             addStep(ConfigureSeekTo(this, query))
             addStep(WaitForTerminalAtTarget(this))
+        }.runTest()
+
+fun runErrorResolutionDataTest(
+        controller: MediaControllerCompat,
+        logger: (tag: String, message: String) -> Unit?
+) = Test(Test.androidResources
+        .getString(R.string.error_resolution_test_logs_title), controller, logger)
+        .apply {
+            addStep(CheckErrorResolution(this))
+        }.runTest()
+
+fun runCustomActionIconTypeTest(
+        context: Context,
+        controller: MediaControllerCompat,
+        appDetails: MediaAppDetails?,
+        logger: (tag: String, message: String) -> Unit?
+) = Test(Test.androidResources
+        .getString(R.string.custom_actions_icon_test_logs_title), controller, logger)
+        .apply {
+            addStep(CheckCustomActions(this, context, appDetails))
+        }.runTest()
+
+fun runPreferenceTest(
+        controller: MediaControllerCompat,
+        appDetails: MediaAppDetails?,
+        packageManager: PackageManager,
+        logger: (tag: String, message: String) -> Unit?
+) = Test(Test.androidResources
+        .getString(R.string.preference_activity_test_logs_title), controller, logger)
+        .apply {
+            addStep(CheckForPreferences(this, appDetails, packageManager))
         }.runTest()

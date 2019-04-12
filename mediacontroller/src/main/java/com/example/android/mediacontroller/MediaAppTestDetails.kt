@@ -26,6 +26,11 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import com.example.android.mediacontroller.Test.Companion.androidResources
 import kotlin.math.abs
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.drawable.VectorDrawable
+import android.util.TypedValue
+import java.util.*
 
 /**
  * This is where verification tests are managed and configured
@@ -907,5 +912,107 @@ class WaitForTerminalAtTarget(override val test: Test) : TestStep {
                 TestStepStatus.STEP_FAIL
             }
         }
+    }
+}
+
+/**
+ * PASS: An activity with the filter Intent.ACTION_APPLICATION_PREFERENCES is found
+ * FAIL: otherwise
+ */
+class CheckForPreferences(override val test: Test,
+                          val appDetails: MediaAppDetails?,
+                          val packageManager: PackageManager) : TestStep {
+    override val logTag = "${test.name}.WFPB"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        val info = MediaAppDetails.findPreferenceResolveInfo(
+                appDetails?.packageName, packageManager)
+
+        if (info != null) {
+            test.testLogger(logTag, androidResources.getString(R.string.test_preferences_found))
+            return TestStepStatus.STEP_PASS
+        }
+
+        test.testLogger(logTag, androidResources.getString(R.string.test_preferences_not_found))
+        return TestStepStatus.STEP_FAIL
+    }
+}
+
+/**
+ * PASS: custom actions icons are all vector images
+ * FAIL: otherwise
+ */
+class CheckCustomActions(override val test: Test, val context: Context, val appDetails: MediaAppDetails?) : TestStep {
+    override val logTag = "${test.name}.WFPB"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        val customActions = test.mediaController.playbackState.customActions
+        val value = TypedValue()
+
+        if (customActions.isEmpty()) {
+            test.testLogger(logTag, androidResources.getString(R.string.test_empty_custom_actions))
+        }
+
+        var testStatus = TestStepStatus.STEP_PASS
+
+        val resources = context.packageManager.getResourcesForApplication(appDetails?.packageName)
+        for (action in customActions) {
+            try {
+                val drawable = resources.getDrawable(action.icon, null)
+                resources.getValue(action.icon, value, true)
+                var filename = value.string.toString()
+
+                if (drawable !is VectorDrawable) {
+                    test.testLogger(logTag, androidResources.getString(
+                            R.string.test_invalid_icon_type, filename))
+                    testStatus = TestStepStatus.STEP_FAIL
+                }
+            } catch (notFound: Resources.NotFoundException) {
+                test.testLogger(logTag, androidResources.getString(
+                        R.string.test_warn_icon_null, action.icon.toString()))
+                testStatus = TestStepStatus.STEP_FAIL
+            }
+        }
+
+        return testStatus
+    }
+}
+
+/**
+ * PASS: state must be STATE_ERROR and label and intent are found
+ * CONTINUE: any state other than STATE_ERROR
+ * FAIL: state is in STATE_ERROR but label and intent are not found
+ */
+class CheckErrorResolution(override val test: Test) : TestStep {
+    override val logTag = "${test.name}.WFPB"
+    override fun execute(
+            currState: PlaybackStateCompat?,
+            currMetadata: MediaMetadataCompat?
+    ): TestStepStatus {
+        if (currState?.state != PlaybackStateCompat.STATE_ERROR) {
+            test.testLogger(logTag, androidResources.getString(R.string.test_warn_not_state_error))
+            return TestStepStatus.STEP_CONTINUE
+        }
+
+        val label = currState?.extras?.get("android.media.extras.ERROR_RESOLUTION_ACTION_LABEL")
+        val intent = currState?.extras?.get("android.media.extras.ERROR_RESOLUTION_ACTION_INTENT")
+
+        if (label != null && intent != null) {
+            return TestStepStatus.STEP_PASS
+        }
+
+        if (label == null) {
+            test.testLogger(logTag, androidResources.getString(R.string.test_error_label_not_found))
+        }
+        if (intent == null) {
+            test.testLogger(logTag, androidResources.getString(
+                    R.string.test_error_intent_not_found))
+        }
+
+        return TestStepStatus.STEP_FAIL
     }
 }

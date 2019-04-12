@@ -520,6 +520,25 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.seek_test_desc)
         ) { query -> runSeekToTest(query, controller, ::logTestUpdate) }
 
+        /**
+         * AAE SPECIFIC TESTS
+         */
+        val errorResolutionDataTest = TestOptionDetails(
+                getString(R.string.error_resolution_test_title),
+                getString(R.string.error_resolution_test_desc)
+        ) { _ -> runErrorResolutionDataTest(controller, ::logTestUpdate) }
+
+        val customActionIconTypeTest = TestOptionDetails(
+                getString(R.string.custom_actions_icon_test_title),
+                getString(R.string.custom_actions_icon_test_desc)
+        ) { _ -> runCustomActionIconTypeTest(
+                applicationContext, controller, mediaAppDetails, ::logTestUpdate) }
+
+        val preferenceTest = TestOptionDetails(
+                getString(R.string.preference_activity_test_title),
+                getString(R.string.preference_activity_test_desc)
+        ) { _ -> runPreferenceTest(controller, mediaAppDetails, packageManager, ::logTestUpdate) }
+
         val testOptionAdapter = TestOptionAdapter(arrayOf(
                 playTest,
                 playFromSearch,
@@ -530,7 +549,10 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 skipToNextTest,
                 skipToPrevTest,
                 skipToItemTest,
-                seekToTest
+                seekToTest,
+                errorResolutionDataTest,
+                customActionIconTypeTest,
+                preferenceTest
         ))
 
         val testList = test_options_list

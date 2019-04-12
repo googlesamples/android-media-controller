@@ -63,6 +63,9 @@
     <string name="skip_prev_test_desc">This tests the \'skip to previous\' functionality.</string>
     <string name="skip_item_test_desc">This tests the \'skip to queue item\' functionality. Enter a Queue ID number in the query field to skip the according queue item.</string>
     <string name="seek_test_desc">This tests the \'seek to\' functionality. Enter a timestamp in seconds or a change in position (number of seconds prepended by + to go forward or - to go back) in the query field.</string>
+    <string name="error_resolution_test_desc">This tests whether PlaybackState has the required extras for error resolution</string>
+    <string name="custom_actions_icon_test_desc">This tests whether the icon types for custom actions are vector xmls</string>
+    <string name="preference_activity_test_desc">This tests whether the activity implements a preference activity</string>
 
     <!-- Test Titles -->
     <string name="play_test_title">Play Test</string>
@@ -75,6 +78,9 @@
     <string name="skip_prev_test_title">Skip To Previous Test</string>
     <string name="skip_item_test_title">Skip To Queue Item Test</string>
     <string name="seek_test_title">Seek To Test</string>
+    <string name="error_resolution_test_title">Error Resolution Extras Test</string>
+    <string name="custom_actions_icon_test_title">Custom Action Icon Type Test</string>
+    <string name="preference_activity_test_title">Preference Activity Test</string>
 
     <!-- Test Logging Headers -->
     <string name="play_test_logs_title">Play</string>
@@ -87,6 +93,9 @@
     <string name="skip_prev_test_logs_title">SkipPrev</string>
     <string name="skip_item_test_logs_title">SkipItem</string>
     <string name="seek_test_logs_title">Seek</string>
+    <string name="error_resolution_test_logs_title">ErrorResolutionExtras</string>
+    <string name="custom_actions_icon_test_logs_title">CustomActionIcons</string>
+    <string name="preference_activity_test_logs_title">PreferenceActivity</string>
 
     <!-- Test States -->
     <string name="test_starting">Starting test with state %s and metadata %s</string>
@@ -99,6 +108,8 @@
     <string name="test_warn_action_unsupported">Warning: %s is not supported</string>
     <string name="test_warn_action_none">Warning: No actions supported</string>
     <string name="test_warn_state_diff">Warning: Step did not end with the same state, %s, in which the Test began, %s</string>
+    <string name="test_warn_not_state_error">Warning: This test requires playback state to be in STATE_ERROR</string>
+    <string name="test_warn_icon_null">Warning: Custom action icon resource not found %s</string>
 
     <!-- Test Errors -->
     <string name="test_error_query_empty">Error: empty query</string>
@@ -116,6 +127,12 @@
     <string name="test_metadata_updated">Running: Metadata updated</string>
     <string name="test_metadata_changed">Running: Metadata changed</string>
     <string name="test_compare_metadata">Comparing original metadata %s to current metadata %s</string>
+    <string name="test_empty_custom_actions">Application does not have any custom actions</string>
+    <string name="test_preferences_found">Activity matching preference filter found</string>
+    <string name="test_preferences_not_found">Activity matching preference filter not found</string>
+    <string name="test_error_label_not_found">Error resolution label does not exist</string>
+    <string name="test_error_intent_not_found">Error resolution intent does not exist</string>
+    <string name="test_invalid_icon_type">Custom action icon must be a vector image %s"</string>
 
     <!-- Test Step Status -->
     <string name="test_step_pass_state">Passed: %s</string>
