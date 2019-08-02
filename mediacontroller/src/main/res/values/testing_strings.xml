@@ -66,6 +66,13 @@
     <string name="error_resolution_test_desc">This tests whether PlaybackState has the required extras for error resolution</string>
     <string name="custom_actions_icon_test_desc">This tests whether the icon types for custom actions are vector xmls</string>
     <string name="preference_activity_test_desc">This tests whether the activity implements a preference activity</string>
+    <string name="launcher_intent_test_desc">This tests whether the app has a launcher activity</string>
+    <string name="playback_state_test_desc">This tests whether the initial playback state of the app is in a playing or non playing state</string>
+    <string name="browse_tree_depth_test_desc">This tests the maximum depth of the browse tree</string>
+    <string name="media_artwork_test_desc">This tests whether the provided artwork for each media item is passed correctly</string>
+    <string name="content_style_test_desc">This tests whether the app supports content styling</string>
+    <string name="search_supported_test_desc">This tests whether the activity supports search</string>
+    <string name="browse_tree_structure_test_desc">This tests if the browse tree has the correct root structure</string>
 
     <!-- Test Titles -->
     <string name="play_test_title">Play Test</string>
@@ -81,6 +88,13 @@
     <string name="error_resolution_test_title">Error Resolution Extras Test</string>
     <string name="custom_actions_icon_test_title">Custom Action Icon Type Test</string>
     <string name="preference_activity_test_title">Preference Activity Test</string>
+    <string name="launcher_intent_test_title">Launcher Intent Test</string>
+    <string name="playback_state_test_title">Initial Playback State Test</string>
+    <string name="browse_tree_depth_test_title">Browse Tree Depth Test</string>
+    <string name="media_artwork_test_title">Media Artwork Test</string>
+    <string name="content_style_test_title">Content Style Test</string>
+    <string name="search_supported_test_title">Search Supported Test</string>
+    <string name="browse_tree_structure_test_title">Browse Tree Structure Test</string>
 
     <!-- Test Logging Headers -->
     <string name="play_test_logs_title">Play</string>
@@ -96,6 +110,13 @@
     <string name="error_resolution_test_logs_title">ErrorResolutionExtras</string>
     <string name="custom_actions_icon_test_logs_title">CustomActionIcons</string>
     <string name="preference_activity_test_logs_title">PreferenceActivity</string>
+    <string name="launcher_intent_test_logs_title">LauncherIntent</string>
+    <string name="manifest_declaration_test_logs_title">ManifestDeclaration</string>
+    <string name="browse_tree_depth_test_logs_title">TreeDepth</string>
+    <string name="browse_tree_structure_test_logs_title">TreeStructure</string>
+    <string name="search_test_test_logs_title">SearchTest</string>
+    <string name="content_style_test_logs_title">ContentStyle</string>
+    <string name="media_artwork_test_logs_title">MediaArtwork</string>
 
     <!-- Test States -->
     <string name="test_starting">Starting test with state %s and metadata %s</string>
@@ -117,6 +138,7 @@
     <string name="test_error_position">Error: Can\'t determine current position</string>
     <string name="test_error_metadata">Error: Metadata changed</string>
     <string name="test_error_metadata_null">Error: null original metadata</string>
+    <string name="test_error_minsdk">Error: Test requires minSDK 24</string>
 
     <!-- Test Info -->
     <string name="test_running_request">Running: Sending %s TransportControl request</string>
@@ -129,10 +151,21 @@
     <string name="test_compare_metadata">Comparing original metadata %s to current metadata %s</string>
     <string name="test_empty_custom_actions">Application does not have any custom actions</string>
     <string name="test_preferences_found">Activity matching preference filter found</string>
+    <string name="test_preferences_multiple">Multiple activities matching preference filter found</string>
     <string name="test_preferences_not_found">Activity matching preference filter not found</string>
+    <string name="test_launcher_found">Activity matching launcher intent filter found</string>
+    <string name="test_launcher_not_found">Activity matching launcher intent filter not found</string>
     <string name="test_error_label_not_found">Error resolution label does not exist</string>
     <string name="test_error_intent_not_found">Error resolution intent does not exist</string>
     <string name="test_invalid_icon_type">Custom action icon must be a vector image %s"</string>
+    <string name="test_non_playing_state">Current playback state is in a non playing state</string>
+    <string name="test_playing_state">Current playback state is in a playing state</string>
+    <string name="test_browsable_items">Tree root must have at most 4 browsable items</string>
+    <string name="test_root_items_type">Items at tree root must be all browsable or playable</string>
+    <string name="test_artwork_type_invalid_schema">Artwork URI schema must be SCHEME_CONTENT or SCHEME_ANDROID_RESOURCE</string>
+    <string name="test_artwork_type_non_null_icon">Artwork must not be a bitmap</string>
+    <string name="test_content_style">This app supports content styling</string>
+    <string name="test_tree_depth">Tree maximum depth must be at most 3</string>
 
     <!-- Test Step Status -->
     <string name="test_step_pass_state">Passed: %s</string>

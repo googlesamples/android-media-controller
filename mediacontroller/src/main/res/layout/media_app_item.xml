@@ -79,5 +79,4 @@
         android:layout_marginEnd="@dimen/activity_horizontal_margin"
         android:text="@string/app_test_button" />
 
-
 </LinearLayout>

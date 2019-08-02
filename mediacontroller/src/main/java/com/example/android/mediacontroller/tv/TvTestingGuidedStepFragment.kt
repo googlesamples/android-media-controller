@@ -90,7 +90,7 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
             title: String,
             desc: String,
             usesQuery: Boolean = false
-    ) : GuidedAction {
+    ): GuidedAction {
         val action = GuidedAction.Builder(context)
                 .id(id)
                 .title(title)
@@ -173,23 +173,23 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
             when (action?.id) {
                 PLAY_FROM_SEARCH_TEST -> {
                     action.description = getQueryTestDesc(R.string.play_search_test_desc, query)
-                    runPlayFromSearchTest(query, it, ::logTestUpdate)
+                    runPlayFromSearchTest(1, query, it, { foo, bar -> }, ::logTestUpdate)
                 }
                 PLAY_FROM_MEDIA_ID_TEST -> {
                     action.description = getQueryTestDesc(R.string.play_media_id_test_desc, query)
-                    runPlayFromMediaIdTest(query, it, ::logTestUpdate)
+                    runPlayFromMediaIdTest(2, query, it, { foo, bar -> }, ::logTestUpdate)
                 }
                 PLAY_FROM_URI_TEST -> {
                     action.description = getQueryTestDesc(R.string.play_uri_test_desc, query)
-                    runPlayFromUriTest(query, it, ::logTestUpdate)
+                    runPlayFromUriTest(3, query, it, { foo, bar -> }, ::logTestUpdate)
                 }
                 SKIP_TO_ITEM_TEST -> {
                     action.description = getQueryTestDesc(R.string.skip_item_test_desc, query)
-                    runSkipToItemTest(query, it, ::logTestUpdate)
+                    runSkipToItemTest(8, query, it, { foo, bar -> }, ::logTestUpdate)
                 }
                 SEEK_TO_TEST -> {
                     action.description = getQueryTestDesc(R.string.seek_test_desc, query)
-                    runSeekToTest(query, it, ::logTestUpdate)
+                    runSeekToTest(9, query, it, { foo, bar -> }, ::logTestUpdate)
                 }
                 else -> {
                     query = ""
@@ -241,11 +241,11 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
         )
         mediaController?.let {
             when (action?.id) {
-                PLAY_TEST -> runPlayTest(it, ::logTestUpdate)
-                PAUSE_TEST -> runPauseTest(it, ::logTestUpdate)
-                STOP_TEST -> runStopTest(it, ::logTestUpdate)
-                SKIP_TO_NEXT_TEST -> runSkipToNextTest(it, ::logTestUpdate)
-                SKIP_TO_PREV_TEST -> runSkipToPrevTest(it, ::logTestUpdate)
+                PLAY_TEST -> runPlayTest(0, it, { foo, bar -> }, ::logTestUpdate)
+                PAUSE_TEST -> runPauseTest(4, it, { foo, bar -> }, ::logTestUpdate)
+                STOP_TEST -> runStopTest(5, it, { foo, bar -> }, ::logTestUpdate)
+                SKIP_TO_NEXT_TEST -> runSkipToNextTest(6, it, { foo, bar -> }, ::logTestUpdate)
+                SKIP_TO_PREV_TEST -> runSkipToPrevTest(7, it, { foo, bar -> }, ::logTestUpdate)
                 REFRESH_INFO -> guidanceStylist.descriptionView.text = it.formatTvDetailsString()
                 else -> {
                     if (action?.id == null || !queryTests.contains(action.id)) {

@@ -17,6 +17,7 @@ package com.example.android.mediacontroller;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.FeatureInfo;
 import android.content.pm.PackageItemInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -26,13 +27,18 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.media.session.MediaSession;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.media.MediaBrowserServiceCompat;
-import android.support.v4.media.session.MediaSessionCompat;
 
+import android.support.v4.media.session.MediaSessionCompat;
+import android.util.Log;
+
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,9 +53,11 @@ public class MediaAppDetails implements Parcelable {
     public Bitmap banner;
     public final MediaSessionCompat.Token sessionToken;
     public final ComponentName componentName;
+    public boolean supportsAutomotive = false;
+    public boolean supportsAuto = false;
 
     public MediaAppDetails(String packageName, String name, Bitmap appIcon,
-                           @Nullable Bitmap appBanner, MediaSessionCompat.Token token) {
+            @Nullable Bitmap appBanner, MediaSessionCompat.Token token) {
         this.packageName = packageName;
         appName = name;
         sessionToken = token;
@@ -62,12 +70,12 @@ public class MediaAppDetails implements Parcelable {
     }
 
     public MediaAppDetails(String packageName, String name, Bitmap appIcon,
-                           @Nullable Bitmap appBanner, MediaSession.Token token) {
+            @Nullable Bitmap appBanner, MediaSession.Token token) {
         this(packageName, name, appIcon, appBanner, MediaSessionCompat.Token.fromToken(token));
     }
 
     public MediaAppDetails(PackageItemInfo info, PackageManager pm, Resources resources,
-                           MediaSession.Token token) {
+            MediaSession.Token token) {
         packageName = info.packageName;
         appName = info.loadLabel(pm).toString();
         Drawable appIcon = info.loadIcon(pm);
@@ -89,6 +97,27 @@ public class MediaAppDetails implements Parcelable {
             // MediaBrowserService implementation.
             componentName = new ComponentName(info.packageName, info.name);
             sessionToken = null;
+        }
+
+        try {
+            FeatureInfo[] features = pm.getPackageInfo(
+                    packageName, PackageManager.GET_CONFIGURATIONS).reqFeatures;
+
+            supportsAutomotive = features != null && Arrays.stream(features)
+                    .filter(f -> "android.hardware.type.automotive".equals(f.name))
+                    .findAny()
+                    .orElse(null) != null;
+
+            Bundle metaData = pm.getApplicationInfo(packageName,
+                    PackageManager.GET_META_DATA).metaData;
+
+            if (metaData != null) {
+                if (metaData.containsKey("com.google.android.gms.car.application")) {
+                    supportsAuto = true;
+                }
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.w("MediaAppDetails", "package name not found" + packageName);
         }
     }
 
@@ -112,11 +141,13 @@ public class MediaAppDetails implements Parcelable {
         return null;
     }
 
-    public static ResolveInfo findPreferenceResolveInfo(String packageName, PackageManager pm) {
+    public static List<ResolveInfo> findResolveInfo(
+            String packageName, PackageManager pm, String action) {
         if (packageName != null) {
-            Intent prefsIntent = new Intent(Intent.ACTION_APPLICATION_PREFERENCES);
+            Intent prefsIntent = new Intent(action);
             prefsIntent.setPackage(packageName);
-            return pm.resolveActivity(prefsIntent, 0);
+
+            return pm.queryIntentActivities(prefsIntent, 0);
         }
         return null;
     }
@@ -127,6 +158,8 @@ public class MediaAppDetails implements Parcelable {
         icon = parcel.readParcelable(MediaAppDetails.class.getClassLoader());
         sessionToken = parcel.readParcelable(MediaAppDetails.class.getClassLoader());
         componentName = parcel.readParcelable(MediaAppDetails.class.getClassLoader());
+        supportsAuto = parcel.readInt() == 1;
+        supportsAutomotive = parcel.readInt() == 1;
     }
 
     @Override
@@ -141,6 +174,8 @@ public class MediaAppDetails implements Parcelable {
         dest.writeParcelable(icon, flags);
         dest.writeParcelable(sessionToken, flags);
         dest.writeParcelable(componentName, flags);
+        dest.writeInt(supportsAuto ? 1 : 0);
+        dest.writeInt(supportsAutomotive ? 1 : 0);
     }
 
     public static final Parcelable.Creator<MediaAppDetails> CREATOR =

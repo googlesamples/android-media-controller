@@ -27,7 +27,14 @@
     <string name="app_control_button">Control</string>
     <string name="app_test_button">Test</string>
 
+    <string name="app_auto_compat_text">a</string>
+    <string name="app_automotive_compat_text">A</string>
+    <string name="app_both_compat_text">aA</string>
+
     <string name="media_app_header_browse">MediaBrowserService Implementations</string>
+    <string name="media_app_automotive_header_browse">MediaBrowserService Implementations (Automotive supported)</string>
+    <string name="media_app_auto_header_browse">MediaBrowserService Implementations (Auto supported)</string>
+    <string name="media_app_both_header_browse">MediaBrowserService Implementations (Auto and Automotive supported)</string>
     <string name="media_app_header_session">Active MediaSessions</string>
 
     <string name="monkey_buttons_txt">PUSH BUTTONS!</string>

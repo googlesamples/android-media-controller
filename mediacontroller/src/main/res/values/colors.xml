@@ -32,4 +32,8 @@
     <color name="text_dark">#303030</color>
     <color name="text_light">#909090</color>
     <color name="text_shadow">#a0000000</color>
+
+    <color name="test_result_fail">#FF8483</color>
+    <color name="test_result_pass">#92FF8F</color>
+    <color name="test_result_optional_fail">#FFDC00</color>
 </resources>

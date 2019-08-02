@@ -37,7 +37,8 @@
             android:layout_height="wrap_content"
             tools:text="Test Name"
             android:textSize="@dimen/tests_subheader_text_size"
-            android:textStyle="italic" />
+            android:textStyle="italic"
+            android:textColor="#000"/>
 
         <TextView
             android:id="@+id/card_text"

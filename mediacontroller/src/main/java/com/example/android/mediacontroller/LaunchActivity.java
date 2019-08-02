@@ -35,6 +35,7 @@ import com.example.android.mediacontroller.tasks.FindMediaSessionAppsTask;
 import com.example.android.mediacontroller.tasks.MediaAppControllerUtils;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -54,6 +55,7 @@ public class LaunchActivity extends AppCompatActivity {
 
     private Snackbar mSnackbar;
 
+    private MediaAppListAdapter mediaAppsAdapter;
     private MediaAppListAdapter.Section mMediaBrowserApps;
 
     private final FindMediaAppsTask.AppListUpdatedCallback mBrowserAppsUpdated =
@@ -64,12 +66,50 @@ public class LaunchActivity extends AppCompatActivity {
 
                     if (mediaAppDetails.isEmpty()) {
                         // Show an error if no apps were found.
+                        mMediaBrowserApps = mediaAppsAdapter
+                                .addSection(R.string.media_app_header_browse);
                         mMediaBrowserApps.setError(
                                 R.string.no_apps_found,
                                 R.string.no_apps_reason_no_media_browser_service);
                         return;
                     }
-                    mMediaBrowserApps.setAppsList(mediaAppDetails);
+
+                    ArrayList<MediaAppDetails> apps = new ArrayList<>();
+                    ArrayList<MediaAppDetails> autoApps = new ArrayList<>();
+                    ArrayList<MediaAppDetails> automotiveApps = new ArrayList<>();
+                    ArrayList<MediaAppDetails> bothApps = new ArrayList<>();
+
+                    for (MediaAppDetails app : mediaAppDetails) {
+                        if (app.supportsAuto && app.supportsAutomotive) {
+                            bothApps.add(app);
+                        } else if (app.supportsAuto) {
+                            autoApps.add(app);
+                        } else if (app.supportsAutomotive) {
+                            automotiveApps.add(app);
+                        } else {
+                            apps.add(app);
+                        }
+                    }
+
+                    mediaAppsAdapter.clearImplSections();
+
+                    if (!apps.isEmpty()) {
+                        mMediaBrowserApps = mediaAppsAdapter.addSection(
+                                R.string.media_app_header_browse);
+                        mMediaBrowserApps.setAppsList(apps);
+                    }
+                    if (!bothApps.isEmpty()) {
+                        mediaAppsAdapter.addSection(R.string.media_app_both_header_browse)
+                                .setAppsList(bothApps);
+                    }
+                    if (!autoApps.isEmpty()) {
+                        mediaAppsAdapter.addSection(R.string.media_app_auto_header_browse)
+                                .setAppsList(autoApps);
+                    }
+                    if (!automotiveApps.isEmpty()) {
+                        mediaAppsAdapter.addSection(R.string.media_app_automotive_header_browse)
+                                .setAppsList(automotiveApps);
+                    }
                 }
             };
 
@@ -88,7 +128,7 @@ public class LaunchActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        MediaAppListAdapter mediaAppsAdapter = new MediaAppListAdapter((app, isTest) -> {
+        mediaAppsAdapter = new MediaAppListAdapter((app, isTest) -> {
             if (mSnackbar != null) {
                 mSnackbar.dismiss();
                 mSnackbar = null;
@@ -103,7 +143,6 @@ public class LaunchActivity extends AppCompatActivity {
         if (mMediaSessionListener != null) {
             mMediaSessionListener.onCreate(mediaAppsAdapter);
         }
-        mMediaBrowserApps = mediaAppsAdapter.addSection(R.string.media_app_header_browse);
 
         RecyclerView mediaAppsList = findViewById(R.id.app_list);
         mediaAppsList.setLayoutManager(new LinearLayoutManager(this));

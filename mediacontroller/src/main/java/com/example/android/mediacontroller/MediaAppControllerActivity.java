@@ -150,7 +150,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
      * @return An Intent that can be used to start the Activity.
      */
     public static Intent buildIntent(final Activity activity,
-                                     final MediaAppDetails appDetails) {
+            final MediaAppDetails appDetails) {
         final Intent intent = new Intent(activity, MediaAppControllerActivity.class);
         intent.putExtra(APP_DETAILS_EXTRA, appDetails);
         return intent;
@@ -162,6 +162,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_media_app_controller);
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        toolbar.setNavigationOnClickListener(v -> finish());
 
         mViewPager = findViewById(R.id.view_pager);
         mInputTypeView = findViewById(R.id.input_type);
@@ -751,7 +753,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     }
 
     private boolean actionSupported(@PlaybackStateCompat.Actions long actions,
-                                    @PlaybackStateCompat.Actions long checkAction) {
+            @PlaybackStateCompat.Actions long checkAction) {
         return ((actions & checkAction) != 0);
     }
 
@@ -778,8 +780,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private final Spinner mFocusTypeSpinner;
 
         private AudioFocusHelper(@NonNull Context context,
-                                 @NonNull ToggleButton focusToggleButton,
-                                 @NonNull Spinner focusTypeSpinner) {
+                @NonNull ToggleButton focusToggleButton,
+                @NonNull Spinner focusTypeSpinner) {
 
             mAudioManager = (AudioManager) context.getSystemService(AUDIO_SERVICE);
             mToggleButton = focusToggleButton;
@@ -897,7 +899,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
 
         void setActions(MediaControllerCompat controller,
-                        List<PlaybackStateCompat.CustomAction> actions) {
+                List<PlaybackStateCompat.CustomAction> actions) {
             mControls = controller.getTransportControls();
             try {
                 mMediaAppResources = getPackageManager()
@@ -921,7 +923,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
                     return actions.size() == mActions.size() &&
                             actions.get(oldItemPosition).getAction()
-                            .equals(mActions.get(newItemPosition).getAction());
+                                    .equals(mActions.get(newItemPosition).getAction());
                 }
 
                 @Override
@@ -959,9 +961,9 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private final List<Integer> modes;
 
         ModeHelper(ViewGroup container,
-                   @IdRes int stateSpinnerView,
-                   @IdRes int iconImageView,
-                   List<Integer> modes) {
+                @IdRes int stateSpinnerView,
+                @IdRes int iconImageView,
+                List<Integer> modes) {
             this.context = container.getContext();
             this.spinner = container.findViewById(stateSpinnerView);
             this.icon = container.findViewById(iconImageView);
@@ -1073,7 +1075,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 new MediaBrowserCompat.SubscriptionCallback() {
                     @Override
                     public void onChildrenLoaded(@NonNull String parentId,
-                                                 @NonNull List<MediaItem> children) {
+                            @NonNull List<MediaItem> children) {
                         updateItemsEmptyIfNull(children);
                     }
                 };
@@ -1252,7 +1254,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 mBrowser.search(getCurrentNode(), null, new MediaBrowserCompat.SearchCallback() {
                     @Override
                     public void onSearchResult(@NonNull String query, Bundle extras,
-                                               @NonNull List<MediaBrowserCompat.MediaItem> items) {
+                            @NonNull List<MediaBrowserCompat.MediaItem> items) {
                         if (query.equals(getCurrentNode())) {
                             updateItemsEmptyIfNull(items);
                         }

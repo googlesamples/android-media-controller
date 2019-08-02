@@ -22,6 +22,7 @@ import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -105,7 +106,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
         private final MediaAppSelectedListener appSelectedListener;
 
         public AppEntry(MediaAppDetails appDetails,
-                        MediaAppSelectedListener appSelectedListener) {
+                MediaAppSelectedListener appSelectedListener) {
             this.appDetails = appDetails;
             this.appSelectedListener = appSelectedListener;
         }
@@ -120,7 +121,8 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
             ViewHolder holder = (ViewHolder) vh;
             holder.appIconView.setImageBitmap(appDetails.icon);
             holder.appIconView.setContentDescription(
-                    holder.appIconView.getContext().getString(R.string.app_icon_desc, appDetails.appName));
+                    holder.appIconView.getContext().getString(R.string.app_icon_desc,
+                            appDetails.appName));
             holder.appNameView.setText(appDetails.appName);
             holder.appPackageView.setText(appDetails.packageName);
 
@@ -227,7 +229,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
         private final View.OnClickListener clickListener;
 
         public Error(@StringRes int message, @StringRes int detail, @StringRes int buttonText,
-                     @Nullable View.OnClickListener onClickListener) {
+                @Nullable View.OnClickListener onClickListener) {
             this.errorMsgId = message;
             this.errorDetailId = detail;
             this.errorButtonId = buttonText;
@@ -316,7 +318,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
         }
 
         public void setError(@StringRes int message, @StringRes int detail,
-                             @StringRes int buttonText, View.OnClickListener onClickListener) {
+                @StringRes int buttonText, View.OnClickListener onClickListener) {
             mItems.clear();
             mItems.add(new Error(message, detail, buttonText, onClickListener));
             updateData();
@@ -329,7 +331,6 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
             }
             updateData();
         }
-
     }
 
     private final List<Section> mSections = new ArrayList<>();
@@ -339,6 +340,12 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
 
     MediaAppListAdapter(@NonNull MediaAppSelectedListener itemClickListener) {
         mMediaAppSelectedListener = itemClickListener;
+    }
+
+    void clearImplSections() {
+        Section active = mSections.get(0);
+        mSections.clear();
+        mSections.add(active);
     }
 
     Section addSection(@StringRes int label) {
