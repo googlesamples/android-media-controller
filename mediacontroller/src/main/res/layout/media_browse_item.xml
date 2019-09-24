@@ -27,7 +27,6 @@
         android:layout_gravity="center_vertical"
         android:layout_marginEnd="@dimen/margin_small"
         android:scaleType="fitCenter"
-        android:tint="@color/text_dark"
         tools:ignore="ContentDescription" />
 
     <LinearLayout
