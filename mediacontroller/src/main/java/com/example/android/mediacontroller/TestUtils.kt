@@ -16,6 +16,7 @@
 package com.example.android.mediacontroller
 
 import android.os.Bundle
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -27,6 +28,7 @@ import org.json.JSONObject
  */
 
 const val METADATA_KEY_PREFIX = "android.media.metadata."
+const val METADATA_EXTRA_KEY_PREFIX = "android.media.extra."
 
 // Title, Artist, and Duration seem to always be present for a given Media Item, so these
 // three Metadata Keys are used to identify unique Media Items
@@ -287,7 +289,12 @@ fun getMetadataKey(metadata: MediaMetadataCompat?, key: String): String {
             MediaMetadataCompat.METADATA_KEY_DISC_NUMBER,
             MediaMetadataCompat.METADATA_KEY_DURATION,
             MediaMetadataCompat.METADATA_KEY_NUM_TRACKS,
-            MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER
+            MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER,
+            MediaMetadataCompat.METADATA_KEY_DOWNLOAD_STATUS,
+            MediaMetadataCompat.METADATA_KEY_BT_FOLDER_TYPE,
+            MediaMetadataCompat.METADATA_KEY_ADVERTISEMENT,
+            MediaDescriptionCompat.EXTRA_DOWNLOAD_STATUS,
+            MediaDescriptionCompat.EXTRA_BT_FOLDER_TYPE
     )
     val bitmapValues = arrayOf(
             MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
@@ -327,6 +334,8 @@ fun formatMetadata(metadata: MediaMetadataCompat?): String {
     keys.forEach { key ->
         val label = if (key.startsWith(METADATA_KEY_PREFIX)) {
             "${key.substringAfter(METADATA_KEY_PREFIX)}:".padEnd(20, ' ')
+        } else if (key.startsWith(METADATA_EXTRA_KEY_PREFIX)) {
+            "extra.${key.substringAfter(METADATA_EXTRA_KEY_PREFIX)}:".padEnd(20, ' ')
         } else {
             "$key:".padEnd(20, ' ')
         }
