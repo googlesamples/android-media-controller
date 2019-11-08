@@ -102,11 +102,13 @@ public class MediaAppDetails implements Parcelable {
         try {
             FeatureInfo[] features = pm.getPackageInfo(
                     packageName, PackageManager.GET_CONFIGURATIONS).reqFeatures;
-
-            supportsAutomotive = features != null && Arrays.stream(features)
-                    .filter(f -> "android.hardware.type.automotive".equals(f.name))
-                    .findAny()
-                    .orElse(null) != null;
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                supportsAutomotive = features != null && Arrays.stream(features)
+                        .filter(f -> "android.hardware.type.automotive".equals(f.name))
+                        .findAny()
+                        .orElse(null) != null;
+            }
 
             Bundle metaData = pm.getApplicationInfo(packageName,
                     PackageManager.GET_META_DATA).metaData;
