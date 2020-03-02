@@ -2,6 +2,7 @@ Media Controller Test
 =====================
 Create a simple MediaController that connects to a MediaBrowserService
 in order to test inter-app media controls.
+This tool is described in the Android documentation: [Using the media controller test app](https://developer.android.com/guide/topics/media-apps/audio-app/media-controller-test).
 
 This app works with the Universal Android Music Player sample,
 or any other app that implements the media APIs.
