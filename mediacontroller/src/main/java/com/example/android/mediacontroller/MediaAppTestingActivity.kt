@@ -43,7 +43,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
-import androidx.viewpager.widget.ViewPager.OnPageChangeListener
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.android.synthetic.main.activity_media_app_testing.*
 import kotlinx.android.synthetic.main.media_controller_info.*
@@ -53,7 +52,7 @@ import kotlinx.android.synthetic.main.media_tests.*
 import java.text.DateFormat
 import java.util.*
 
-class MediaAppTestingActivity : AppCompatActivity(){
+class MediaAppTestingActivity : AppCompatActivity() {
     private var mediaAppDetails: MediaAppDetails? = null
     private var mediaController: MediaControllerCompat? = null
     private var mediaBrowser: MediaBrowserCompat? = null
@@ -148,8 +147,9 @@ class MediaAppTestingActivity : AppCompatActivity(){
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
 
             }
+
             override fun onPageSelected(position: Int) {
-                bottomNavigationView.menu.getItem(position).setChecked(true)
+                bottomNavigationView.menu.getItem(position).isChecked = true
             }
         })
     }
@@ -737,7 +737,7 @@ class MediaAppTestingActivity : AppCompatActivity(){
         if (mediaAppDetails?.supportsAuto == true || mediaAppDetails?.supportsAutomotive == true) {
             testList += commonTests
         }
-        if (mediaAppDetails?.supportsAutomotive ?: false) {
+        if (mediaAppDetails?.supportsAutomotive == true) {
             testList += automotiveTests
         }
 
