@@ -764,7 +764,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         if (mediaAppDetails?.supportsAuto == true || mediaAppDetails?.supportsAutomotive == true) {
             testList += commonTests
         }
-        if (mediaAppDetails?.supportsAutomotive == true) {
+        if (mediaAppDetails?.supportsAutomotive ?: false) {
             testList += automotiveTests
         }
 
