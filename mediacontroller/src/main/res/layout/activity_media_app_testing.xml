@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Copyright (C) 2018 The Android Open Source Project
+  Copyright (C) 2020 The Android Open Source Project
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -14,8 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -38,35 +37,30 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <FrameLayout
+    <androidx.viewpager.widget.ViewPager
+        android:id="@+id/view_pager"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-        <androidx.viewpager.widget.ViewPager
-            android:id="@+id/view_pager"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="@dimen/margin_small">
+        <include
+            android:id="@+id/media_controller_info_page"
+            layout="@layout/media_controller_info" />
 
-            <include
-                android:id="@+id/media_controller_info_page"
-                layout="@layout/media_controller_info" />
+        <include
+            android:id="@+id/media_controller_test_page"
+            layout="@layout/media_tests" />
 
-            <include
-                android:id="@+id/media_controller_test_page"
-                layout="@layout/media_tests" />
+    </androidx.viewpager.widget.ViewPager>
 
-        </androidx.viewpager.widget.ViewPager>
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/page_indicator"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:background="@android:color/transparent"
-            app:tabBackground="@drawable/tab_indicator"
-            app:tabGravity="center"
-            app:tabIndicatorHeight="0dp" />
-    </FrameLayout>
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        app:itemTextColor="@color/bottom_nav_item_tint"
+        app:itemRippleColor="@color/colorAccent"
+        app:itemIconTint="@color/bottom_nav_item_tint"
+        app:menu="@menu/bottom_nav_menu" />
 
 </LinearLayout>

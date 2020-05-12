@@ -51,6 +51,7 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$app_compat_version"
     implementation "androidx.constraintlayout:constraintlayout:$constraint_layout_version"
     implementation "androidx.cardview:cardview:$support_lib_version"
+    implementation 'com.android.support:design:28.0.0'
 
     implementation "androidx.leanback:leanback:$leanback_version"
 

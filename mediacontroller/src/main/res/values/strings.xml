@@ -133,6 +133,8 @@
 
     <string name="rating_percentage">Rating %</string>
     <string name="rating_set_percentage">Set</string>
+    <string name="bottom_nav_info_text">Info</string>
+    <string name="bottom_nav_test_text">Test</string>
 
     <!--
     The order of these strings must match the order of the constants

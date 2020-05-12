@@ -48,12 +48,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 import com.google.android.material.tabs.TabLayout
 
 import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_info_page
 import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.page_indicator
 import kotlinx.android.synthetic.main.activity_media_app_testing.toolbar
 import kotlinx.android.synthetic.main.activity_media_app_testing.view_pager
 import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
@@ -96,6 +96,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
     private lateinit var shuffleModeText: TextView
     private lateinit var queueTitleText: TextView
     private lateinit var queueText: TextView
+    private lateinit var bottomNavigationView: BottomNavigationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -108,6 +109,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         Test.androidResources = resources
 
+        bottomNavigationView = findViewById(R.id.bottom_navigation_view)
         viewPager = view_pager
         testsQuery = tests_query
         resultsContainer = test_results_container
@@ -129,6 +131,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             viewPager.visibility = View.GONE
         }
 
+        // Set up page navigation
         val pages = arrayOf(media_controller_info_page, media_controller_test_page)
         viewPager.offscreenPageLimit = pages.size
         viewPager.adapter = object : PagerAdapter() {
@@ -144,10 +147,40 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 return pages[position]
             }
         }
+        bottomNavigationView.setOnNavigationItemSelectedListener { item: MenuItem ->
+            return@setOnNavigationItemSelectedListener when (item.itemId) {
+                R.id.info_bottom_nav -> {
+                    viewPager.currentItem = 0
+                    true
+                }
+                /* To be implemented...
+                R.id.test_bottom_nav -> {
+                    viewPager.currentItem = 1
+                    true
+                }
+                 */
+                R.id.test_suite_bottom_nav -> {
+                    viewPager.currentItem = 2
+                    true
+                }
+                else -> false
+            }
+        }
+        viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
 
-        val pageIndicator: TabLayout = page_indicator
-        pageIndicator.setupWithViewPager(viewPager)
+            override fun onPageScrollStateChanged(state: Int) {
+            }
+
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+
+            }
+
+            override fun onPageSelected(position: Int) {
+                bottomNavigationView.menu.getItem(position).isChecked = true
+            }
+        })
     }
+
 
     override fun onDestroy() {
         mediaController?.run {
