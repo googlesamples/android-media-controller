@@ -51,11 +51,8 @@ import androidx.viewpager.widget.ViewPager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 import com.google.android.material.tabs.TabLayout
+import kotlinx.android.synthetic.main.activity_media_app_testing.*
 
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_info_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.toolbar
-import kotlinx.android.synthetic.main.activity_media_app_testing.view_pager
 import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
 import kotlinx.android.synthetic.main.media_controller_info.metadata_text
 import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
@@ -132,7 +129,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         // Set up page navigation
-        val pages = arrayOf(media_controller_info_page, media_controller_test_page)
+        val pages = arrayOf(media_controller_info_page, media_controller_test_page, media_controller_test_suite_page)
         viewPager.offscreenPageLimit = pages.size
         viewPager.adapter = object : PagerAdapter() {
             override fun getCount(): Int {
@@ -153,12 +150,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     viewPager.currentItem = 0
                     true
                 }
-                /* To be implemented...
-                R.id.test_bottom_nav -> {
+
+                R.id.test_bottom_nav-> {
                     viewPager.currentItem = 1
                     true
                 }
-                 */
+
                 R.id.test_suite_bottom_nav -> {
                     viewPager.currentItem = 2
                     true

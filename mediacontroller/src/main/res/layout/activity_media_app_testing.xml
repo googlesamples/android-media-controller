@@ -51,6 +51,10 @@
             android:id="@+id/media_controller_test_page"
             layout="@layout/media_tests" />
 
+        <include
+            android:id="@+id/media_controller_test_suite_page"
+            layout="@layout/media_tests" />
+
     </androidx.viewpager.widget.ViewPager>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
