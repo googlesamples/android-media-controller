@@ -53,7 +53,7 @@
 
         <include
             android:id="@+id/media_controller_test_suite_page"
-            layout="@layout/media_tests" />
+            layout="@layout/media_test_suites" />
 
     </androidx.viewpager.widget.ViewPager>
 
