@@ -29,11 +29,16 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
@@ -43,12 +48,33 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
+
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlinx.android.synthetic.main.activity_media_app_testing.*
-import kotlinx.android.synthetic.main.media_controller_info.*
-import kotlinx.android.synthetic.main.media_queue_item.view.*
-import kotlinx.android.synthetic.main.media_test_option.view.*
-import kotlinx.android.synthetic.main.media_tests.*
+
+import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_page
+import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_info_page
+import kotlinx.android.synthetic.main.activity_media_app_testing.toolbar
+import kotlinx.android.synthetic.main.activity_media_app_testing.view_pager
+import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
+import kotlinx.android.synthetic.main.media_controller_info.metadata_text
+import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
+import kotlinx.android.synthetic.main.media_controller_info.queue_item_list
+import kotlinx.android.synthetic.main.media_controller_info.queue_text
+import kotlinx.android.synthetic.main.media_controller_info.queue_title_text
+import kotlinx.android.synthetic.main.media_controller_info.repeat_mode_text
+import kotlinx.android.synthetic.main.media_controller_info.shuffle_mode_text
+import kotlinx.android.synthetic.main.media_queue_item.view.description_id
+import kotlinx.android.synthetic.main.media_queue_item.view.description_subtitle
+import kotlinx.android.synthetic.main.media_queue_item.view.description_title
+import kotlinx.android.synthetic.main.media_queue_item.view.description_uri
+import kotlinx.android.synthetic.main.media_queue_item.view.queue_id
+import kotlinx.android.synthetic.main.media_test_option.view.card_button
+import kotlinx.android.synthetic.main.media_test_option.view.card_header
+import kotlinx.android.synthetic.main.media_test_option.view.card_text
+import kotlinx.android.synthetic.main.media_tests.test_options_list
+import kotlinx.android.synthetic.main.media_tests.test_results_container
+import kotlinx.android.synthetic.main.media_tests.tests_query
+
 
 class MediaAppTestingActivity : AppCompatActivity() {
     private var mediaAppDetails: MediaAppDetails? = null
