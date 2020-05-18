@@ -3,40 +3,35 @@ package com.example.android.mediacontroller
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
-import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.android.synthetic.main.media_test_option.view.*
 import kotlinx.android.synthetic.main.media_test_option.view.card_header
 import kotlinx.android.synthetic.main.media_test_option.view.card_text
 import kotlinx.android.synthetic.main.media_test_suite_result.view.*
-import org.w3c.dom.Text
-import java.text.DateFormat
-import java.util.*
-import java.util.concurrent.Semaphore
-import java.util.concurrent.atomic.AtomicBoolean
 
-class MediaAppTestSuite(testSuiteName: String, testSuiteDescripton: String, testList: Array<TestOptionDetails>, testSuiteResultsLayout: RecyclerView, context: Context): View.OnClickListener {
+
+class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList: Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context): View.OnClickListener {
     val name = testSuiteName
-    val description = testSuiteDescripton
-    val singleSuiteTestList = testList
-    val testSuiteResultsLayout = testSuiteResultsLayout
+    val description = testSuiteDescription
+    private val singleSuiteTestList = testList
     val context = context
-    val resultsAdapter = ResultsAdapter(singleSuiteTestList)
+    private val resultsAdapter = ResultsAdapter(singleSuiteTestList)
 
-    val callback = { result: TestResult, testId: Int ->
+    val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
         Log.i(name, "Finished Test: " + testList[testId].name + " with result " + result)
         testList[testId].testResult = result
-        resultsAdapter.notifyItemChanged(testId)
+        testList[testId].testLogs = testLogs
+        //resultsAdapter.notifyItemChanged(testId)
     }
 
     fun runSuite(numIter: Int){
@@ -97,20 +92,26 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescripton: String, test
     override fun onClick(p0: View?) {
 
     }
-    class OnResultsClickedListener(testDetails: TestOptionDetails, context: Context): View.OnClickListener{
-        val testDetails = testDetails
-        val context = context
+    class OnResultsClickedListener(private val testDetails: TestOptionDetails, val context: Context): View.OnClickListener{
 
         override fun onClick(p0: View?) {
+
             var dialog = Dialog(context)
-            dialog .requestWindowFeature(Window.FEATURE_NO_TITLE)
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
             dialog.setContentView(R.layout.test_suite_results_dialog)
             val results_title = dialog.findViewById(R.id.results_title) as TextView
             results_title.text = testDetails.name
             val results_subtitle = dialog.findViewById(R.id.results_subtitle) as TextView
             results_subtitle.text = testDetails.desc
-            val results_log = dialog.findViewById(R.id.results_log) as TextView
-            results_log.text = "This is the test results"
+            val results_log = dialog.findViewById(R.id.results_log) as LinearLayout
+            if (testDetails.testLogs != Test.NO_LOGS) {
+                results_log.removeAllViews()
+                for (line in testDetails.testLogs){
+                    val tv_newLine = TextView(context)
+                    tv_newLine.text = line
+                    results_log.addView(tv_newLine)
+                }
+            }
             dialog.show()
         }
     }

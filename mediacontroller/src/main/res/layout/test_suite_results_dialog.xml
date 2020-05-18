@@ -23,7 +23,8 @@
         android:layout_height="2dp"
         android:padding="@dimen/margin_small"
         android:background="#c0c0c0"/>
-    <TextView
+    <LinearLayout
+        android:orientation="vertical"
         android:id="@+id/results_log"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

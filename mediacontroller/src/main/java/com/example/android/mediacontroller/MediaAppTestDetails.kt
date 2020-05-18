@@ -27,13 +27,17 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.util.TypedValue
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import com.example.android.mediacontroller.Test.Companion.androidResources
+import java.text.DateFormat
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 /**
@@ -45,11 +49,11 @@ var currentTest: Test? = null
 class Test(
         testName: String,
         val testType: TestType,
-        val mediaController: MediaControllerCompat,
-        val testLogger: (tag: String, msg: String) -> Unit?
+        val mediaController: MediaControllerCompat
 ) : HandlerThread(testName) {
     private val steps = mutableListOf<TestStep>()
     private var stepIndex = 0
+    public var testLogs = arrayListOf<String>()
     var origState: PlaybackStateCompat? = null
     var origMetadata: MediaMetadataCompat? = null
     private lateinit var callback: MediaControllerCompat.Callback
@@ -57,28 +61,38 @@ class Test(
     val extras = Bundle()
     lateinit var handler: Handler // TODO(nevmital): might not need to hold reference
 
+    fun logTestUpdate(logTag: String, message: String) {
+        val date = DateFormat
+                .getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG)
+                .format(Date())
+        val update = "[$date] <$logTag>:\n$message"
+
+        //Log.i(logTag, "<$logTag> [$date] $message")
+        testLogs.add(update)
+    }
+
     fun addStep(step: TestStep) {
         if (currentTest == this) {
-            testLogger(name, androidResources.getString(R.string.step_add_error_running))
+            logTestUpdate(name, androidResources.getString(R.string.step_add_error_running))
             return
         }
         if (step.test != this) {
-            testLogger(name, androidResources.getString(R.string.step_add_error_parent))
+            logTestUpdate(name, androidResources.getString(R.string.step_add_error_parent))
             return
         }
         steps.add(step)
     }
 
-    fun runTest(testId: Int, resCallback: (result: TestResult, testId: Int) -> Unit) {
+    fun runTest(testId: Int, resCallback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit) {
         currentTest?.run {
-            testLogger(name, androidResources.getString(R.string.test_interrupted))
+            logTestUpdate(name, androidResources.getString(R.string.test_interrupted))
             endTest()
         }
         currentTest = this
 
         // Start Looper
         start()
-        testLogger(name, androidResources.getString(
+        logTestUpdate(name, androidResources.getString(
                 R.string.test_starting,
                 playbackStateToName(origState?.state),
                 origMetadata.toBasicString()
@@ -87,11 +101,11 @@ class Test(
         handler = object : Handler(this.looper) {
             override fun handleMessage(msg: Message?) {
                 if (msg == null) {
-                    testLogger(name, androidResources.getString(R.string.test_message_empty))
+                    logTestUpdate(name, androidResources.getString(R.string.test_message_empty))
                     return
                 }
                 if (stepIndex >= steps.size) {
-                    testLogger(name, androidResources.getString(R.string.test_success))
+                    logTestUpdate(name, androidResources.getString(R.string.test_success))
                     endTest()
                     return
                 }
@@ -106,17 +120,17 @@ class Test(
                         currentStep.execute(state, metadata)
                     }
                     TIMED_OUT -> {
-                        testLogger(name, androidResources.getString(R.string.test_fail_timeout))
+                        logTestUpdate(name, androidResources.getString(R.string.test_fail_timeout))
                         TestStepStatus.STEP_FAIL
                     }
                     else -> {
-                        testLogger(name, androidResources.getString(R.string.test_message_invalid))
+                        logTestUpdate(name, androidResources.getString(R.string.test_message_invalid))
                         return
                     }
                 }
 
                 if (state.state == PlaybackStateCompat.STATE_ERROR) {
-                    testLogger(
+                    logTestUpdate(
                             name,
                             "${errorCodeToName(state.errorCode)}: ${state.errorMessage}"
                     )
@@ -124,7 +138,7 @@ class Test(
                 // Process TestStep result
                 when (status) {
                     TestStepStatus.STEP_PASS -> {
-                        testLogger(
+                        logTestUpdate(
                                 currentStep.logTag,
                                 androidResources.getString(
                                         R.string.test_step_pass_state,
@@ -133,7 +147,7 @@ class Test(
                         )
                         // Pass test if only last step is a pass
                         if (stepIndex == steps.size - 1) {
-                            resCallback(TestResult.PASS, testId)
+                            resCallback(TestResult.PASS, testId, testLogs)
                         }
                         // Move to next step
                         ++stepIndex
@@ -142,7 +156,7 @@ class Test(
                     }
                     TestStepStatus.STEP_CONTINUE -> {
                         // No op
-                        testLogger(
+                        logTestUpdate(
                                 currentStep.logTag,
                                 androidResources.getString(
                                         R.string.test_step_cont_state,
@@ -152,7 +166,7 @@ class Test(
                     }
                     TestStepStatus.STEP_FAIL -> {
                         if (msg.what != TIMED_OUT) {
-                            testLogger(
+                            logTestUpdate(
                                     currentStep.logTag,
                                     androidResources.getString(
                                             R.string.test_step_fail_state,
@@ -161,9 +175,9 @@ class Test(
                             )
                         }
                         if (testType == TestType.REQUIRED) {
-                            resCallback(TestResult.FAIL, testId)
+                            resCallback(TestResult.FAIL, testId, testLogs)
                         } else if (testType == TestType.OPTIONAL) {
-                            resCallback(TestResult.OPTIONAL_FAIL, testId)
+                            resCallback(TestResult.OPTIONAL_FAIL, testId, testLogs)
                         }
                         endTest()
                     }
@@ -205,6 +219,7 @@ class Test(
         const val TRIGGER_KEY = "STEP_TRIGGER"
         const val TARGET_KEY = "TARGET_POSITION"
         const val ITEM_CHANGED_KEY = "METADATA_CHANGED"
+        val NO_LOGS = arrayListOf<String>()
 
         /**
          * TODO (b/112546844): Provide better abstraction for testing-related strings. (e.g. some
@@ -218,9 +233,11 @@ class TestOptionDetails(val id: Int,
                         val name: String,
                         val desc: String,
                         var testResult: TestResult,
+                        var testLogs: ArrayList<String>,
                         val runTest: (query: String,
-                                      callback: (result: TestResult, testId: Int) -> Unit,
+                                      callback: (result: TestResult, testId: Int, ArrayList<String>) -> Unit,
                                       testId: Int) -> Unit)
+
 
 enum class TestType {
     OPTIONAL, REQUIRED
@@ -270,16 +287,16 @@ interface TestStep {
 
     fun checkActionSupported(state: PlaybackStateCompat?, action: Long) {
         if (state == null) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_warn_state_null))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_state_null))
         } else {
             if (state.actions and action == 0L) {
-                test.testLogger(logTag, androidResources.getString(
+                test.logTestUpdate(logTag, androidResources.getString(
                         R.string.test_warn_action_unsupported,
                         actionToString(action)
                 ))
             }
             if (state.actions == 0L) {
-                test.testLogger(logTag, androidResources.getString(R.string.test_warn_action_none))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_action_none))
             }
         }
     }
@@ -314,7 +331,7 @@ class ConfigurePlay(override val test: Test) : TestStep {
         test.origMetadata = test.mediaController.metadata
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "play()"
         ))
@@ -355,7 +372,7 @@ class ConfigurePlayFromSearch(override val test: Test, private val query: String
         val extras = makePlayFromBundle(query)
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "playFromSearch($query, $extras)"
         ))
@@ -379,14 +396,14 @@ class ConfigurePlayFromMediaId(override val test: Test, private val query: Strin
         test.origMetadata = test.mediaController.metadata
 
         if (query == "") {
-            test.testLogger(logTag, androidResources.getString(R.string.test_error_query_empty))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_query_empty))
             return TestStepStatus.STEP_FAIL
         }
 
         val extras = makePlayFromBundle(query)
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "playFromMediaId($query, $extras)"
         ))
@@ -411,7 +428,7 @@ class ConfigurePlayFromUri(override val test: Test, private val query: String) :
         test.origMetadata = test.mediaController.metadata
 
         if (query == "") {
-            test.testLogger(logTag, androidResources.getString(R.string.test_error_query_empty))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_query_empty))
             return TestStepStatus.STEP_FAIL
         }
 
@@ -419,7 +436,7 @@ class ConfigurePlayFromUri(override val test: Test, private val query: String) :
         val extras = makePlayFromBundle(query)
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PLAY_FROM_URI)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "playFromUri($uri, $extras)"
         ))
@@ -442,7 +459,7 @@ class ConfigurePause(override val test: Test) : TestStep {
         test.origMetadata = test.mediaController.metadata
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_PAUSE)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "pause()"
         ))
@@ -465,7 +482,7 @@ class ConfigureStop(override val test: Test) : TestStep {
         test.origMetadata = test.mediaController.metadata
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_STOP)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "stop()"
         ))
@@ -490,7 +507,7 @@ class ConfigureSkipToNext(override val test: Test) : TestStep {
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
         test.extras.putBoolean(Test.ITEM_CHANGED_KEY, false)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "skipToNext()"
         ))
@@ -515,7 +532,7 @@ class ConfigureSkipToPrevious(override val test: Test) : TestStep {
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
         test.extras.putBoolean(Test.ITEM_CHANGED_KEY, false)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "skipToPrevious()"
         ))
@@ -542,7 +559,7 @@ class ConfigureSkipToItem(override val test: Test, private val query: String) : 
 
         val itemId = query.toLongOrNull()
         if (itemId == null) {
-            test.testLogger(logTag, androidResources.getString(
+            test.logTestUpdate(logTag, androidResources.getString(
                     R.string.test_error_query_parse, query
             ))
             return TestStepStatus.STEP_FAIL
@@ -550,7 +567,7 @@ class ConfigureSkipToItem(override val test: Test, private val query: String) : 
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM)
         test.extras.putBoolean(Test.ITEM_CHANGED_KEY, false)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "skipToQueueItem($itemId)"
         ))
@@ -578,12 +595,12 @@ class ConfigureSeekTo(override val test: Test, private val query: String) : Test
 
         val currentTime = currState?.position
         if (currentTime == null) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_error_position))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_position))
             return TestStepStatus.STEP_FAIL
         }
         var newTime = query.toLongOrNull()
         if (query == "" || newTime == null) {
-            test.testLogger(logTag, androidResources.getString(
+            test.logTestUpdate(logTag, androidResources.getString(
                     R.string.test_error_query_parse, query
             ))
             return TestStepStatus.STEP_FAIL
@@ -596,7 +613,7 @@ class ConfigureSeekTo(override val test: Test, private val query: String) : Test
 
         checkActionSupported(currState, PlaybackStateCompat.ACTION_SEEK_TO)
         test.extras.putLong(Test.TARGET_KEY, newTime)
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_running_request,
                 "seekTo($newTime)"
         ))
@@ -616,7 +633,7 @@ class WaitForPlaying(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_compare_metadata,
                 test.origMetadata.toBasicString(),
                 currMetadata.toBasicString()
@@ -624,13 +641,13 @@ class WaitForPlaying(override val test: Test) : TestStep {
         // Metadata should not change for this step, but some apps "update" the Metadata with the
         // same media item.
         if (test.origMetadata != null && !test.origMetadata.isContentSameAs(currMetadata)) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_error_metadata))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_metadata))
             return TestStepStatus.STEP_FAIL
         }
 
         return when {
             currState?.state == null -> {
-                test.testLogger(logTag, androidResources.getString(R.string.test_warn_state_null))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_state_null))
                 TestStepStatus.STEP_CONTINUE
             }
             currState.state == PlaybackStateCompat.STATE_PLAYING -> {
@@ -667,7 +684,7 @@ class WaitForSkip(override val test: Test) : TestStep {
         val stepTrigger = test.extras.getInt(Test.TRIGGER_KEY)
         val isNewItem = !test.origMetadata.isContentSameAs(currMetadata)
 
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_compare_metadata,
                 test.origMetadata.toBasicString(),
                 currMetadata.toBasicString()
@@ -677,17 +694,17 @@ class WaitForSkip(override val test: Test) : TestStep {
         if (isNewItem) {
             // Skipped to new media item
             itemChanged = true
-            test.testLogger(logTag, androidResources.getString(R.string.test_metadata_changed))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_metadata_changed))
         } else if (stepTrigger == Test.METADATA_CHANGED) {
             // Skipped to same media item
             itemChanged = true
-            test.testLogger(logTag, androidResources.getString(R.string.test_metadata_updated))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_metadata_updated))
         }
         test.extras.putBoolean(Test.ITEM_CHANGED_KEY, itemChanged)
 
         return when {
             currState?.state == null -> {
-                test.testLogger(logTag, androidResources.getString(R.string.test_warn_state_null))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_state_null))
                 TestStepStatus.STEP_CONTINUE
             }
             (isNewItem && currState.state == PlaybackStateCompat.STATE_PLAYING)
@@ -696,7 +713,7 @@ class WaitForSkip(override val test: Test) : TestStep {
                     // All conditions satisfied
                     TestStepStatus.STEP_PASS
                 } else {
-                    test.testLogger(logTag, androidResources.getString(R.string.test_running_skip))
+                    test.logTestUpdate(logTag, androidResources.getString(R.string.test_running_skip))
                     TestStepStatus.STEP_CONTINUE
                 }
             }
@@ -725,7 +742,7 @@ class WaitForStopped(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_compare_metadata,
                 test.origMetadata.toBasicString(),
                 currMetadata.toBasicString()
@@ -734,13 +751,13 @@ class WaitForStopped(override val test: Test) : TestStep {
         // item, but Metadata should not change to a different media item.
         if (currMetadata != null && test.origMetadata != null
                 && !test.origMetadata.isContentSameAs(currMetadata)) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_error_metadata))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_metadata))
             return TestStepStatus.STEP_FAIL
         }
 
         return when {
             currState?.state == null -> {
-                test.testLogger(logTag, androidResources.getString(R.string.test_warn_state_null))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_state_null))
                 TestStepStatus.STEP_CONTINUE
             }
             currState.state == PlaybackStateCompat.STATE_NONE
@@ -773,7 +790,7 @@ class WaitForPaused(override val test: Test) : TestStep {
             currState: PlaybackStateCompat?,
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
-        test.testLogger(logTag, androidResources.getString(
+        test.logTestUpdate(logTag, androidResources.getString(
                 R.string.test_compare_metadata,
                 test.origMetadata.toBasicString(),
                 currMetadata.toBasicString()
@@ -781,13 +798,13 @@ class WaitForPaused(override val test: Test) : TestStep {
         // Metadata should not change for this step, but some apps "update" the Metadata with the
         // same media item.
         if (test.origMetadata != null && !test.origMetadata.isContentSameAs(currMetadata)) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_error_metadata))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_metadata))
             return TestStepStatus.STEP_FAIL
         }
 
         return when {
             currState?.state == null -> {
-                test.testLogger(logTag, androidResources.getString(R.string.test_warn_state_null))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_state_null))
                 TestStepStatus.STEP_CONTINUE
             }
             currState.state == PlaybackStateCompat.STATE_PAUSED -> {
@@ -831,14 +848,14 @@ class WaitForPlayingBeginning(override val test: Test) : TestStep {
     ): TestStepStatus {
         return when {
             currState?.state == null -> {
-                test.testLogger(logTag, androidResources.getString(R.string.test_warn_state_null))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_state_null))
                 TestStepStatus.STEP_CONTINUE
             }
             currState.state == PlaybackStateCompat.STATE_PLAYING -> {
                 if (abs(currState.position) < Test.POSITION_LENIENCY) {
                     TestStepStatus.STEP_PASS
                 } else {
-                    test.testLogger(logTag, androidResources.getString(
+                    test.logTestUpdate(logTag, androidResources.getString(
                             R.string.test_running_playing_nonzero
                     ))
                     TestStepStatus.STEP_CONTINUE
@@ -878,7 +895,7 @@ class WaitForTerminalAtTarget(override val test: Test) : TestStep {
         val target = test.extras.getLong(Test.TARGET_KEY)
         val dur = test.origMetadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
         if (dur == null) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_error_metadata_null))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_metadata_null))
             return TestStepStatus.STEP_FAIL
         }
         // Metadata might change for this step (if the seek position is outside the bounds of the
@@ -886,11 +903,11 @@ class WaitForTerminalAtTarget(override val test: Test) : TestStep {
         val isNewItem = !test.origMetadata.isContentSameAs(currMetadata)
         if (test.origMetadata != null && isNewItem) {
             if (target < 0 || target > (dur - Test.POSITION_LENIENCY)) {
-                test.testLogger(logTag, androidResources.getString(
+                test.logTestUpdate(logTag, androidResources.getString(
                         R.string.test_running_item_ended
                 ))
             } else {
-                test.testLogger(logTag, androidResources.getString(R.string.test_error_metadata))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_metadata))
                 return TestStepStatus.STEP_FAIL
             }
         }
@@ -909,7 +926,7 @@ class WaitForTerminalAtTarget(override val test: Test) : TestStep {
                         // valid end state and correct position
                         val origState = test.origState
                         if (origState != null && currState.state != origState.state) {
-                            test.testLogger(logTag, androidResources.getString(
+                            test.logTestUpdate(logTag, androidResources.getString(
                                     R.string.test_warn_state_diff,
                                     playbackStateToName(currState.state),
                                     playbackStateToName(origState.state)
@@ -926,7 +943,7 @@ class WaitForTerminalAtTarget(override val test: Test) : TestStep {
                     }
                 } else {
                     // valid end state, but incorrect position
-                    test.testLogger(
+                    test.logTestUpdate(
                             logTag, androidResources.getString(
                             R.string.test_running_position,
                             currState.position
@@ -960,13 +977,13 @@ class CheckForPreferences(override val test: Test,
                 appDetails?.packageName, packageManager, Intent.ACTION_APPLICATION_PREFERENCES)
 
         if (infoList.size != 1) {
-            test.testLogger(logTag, androidResources.getString(
+            test.logTestUpdate(logTag, androidResources.getString(
                     if (infoList.isEmpty()) R.string.test_preferences_not_found
                     else R.string.test_preferences_multiple))
             return TestStepStatus.STEP_FAIL
         }
 
-        test.testLogger(logTag, androidResources.getString(R.string.test_preferences_found))
+        test.logTestUpdate(logTag, androidResources.getString(R.string.test_preferences_found))
         return TestStepStatus.STEP_PASS
     }
 }
@@ -987,7 +1004,7 @@ class CheckCustomActions(override val test: Test,
         val value = TypedValue()
 
         if (customActions.isEmpty()) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_empty_custom_actions))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_empty_custom_actions))
         }
 
         var testStatus = TestStepStatus.STEP_PASS
@@ -1000,12 +1017,12 @@ class CheckCustomActions(override val test: Test,
                 var filename = value.string.toString()
 
                 if (drawable !is VectorDrawable) {
-                    test.testLogger(logTag, androidResources.getString(
+                    test.logTestUpdate(logTag, androidResources.getString(
                             R.string.test_invalid_icon_type, filename))
                     testStatus = TestStepStatus.STEP_FAIL
                 }
             } catch (notFound: Resources.NotFoundException) {
-                test.testLogger(logTag, androidResources.getString(
+                test.logTestUpdate(logTag, androidResources.getString(
                         R.string.test_warn_icon_null, action.icon.toString()))
                 testStatus = TestStepStatus.STEP_FAIL
             }
@@ -1027,7 +1044,7 @@ class CheckErrorResolution(override val test: Test) : TestStep {
             currMetadata: MediaMetadataCompat?
     ): TestStepStatus {
         if (currState?.state != PlaybackStateCompat.STATE_ERROR) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_warn_not_state_error))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_not_state_error))
             return TestStepStatus.STEP_CONTINUE
         }
 
@@ -1039,10 +1056,10 @@ class CheckErrorResolution(override val test: Test) : TestStep {
         }
 
         if (label == null) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_error_label_not_found))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_label_not_found))
         }
         if (intent == null) {
-            test.testLogger(logTag, androidResources.getString(
+            test.logTestUpdate(logTag, androidResources.getString(
                     R.string.test_error_intent_not_found))
         }
 
@@ -1066,11 +1083,11 @@ class CheckForLauncher(override val test: Test,
                 appDetails?.packageName, packageManager, Intent.CATEGORY_LAUNCHER)
 
         if (infoList.isEmpty()) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_launcher_not_found))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_launcher_not_found))
             return TestStepStatus.STEP_PASS
         }
 
-        test.testLogger(logTag, androidResources.getString(R.string.test_launcher_found))
+        test.logTestUpdate(logTag, androidResources.getString(R.string.test_launcher_found))
         return TestStepStatus.STEP_FAIL
     }
 }
@@ -1095,11 +1112,11 @@ class CheckPlaybackState(override val test: Test) : TestStep {
             PlaybackStateCompat.STATE_PAUSED,
             PlaybackStateCompat.STATE_NONE,
             PlaybackStateCompat.STATE_ERROR -> {
-                test.testLogger(logTag, androidResources.getString(R.string.test_non_playing_state))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_non_playing_state))
                 return TestStepStatus.STEP_PASS
             }
             else -> {
-                test.testLogger(logTag, androidResources.getString(R.string.test_playing_state))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_playing_state))
                 return TestStepStatus.STEP_FAIL
             }
         }
@@ -1159,11 +1176,11 @@ class CheckBrowseDepth(override val test: Test,
 
         try {
             if (traversalFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS) > DEPTH_LIMIT) {
-                test.testLogger(logTag, androidResources.getString(R.string.test_tree_depth))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_tree_depth))
                 return TestStepStatus.STEP_FAIL
             }
         } catch (e: TimeoutException) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_fail_timeout))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_fail_timeout))
             return TestStepStatus.STEP_FAIL
         }
 
@@ -1233,17 +1250,17 @@ class CheckMediaArtwork(override val test: Test,
 
         try {
             if (future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).equals(FAIL_ICONBITMAP_NON_NULL)) {
-                test.testLogger(logTag,
+                test.logTestUpdate(logTag,
                         androidResources.getString(R.string.test_artwork_type_non_null_icon))
                 return TestStepStatus.STEP_FAIL
             }
             if (future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).equals(FAIL_INVALID_URI_SCHEMA)) {
-                test.testLogger(logTag,
+                test.logTestUpdate(logTag,
                         androidResources.getString(R.string.test_artwork_type_invalid_schema))
                 return TestStepStatus.STEP_FAIL
             }
         } catch (e: TimeoutException) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_fail_timeout))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_fail_timeout))
             return TestStepStatus.STEP_FAIL
         }
 
@@ -1296,15 +1313,15 @@ class CheckBrowseStructure(override val test: Test,
         try {
             val result = rootFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             if (result.type != "browsable" && result.type != "playable") {
-                test.testLogger(logTag, androidResources.getString(R.string.test_root_items_type))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_root_items_type))
                 return TestStepStatus.STEP_FAIL
             }
             if (result.type == "browsable" && result.size > MAX_BROWSABLE_ITEMS) {
-                test.testLogger(logTag, androidResources.getString(R.string.test_browsable_items))
+                test.logTestUpdate(logTag, androidResources.getString(R.string.test_browsable_items))
                 return TestStepStatus.STEP_FAIL
             }
         } catch (e: TimeoutException) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_fail_timeout))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_fail_timeout))
             return TestStepStatus.STEP_FAIL
         }
 
@@ -1333,7 +1350,7 @@ class CheckContentStyle(override val test: Test,
         val playableHint = browser?.extras?.containsKey(CONTENT_STYLE_PLAYABLE_HINT)
 
         if (supported!! && browsableHint!! && playableHint!!) {
-            test.testLogger(logTag, androidResources.getString(R.string.test_content_style))
+            test.logTestUpdate(logTag, androidResources.getString(R.string.test_content_style))
             return TestStepStatus.STEP_PASS
         }
 

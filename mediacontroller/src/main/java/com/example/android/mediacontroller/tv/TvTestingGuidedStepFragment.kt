@@ -173,23 +173,23 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
             when (action?.id) {
                 PLAY_FROM_SEARCH_TEST -> {
                     action.description = getQueryTestDesc(R.string.play_search_test_desc, query)
-                    runPlayFromSearchTest(1, query, it, { foo, bar -> }, ::logTestUpdate)
+                    runPlayFromSearchTest(1, query, it, { foo, bar, _ -> })
                 }
                 PLAY_FROM_MEDIA_ID_TEST -> {
                     action.description = getQueryTestDesc(R.string.play_media_id_test_desc, query)
-                    runPlayFromMediaIdTest(2, query, it, { foo, bar -> }, ::logTestUpdate)
+                    runPlayFromMediaIdTest(2, query, it, { foo, bar, _ -> })
                 }
                 PLAY_FROM_URI_TEST -> {
                     action.description = getQueryTestDesc(R.string.play_uri_test_desc, query)
-                    runPlayFromUriTest(3, query, it, { foo, bar -> }, ::logTestUpdate)
+                    runPlayFromUriTest(3, query, it, { foo, bar, _ -> })
                 }
                 SKIP_TO_ITEM_TEST -> {
                     action.description = getQueryTestDesc(R.string.skip_item_test_desc, query)
-                    runSkipToItemTest(8, query, it, { foo, bar -> }, ::logTestUpdate)
+                    runSkipToItemTest(8, query, it, { foo, bar, _ -> })
                 }
                 SEEK_TO_TEST -> {
                     action.description = getQueryTestDesc(R.string.seek_test_desc, query)
-                    runSeekToTest(9, query, it, { foo, bar -> }, ::logTestUpdate)
+                    runSeekToTest(9, query, it, { foo, bar, _ -> })
                 }
                 else -> {
                     query = ""
@@ -241,11 +241,11 @@ class TvTestingGuidedStepFragment : GuidedStepSupportFragment() {
         )
         mediaController?.let {
             when (action?.id) {
-                PLAY_TEST -> runPlayTest(0, it, { foo, bar -> }, ::logTestUpdate)
-                PAUSE_TEST -> runPauseTest(4, it, { foo, bar -> }, ::logTestUpdate)
-                STOP_TEST -> runStopTest(5, it, { foo, bar -> }, ::logTestUpdate)
-                SKIP_TO_NEXT_TEST -> runSkipToNextTest(6, it, { foo, bar -> }, ::logTestUpdate)
-                SKIP_TO_PREV_TEST -> runSkipToPrevTest(7, it, { foo, bar -> }, ::logTestUpdate)
+                PLAY_TEST -> runPlayTest(0, it, { foo, bar, _ -> })
+                PAUSE_TEST -> runPauseTest(4, it, { foo, bar, _ -> })
+                STOP_TEST -> runStopTest(5, it, { foo, bar, _ -> })
+                SKIP_TO_NEXT_TEST -> runSkipToNextTest(6, it, { foo, bar, _ -> })
+                SKIP_TO_PREV_TEST -> runSkipToPrevTest(7, it, { foo, bar, _ -> })
                 REFRESH_INFO -> guidanceStylist.descriptionView.text = it.formatTvDetailsString()
                 else -> {
                     if (action?.id == null || !queryTests.contains(action.id)) {
