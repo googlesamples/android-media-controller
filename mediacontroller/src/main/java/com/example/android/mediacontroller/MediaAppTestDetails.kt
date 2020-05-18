@@ -27,9 +27,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import android.util.TypedValue
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import com.example.android.mediacontroller.Test.Companion.androidResources
 import java.text.DateFormat
@@ -37,7 +35,6 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 /**
@@ -53,10 +50,11 @@ class Test(
 ) : HandlerThread(testName) {
     private val steps = mutableListOf<TestStep>()
     private var stepIndex = 0
-    public var testLogs = arrayListOf<String>()
+    var testLogs = arrayListOf<String>()
     var origState: PlaybackStateCompat? = null
     var origMetadata: MediaMetadataCompat? = null
     private lateinit var callback: MediaControllerCompat.Callback
+
     // This Bundle is used to transfer information between executions of a Step
     val extras = Bundle()
     lateinit var handler: Handler // TODO(nevmital): might not need to hold reference

@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   Copyright (C) 2020 The Android Open Source Project
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,10 +49,6 @@
         <include
             android:id="@+id/media_controller_test_page"
             layout="@layout/media_tests" />
-
-        <include
-            android:id="@+id/media_controller_test_suite_page"
-            layout="@layout/media_test_suites" />
 
     </androidx.viewpager.widget.ViewPager>
 

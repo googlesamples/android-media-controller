@@ -29,16 +29,11 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
@@ -49,33 +44,11 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.bottomnavigation.BottomNavigationView
-
-import com.google.android.material.tabs.TabLayout
 import kotlinx.android.synthetic.main.activity_media_app_testing.*
-
-import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
-import kotlinx.android.synthetic.main.media_controller_info.metadata_text
-import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_item_list
-import kotlinx.android.synthetic.main.media_controller_info.queue_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_title_text
-import kotlinx.android.synthetic.main.media_controller_info.repeat_mode_text
-import kotlinx.android.synthetic.main.media_controller_info.shuffle_mode_text
-import kotlinx.android.synthetic.main.media_queue_item.view.description_id
-import kotlinx.android.synthetic.main.media_queue_item.view.description_subtitle
-import kotlinx.android.synthetic.main.media_queue_item.view.description_title
-import kotlinx.android.synthetic.main.media_queue_item.view.description_uri
-import kotlinx.android.synthetic.main.media_queue_item.view.queue_id
-import kotlinx.android.synthetic.main.media_test_option.view.card_button
-import kotlinx.android.synthetic.main.media_test_option.view.card_header
-import kotlinx.android.synthetic.main.media_test_option.view.card_text
-import kotlinx.android.synthetic.main.media_test_suites.*
-import kotlinx.android.synthetic.main.media_tests.test_options_list
-import kotlinx.android.synthetic.main.media_tests.test_results_container
-import kotlinx.android.synthetic.main.media_tests.tests_query
-
-import java.text.DateFormat
-import java.util.Date
+import kotlinx.android.synthetic.main.media_controller_info.*
+import kotlinx.android.synthetic.main.media_queue_item.view.*
+import kotlinx.android.synthetic.main.media_test_option.view.*
+import kotlinx.android.synthetic.main.media_tests.*
 
 class MediaAppTestingActivity : AppCompatActivity() {
     private var mediaAppDetails: MediaAppDetails? = null
@@ -130,7 +103,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         // Set up page navigation
-        val pages = arrayOf(media_controller_info_page, media_controller_test_page, media_controller_test_suite_page)
+        val pages = arrayOf(media_controller_info_page, media_controller_test_page)
         viewPager.offscreenPageLimit = pages.size
         viewPager.adapter = object : PagerAdapter() {
             override fun getCount(): Int {
@@ -152,13 +125,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     true
                 }
 
-                R.id.test_bottom_nav-> {
+                R.id.test_bottom_nav -> {
                     viewPager.currentItem = 1
-                    true
-                }
-
-                R.id.test_suite_bottom_nav -> {
-                    viewPager.currentItem = 2
                     true
                 }
                 else -> false
@@ -419,44 +387,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
             Log.e(TAG, getString(R.string.media_controller_failed_msg), remoteException)
             showToast(getString(R.string.media_controller_failed_msg))
         }
-    }
-
-    // Adapter to display test suite details
-    inner class TestSuiteAdapter(
-            private val testSuites: Array<MediaAppTestSuite>
-    ) : RecyclerView.Adapter<TestSuiteAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
-
-        override fun onCreateViewHolder(
-                parent: ViewGroup,
-                viewType: Int
-        ): TestSuiteAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_test_option, parent, false) as CardView
-            return ViewHolder(cardView)
-        }
-
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.cardView.card_header.text = testSuites[position].name
-            holder.cardView.card_text.text = testSuites[position].description
-            holder.cardView.card_button.text = "Run Suite"
-            holder.cardView.card_button.setOnClickListener {
-                var numIter = test_suite_num_iter.text.toString().toIntOrNull()
-                if(numIter == null){
-                    Toast.makeText(this@MediaAppTestingActivity, "Invalid iteration number.", Toast.LENGTH_SHORT).show()
-
-                }
-                else if(numIter > 100 || numIter < 1 ){
-                    Toast.makeText(this@MediaAppTestingActivity, "Iteration value needs to be between 1 and 100.", Toast.LENGTH_SHORT).show()
-                }
-                else {
-                    testSuites[position].runSuite(numIter)
-                }
-            }
-        }
-
-        override fun getItemCount() = testSuites.size
     }
 
     private fun setupTests() {
@@ -816,20 +746,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
         )
 
         var testList = basicTests
-        var testSuites: ArrayList<MediaAppTestSuite> =  ArrayList()
-        var testSuiteResults = test_suite_results_container as RecyclerView
 
-        val basicTestSuite = MediaAppTestSuite("Basic Tests", "Basic media tests.", basicTests, testSuiteResults, this)
-        testSuites.add(basicTestSuite)
         if (mediaAppDetails?.supportsAuto == true || mediaAppDetails?.supportsAutomotive == true) {
             testList += commonTests
-            val autoTestSuite = MediaAppTestSuite("Auto Tests", "Includes support for android auto tests.", testList, testSuiteResults, this)
-            testSuites.add(autoTestSuite)
         }
-        if (mediaAppDetails?.supportsAutomotive ?: false) {
+        if (mediaAppDetails?.supportsAutomotive == true) {
             testList += automotiveTests
-            val automotiveTestSuite = MediaAppTestSuite("Automotive Tests", "Includdes support for Android automotive tests.", testList, testSuiteResults, this)
-            testSuites.add(automotiveTestSuite)
         }
 
         val testOptionAdapter = TestOptionAdapter(testList)
@@ -839,32 +761,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
         testOptionsList.setHasFixedSize(true)
         testOptionsList.adapter = testOptionAdapter
 
-        // Set up test suites display.
-        val testSuiteAdapter = TestSuiteAdapter(testSuites.toTypedArray())
-        val testSuiteList = test_suite_options_list
-        testSuiteList.layoutManager = LinearLayoutManager(this)
-        testSuiteList.setHasFixedSize(true)
-        testSuiteList.adapter = testSuiteAdapter
-    }
-
-    private fun logTestUpdate(logTag: String, message: String) {
-        runOnUiThread {
-            val date = DateFormat
-                    .getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG)
-                    .format(Date())
-            val update = "[$date] <$logTag>:\n$message"
-
-            if (printLogsFormatted) {
-                Log.i(logTag, update)
-            } else {
-                Log.i(logTag, "<$logTag> [$date] $message")
-            }
-
-            val newLine = TextView(this)
-            newLine.text = update
-            newLine.setTextIsSelectable(true)
-            resultsContainer.addView(newLine, 0)
-        }
     }
 
     // Adapter to display test details
@@ -885,10 +781,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
             tests[testId].testResult = result
             tests[testId].testLogs = testLogs
-            Log.d("TAG", "Using OG callback")
             notifyItemChanged(testId)
-
-
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -909,7 +802,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             )
             if (tests[position].testResult != TestResult.NONE) {
                 resultsContainer.removeAllViews()
-                for(line in tests[position].testLogs){
+                for (line in tests[position].testLogs) {
                     val tv_newLine = TextView(applicationContext)
                     tv_newLine.text = line
                     resultsContainer.addView(tv_newLine)
