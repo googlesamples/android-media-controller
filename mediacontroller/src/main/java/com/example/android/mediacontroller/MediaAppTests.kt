@@ -28,9 +28,8 @@ import androidx.annotation.RequiresApi
 fun runPlayTest(
         testId: Int,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.play_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.play_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigurePlay(this))
             addStep(WaitForPlaying(this))
@@ -40,9 +39,8 @@ fun runPlayFromSearchTest(
         testId: Int,
         query: String,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.play_search_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.play_search_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigurePlayFromSearch(this, query))
             addStep(WaitForPlayingBeginning(this))
@@ -52,13 +50,11 @@ fun runPlayFromMediaIdTest(
         testId: Int,
         query: String,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(
         Test.androidResources.getString(R.string.play_media_id_test_logs_title),
         TestType.REQUIRED,
-        controller,
-        logger
+        controller
 ).apply {
     addStep(ConfigurePlayFromMediaId(this, query))
     addStep(WaitForPlayingBeginning(this))
@@ -68,9 +64,8 @@ fun runPlayFromUriTest(
         testId: Int,
         query: String,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.play_uri_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.play_uri_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigurePlayFromUri(this, query))
             addStep(WaitForPlayingBeginning(this))
@@ -79,9 +74,8 @@ fun runPlayFromUriTest(
 fun runPauseTest(
         testId: Int,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.pause_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.pause_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigurePause(this))
             addStep(WaitForPaused(this))
@@ -90,9 +84,8 @@ fun runPauseTest(
 fun runStopTest(
         testId: Int,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.stop_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.stop_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigureStop(this))
             addStep(WaitForStopped(this))
@@ -101,9 +94,8 @@ fun runStopTest(
 fun runSkipToNextTest(
         testId: Int,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.skip_next_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.skip_next_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigureSkipToNext(this))
             addStep(WaitForSkip(this))
@@ -112,9 +104,8 @@ fun runSkipToNextTest(
 fun runSkipToPrevTest(
         testId: Int,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.skip_prev_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.skip_prev_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigureSkipToPrevious(this))
             addStep(WaitForSkip(this))
@@ -124,9 +115,8 @@ fun runSkipToItemTest(
         testId: Int,
         query: String,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.skip_item_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.skip_item_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigureSkipToItem(this, query))
             addStep(WaitForSkip(this))
@@ -136,9 +126,8 @@ fun runSeekToTest(
         testId: Int,
         query: String,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
-) = Test(Test.androidResources.getString(R.string.seek_test_logs_title), TestType.REQUIRED, controller, logger)
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
+) = Test(Test.androidResources.getString(R.string.seek_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(ConfigureSeekTo(this, query))
             addStep(WaitForTerminalAtTarget(this))
@@ -147,10 +136,9 @@ fun runSeekToTest(
 fun runErrorResolutionDataTest(
         testId: Int,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.error_resolution_test_logs_title), TestType.REQUIRED, controller, logger)
+        .getString(R.string.error_resolution_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(CheckErrorResolution(this))
         }.runTest(testId, callback)
@@ -160,10 +148,9 @@ fun runCustomActionIconTypeTest(
         context: Context,
         controller: MediaControllerCompat,
         appDetails: MediaAppDetails?,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.custom_actions_icon_test_logs_title), TestType.REQUIRED, controller, logger)
+        .getString(R.string.custom_actions_icon_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(CheckCustomActions(this, context, appDetails))
         }.runTest(testId, callback)
@@ -173,10 +160,9 @@ fun runPreferenceTest(
         controller: MediaControllerCompat,
         appDetails: MediaAppDetails?,
         packageManager: PackageManager,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.preference_activity_test_logs_title), TestType.REQUIRED, controller, logger)
+        .getString(R.string.preference_activity_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(CheckForPreferences(this, appDetails, packageManager))
         }.runTest(testId, callback)
@@ -186,10 +172,9 @@ fun runLauncherTest(
         controller: MediaControllerCompat,
         appDetails: MediaAppDetails?,
         packageManager: PackageManager,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.launcher_intent_test_logs_title), TestType.REQUIRED, controller, logger)
+        .getString(R.string.launcher_intent_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(CheckForLauncher(this, appDetails, packageManager))
         }.runTest(testId, callback)
@@ -197,10 +182,9 @@ fun runLauncherTest(
 fun runInitialPlaybackStateTest(
         testId: Int,
         controller: MediaControllerCompat,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.launcher_intent_test_logs_title), TestType.REQUIRED, controller, logger)
+        .getString(R.string.launcher_intent_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(CheckPlaybackState(this))
         }.runTest(testId, callback)
@@ -210,10 +194,9 @@ fun runBrowseTreeDepthTest(
         testId: Int,
         controller: MediaControllerCompat,
         browser: MediaBrowserCompat?,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.browse_tree_depth_test_logs_title), TestType.OPTIONAL, controller, logger)
+        .getString(R.string.browse_tree_depth_test_logs_title), TestType.OPTIONAL, controller)
         .apply {
             addStep(CheckBrowseDepth(this, browser))
         }.runTest(testId, callback)
@@ -223,10 +206,9 @@ fun runBrowseTreeStructureTest(
         testId: Int,
         controller: MediaControllerCompat,
         browser: MediaBrowserCompat?,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.browse_tree_structure_test_logs_title), TestType.OPTIONAL, controller, logger)
+        .getString(R.string.browse_tree_structure_test_logs_title), TestType.OPTIONAL, controller)
         .apply {
             addStep(CheckBrowseStructure(this, browser))
         }.runTest(testId, callback)
@@ -235,10 +217,9 @@ fun runSearchTest(
         testId: Int,
         controller: MediaControllerCompat,
         browser: MediaBrowserCompat?,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.search_test_test_logs_title), TestType.OPTIONAL, controller, logger)
+        .getString(R.string.search_test_test_logs_title), TestType.OPTIONAL, controller)
         .apply {
             addStep(CheckSearchSupported(this, browser))
         }.runTest(testId, callback)
@@ -247,10 +228,9 @@ fun runContentStyleTest(
         testId: Int,
         controller: MediaControllerCompat,
         browser: MediaBrowserCompat?,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.content_style_test_logs_title), TestType.OPTIONAL, controller, logger)
+        .getString(R.string.content_style_test_logs_title), TestType.OPTIONAL, controller)
         .apply {
             addStep(CheckContentStyle(this, browser))
         }.runTest(testId, callback)
@@ -260,10 +240,9 @@ fun runMediaArtworkTest(
         testId: Int,
         controller: MediaControllerCompat,
         browser: MediaBrowserCompat?,
-        callback: (result: TestResult, testId: Int) -> Unit,
-        logger: (tag: String, message: String) -> Unit?
+        callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
-        .getString(R.string.media_artwork_test_logs_title), TestType.REQUIRED, controller, logger)
+        .getString(R.string.media_artwork_test_logs_title), TestType.REQUIRED, controller)
         .apply {
             addStep(CheckMediaArtwork(this, browser))
         }.runTest(testId, callback)

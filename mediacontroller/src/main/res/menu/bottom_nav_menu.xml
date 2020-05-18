@@ -23,17 +23,17 @@
         android:icon="@drawable/ic_info"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/test_suite_bottom_nav"
+        android:id="@+id/test_bottom_nav"
         android:enabled="true"
         android:title="@string/bottom_nav_test_text"
         android:icon="@drawable/ic_test"
         app:showAsAction="ifRoom" />
 
-    <!-- To be implemented..
+    <!-- To be implemented.
     <item
-        android:id="@+id/test_bottom_nav"
+        android:id="@+id/test_suite_bottom_nav"
         android:enabled="true"
-        android:title="Test Suite"
+        android:title="@string/test_suite_nav_text"
         android:icon="@drawable/ic_test_suite"
         app:showAsAction="ifRoom" />
     -->
