@@ -13,11 +13,15 @@ import android.view.Window
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.media_test_option.view.card_header
 import kotlinx.android.synthetic.main.media_test_option.view.card_text
 import kotlinx.android.synthetic.main.media_test_suite_result.view.*
+import java.util.concurrent.Semaphore
+import kotlin.concurrent.thread
 
 
 class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList: Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context): View.OnClickListener {
@@ -26,25 +30,59 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
     private val singleSuiteTestList = testList
     val context = context
     private val resultsAdapter = ResultsAdapter(singleSuiteTestList)
+    private val testSemaphore = Semaphore(1)
+    private val mHandler = Handler(Looper.getMainLooper())
+    private val iDToPositionMap = hashMapOf<Int, Int>()
+    private val TAG = "MediaAppTestSuite"
+    private var suiteRunning = false
+
+    init {
+        for(i in testList.indices){
+            iDToPositionMap[testList[i].id] = i
+        }
+    }
 
     val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
-        Log.i(name, "Finished Test: " + testList[testId].name + " with result " + result)
-        testList[testId].testResult = result
-        testList[testId].testLogs = testLogs
-        //resultsAdapter.notifyItemChanged(testId)
+        val index = iDToPositionMap[testId]
+        Log.i(TAG, "Finished Test: " + testList[index!!].name + " with result " + result)
+        testList[index!!].testResult = result
+        testList[index!!].testLogs = testLogs
+        mHandler.post {   resultsAdapter.notifyItemChanged(index!!) }
+        testSemaphore.release()
+
+
+    }
+
+    fun suiteIsRunning(): Boolean{
+        return suiteRunning
     }
 
     fun runSuite(numIter: Int){
+        suiteRunning = true
+        resetTests()
+        thread(start=true) {
+            Looper.prepare()
+            for (test in singleSuiteTestList) {
+                testSemaphore.acquire()
+                Log.i(TAG, "Starting test:" + test.name)
+                test.runTest("", callback, test.id);
 
-
-        for (test in singleSuiteTestList){
-            test.runTest("", callback, test.id)
+            }
+            suiteRunning = false
         }
         displayResults()
 
     }
 
-    fun displayResults(){
+    private fun resetTests(){
+        for(test in singleSuiteTestList){
+            test.testResult = TestResult.NONE
+            test.testLogs = Test.NO_LOGS
+            mHandler.post { resultsAdapter.notifyItemChanged(test.id)}
+        }
+    }
+
+    private fun displayResults(){
         testSuiteResultsLayout.layoutManager = LinearLayoutManager(context)
         testSuiteResultsLayout.setHasFixedSize(true)
         testSuiteResultsLayout.adapter = resultsAdapter
@@ -71,15 +109,18 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
             holder.cardView.total_tests.text = "1"
             if (tests[position].testResult == TestResult.PASS){
                 holder.cardView.tests_passing.text = "1"
-                holder.cardView.setCardBackgroundColor(Color.GREEN)
+                holder.cardView.loading_bar.visibility = View.INVISIBLE
+                holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.test_result_pass))
             }
             else if(tests[position].testResult == TestResult.FAIL){
                 holder.cardView.tests_passing.text = "0"
-                holder.cardView.setCardBackgroundColor(Color.RED)
+                holder.cardView.loading_bar.visibility = View.INVISIBLE
+                holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.test_result_fail))
             }
             else{
                 holder.cardView.tests_passing.text = "?"
-                holder.cardView.setCardBackgroundColor(Color.YELLOW)
+                holder.cardView.loading_bar.visibility = View.VISIBLE
+                holder.cardView.setCardBackgroundColor(Color.WHITE)
             }
             val onResultsClickedListener = OnResultsClickedListener(tests[position], this@MediaAppTestSuite.context)
             holder.cardView.setOnClickListener(onResultsClickedListener)

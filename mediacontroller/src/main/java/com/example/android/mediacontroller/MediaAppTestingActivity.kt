@@ -441,23 +441,34 @@ class MediaAppTestingActivity : AppCompatActivity() {
             holder.cardView.card_header.text = testSuites[position].name
             holder.cardView.card_text.text = testSuites[position].description
             holder.cardView.card_button.text = "Run Suite"
+            var suiteRunning = false
             holder.cardView.card_button.setOnClickListener {
                 var numIter = test_suite_num_iter.text.toString().toIntOrNull()
-                if(numIter == null){
+                if (numIter == null) {
                     Toast.makeText(this@MediaAppTestingActivity, "Invalid iteration number.", Toast.LENGTH_SHORT).show()
 
-                }
-                else if(numIter > 100 || numIter < 1 ){
+                } else if (numIter > 100 || numIter < 1) {
                     Toast.makeText(this@MediaAppTestingActivity, "Iteration value needs to be between 1 and 100.", Toast.LENGTH_SHORT).show()
-                }
-                else {
-                    testSuites[position].runSuite(numIter)
+                } else if (isSuiteRunning()){
+                        Toast.makeText(applicationContext, "Please wait for current test suite to finish.", Toast.LENGTH_SHORT).show()
+                } else {
+                        testSuites[position].runSuite(numIter)
                 }
             }
         }
 
         override fun getItemCount() = testSuites.size
+
+        private fun isSuiteRunning(): Boolean {
+            for (test in testSuites){
+                if (test.suiteIsRunning()) {
+                    return true
+                }
+            }
+            return false
+        }
     }
+
 
     private fun setupTests() {
         // setupTests() should only be called after the mediaController is connected, so this
@@ -787,16 +798,17 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         val basicTests = arrayOf(
+
+                //playFromSearch,
+                //playFromMediaId,
+                //playFromUri,
                 playTest,
-                playFromSearch,
-                playFromMediaId,
-                playFromUri,
                 pauseTest,
                 stopTest,
                 skipToNextTest,
-                skipToPrevTest,
-                skipToItemTest,
-                seekToTest
+                skipToPrevTest
+               // skipToItemTest,
+               // seekToTest
         )
 
         val commonTests = arrayOf(
@@ -831,8 +843,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
             val automotiveTestSuite = MediaAppTestSuite("Automotive Tests", "Includdes support for Android automotive tests.", testList, testSuiteResults, this)
             testSuites.add(automotiveTestSuite)
         }
+        val iDToPositionMap = hashMapOf<Int, Int>()
+        for(i in testList.indices){
+            iDToPositionMap[testList[i].id] = i
+        }
 
-        val testOptionAdapter = TestOptionAdapter(testList)
+        val testOptionAdapter = TestOptionAdapter(testList, iDToPositionMap)
 
         val testOptionsList = test_options_list
         testOptionsList.layoutManager = LinearLayoutManager(this)
@@ -847,29 +863,10 @@ class MediaAppTestingActivity : AppCompatActivity() {
         testSuiteList.adapter = testSuiteAdapter
     }
 
-    private fun logTestUpdate(logTag: String, message: String) {
-        runOnUiThread {
-            val date = DateFormat
-                    .getDateTimeInstance(DateFormat.SHORT, DateFormat.LONG)
-                    .format(Date())
-            val update = "[$date] <$logTag>:\n$message"
-
-            if (printLogsFormatted) {
-                Log.i(logTag, update)
-            } else {
-                Log.i(logTag, "<$logTag> [$date] $message")
-            }
-
-            val newLine = TextView(this)
-            newLine.text = update
-            newLine.setTextIsSelectable(true)
-            resultsContainer.addView(newLine, 0)
-        }
-    }
-
     // Adapter to display test details
     inner class TestOptionAdapter(
-            private val tests: Array<TestOptionDetails>
+            private val tests: Array<TestOptionDetails>,
+            private val iDToPositionMap: HashMap<Int, Int>
     ) : RecyclerView.Adapter<TestOptionAdapter.ViewHolder>() {
         inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
 
@@ -883,12 +880,10 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
-            tests[testId].testResult = result
-            tests[testId].testLogs = testLogs
+            tests[iDToPositionMap[testId]!!].testResult = result
+            tests[iDToPositionMap[testId]!!].testLogs = testLogs
             Log.d("TAG", "Using OG callback")
-            notifyItemChanged(testId)
-
-
+            notifyItemChanged(iDToPositionMap[testId]!!)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
