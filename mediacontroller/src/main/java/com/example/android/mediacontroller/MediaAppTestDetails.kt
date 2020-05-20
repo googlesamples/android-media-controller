@@ -29,6 +29,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.util.TypedValue
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import com.example.android.mediacontroller.Test.Companion.androidResources
 import java.text.DateFormat
@@ -36,6 +37,7 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 /**
@@ -646,6 +648,7 @@ class WaitForPlaying(override val test: Test) : TestStep {
             test.logTestUpdate(logTag, androidResources.getString(R.string.test_error_metadata))
             return TestStepStatus.STEP_FAIL
         }
+
         return when {
             currState?.state == null -> {
                 test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_state_null))

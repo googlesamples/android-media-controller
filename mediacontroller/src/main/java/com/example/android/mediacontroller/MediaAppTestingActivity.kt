@@ -34,6 +34,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
@@ -442,7 +443,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
             return false
         }
     }
-
 
     private fun setupTests() {
         // setupTests() should only be called after the mediaController is connected, so this
