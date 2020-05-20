@@ -27,13 +27,12 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import android.util.TypedValue
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import com.example.android.mediacontroller.Test.Companion.androidResources
 import java.text.DateFormat
-import java.util.*
+import java.util.Date
+import java.util.Stack
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException

@@ -28,7 +28,7 @@
         android:title="@string/bottom_nav_test_text"
         android:icon="@drawable/ic_test"
         app:showAsAction="ifRoom" />
-    
+
     <item
         android:id="@+id/test_suite_bottom_nav"
         android:enabled="true"
