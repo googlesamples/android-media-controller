@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   Copyright (C) 2018 The Android Open Source Project
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,22 +33,23 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-        <TextView
-            android:id="@+id/card_header"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            tools:text="Test Name"
-            android:textSize="@dimen/tests_subheader_text_size"
-            android:textStyle="italic"
-            android:textColor="#000"
-            android:layout_weight="1"/>
 
-        <ProgressBar
-            android:id="@+id/loading_bar"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="visible"
-            android:layout_weight="4"/>
+            <TextView
+                android:id="@+id/card_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="Test Name"
+                android:textSize="@dimen/tests_subheader_text_size"
+                android:textStyle="italic"
+                android:textColor="#000"
+                android:layout_weight="1" />
+
+            <ProgressBar
+                android:id="@+id/loading_bar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="visible"
+                android:layout_weight="4" />
 
         </LinearLayout>
 
@@ -57,7 +57,8 @@
             android:id="@+id/card_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Test Description"/>
+            tools:text="Test Description" />
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -76,24 +77,28 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:text="@string/test_suite_open_paren" />
+
             <TextView
                 android:id="@+id/tests_passing"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:text="@string/test_suite_results_passing_default" />
+
             <TextView
                 android:id="@+id/tests_passing_divide"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:text="@string/test_suite_divide" />
+
             <TextView
                 android:id="@+id/total_tests"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:text="@string/test_suite_results_total_default" />
+
             <TextView
                 android:id="@+id/tests_passing_close_paren"
                 android:layout_width="wrap_content"

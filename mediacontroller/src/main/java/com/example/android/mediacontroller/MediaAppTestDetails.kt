@@ -29,7 +29,6 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.util.TypedValue
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import com.example.android.mediacontroller.Test.Companion.androidResources
 import java.text.DateFormat
@@ -37,7 +36,6 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
-import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 /**
@@ -54,10 +52,11 @@ class Test(
     private val steps = mutableListOf<TestStep>()
     private var stepIndex = 0
     private val TAG = "MediaAppTestDetails"
-    public var testLogs = arrayListOf<String>()
+    var testLogs = arrayListOf<String>()
     var origState: PlaybackStateCompat? = null
     var origMetadata: MediaMetadataCompat? = null
     private lateinit var callback: MediaControllerCompat.Callback
+
     // This Bundle is used to transfer information between executions of a Step
     val extras = Bundle()
     lateinit var handler: Handler // TODO(nevmital): might not need to hold reference
@@ -85,7 +84,6 @@ class Test(
     }
 
     fun runTest(testId: Int, resCallback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit) {
-        Log.i(TAG, "____________Starting test_____________________: $testId")
         currentTest?.run {
             logTestUpdate(name, androidResources.getString(R.string.test_interrupted))
             endTest()
@@ -122,7 +120,6 @@ class Test(
                         currentStep.execute(state, metadata)
                     }
                     TIMED_OUT -> {
-                        Log.i(TAG, "Test timed out")
                         logTestUpdate(name, androidResources.getString(R.string.test_fail_timeout))
                         TestStepStatus.STEP_FAIL
                     }
@@ -191,26 +188,21 @@ class Test(
         callback = object : MediaControllerCompat.Callback() {
 
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                Log.i(TAG, "Playback state changed.")
                 Message.obtain(handler, STATE_CHANGED, state).sendToTarget()
             }
 
             override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-                Log.i(TAG, "Metadata state changed.")
                 Message.obtain(handler, METADATA_CHANGED, metadata).sendToTarget()
             }
         }
 
         // Start sending messages to looper
-        Log.i(TAG, "Registering callback")
         mediaController.registerCallback(callback, handler)
         Message.obtain(handler, RUN_STEP).sendToTarget()
         handler.sendMessageDelayed(Message.obtain(handler, TIMED_OUT), TEST_TIMEOUT)
     }
 
     fun endTest() {
-        Log.i(TAG, "____________Ending test_____________________")
-        Log.i(TAG, "unregistering callback")
         mediaController.unregisterCallback(callback)
         currentTest = null
         quit()

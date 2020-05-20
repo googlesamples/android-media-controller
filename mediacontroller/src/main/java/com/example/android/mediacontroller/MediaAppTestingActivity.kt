@@ -29,16 +29,11 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
@@ -49,33 +44,12 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.bottomnavigation.BottomNavigationView
-
-import com.google.android.material.tabs.TabLayout
 import kotlinx.android.synthetic.main.activity_media_app_testing.*
-
-import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
-import kotlinx.android.synthetic.main.media_controller_info.metadata_text
-import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_item_list
-import kotlinx.android.synthetic.main.media_controller_info.queue_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_title_text
-import kotlinx.android.synthetic.main.media_controller_info.repeat_mode_text
-import kotlinx.android.synthetic.main.media_controller_info.shuffle_mode_text
-import kotlinx.android.synthetic.main.media_queue_item.view.description_id
-import kotlinx.android.synthetic.main.media_queue_item.view.description_subtitle
-import kotlinx.android.synthetic.main.media_queue_item.view.description_title
-import kotlinx.android.synthetic.main.media_queue_item.view.description_uri
-import kotlinx.android.synthetic.main.media_queue_item.view.queue_id
-import kotlinx.android.synthetic.main.media_test_option.view.card_button
-import kotlinx.android.synthetic.main.media_test_option.view.card_header
-import kotlinx.android.synthetic.main.media_test_option.view.card_text
+import kotlinx.android.synthetic.main.media_controller_info.*
+import kotlinx.android.synthetic.main.media_queue_item.view.*
+import kotlinx.android.synthetic.main.media_test_option.view.*
 import kotlinx.android.synthetic.main.media_test_suites.*
-import kotlinx.android.synthetic.main.media_tests.test_options_list
-import kotlinx.android.synthetic.main.media_tests.test_results_container
-import kotlinx.android.synthetic.main.media_tests.tests_query
-
-import java.text.DateFormat
-import java.util.Date
+import kotlinx.android.synthetic.main.media_tests.*
 
 class MediaAppTestingActivity : AppCompatActivity() {
     private var mediaAppDetails: MediaAppDetails? = null
@@ -152,7 +126,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     true
                 }
 
-                R.id.test_bottom_nav-> {
+                R.id.test_bottom_nav -> {
                     viewPager.currentItem = 1
                     true
                 }
@@ -445,14 +419,14 @@ class MediaAppTestingActivity : AppCompatActivity() {
             holder.cardView.card_button.setOnClickListener {
                 var numIter = test_suite_num_iter.text.toString().toIntOrNull()
                 if (numIter == null) {
-                    Toast.makeText(this@MediaAppTestingActivity, "Invalid iteration number.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
 
                 } else if (numIter > 100 || numIter < 1) {
-                    Toast.makeText(this@MediaAppTestingActivity, "Iteration value needs to be between 1 and 100.", Toast.LENGTH_SHORT).show()
-                } else if (isSuiteRunning()){
-                        Toast.makeText(applicationContext, "Please wait for current test suite to finish.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
+                } else if (isSuiteRunning()) {
+                    Toast.makeText(applicationContext, getText(R.string.test_suite_already_running), Toast.LENGTH_SHORT).show()
                 } else {
-                        testSuites[position].runSuite(numIter)
+                    testSuites[position].runSuite(numIter)
                 }
             }
         }
@@ -460,7 +434,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         override fun getItemCount() = testSuites.size
 
         private fun isSuiteRunning(): Boolean {
-            for (test in testSuites){
+            for (test in testSuites) {
                 if (test.suiteIsRunning()) {
                     return true
                 }
@@ -848,7 +822,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         )
 
         var testList = basicTests
-        var testSuites: ArrayList<MediaAppTestSuite> =  ArrayList()
+        var testSuites: ArrayList<MediaAppTestSuite> = ArrayList()
         var testSuiteResults = test_suite_results_container as RecyclerView
 
         val basicTestSuite = MediaAppTestSuite("Basic Tests", "Basic media tests.", basicTests, testSuiteResults, this)
@@ -858,13 +832,13 @@ class MediaAppTestingActivity : AppCompatActivity() {
             val autoTestSuite = MediaAppTestSuite("Auto Tests", "Includes support for android auto tests.", testList, testSuiteResults, this)
             testSuites.add(autoTestSuite)
         }
-        if (mediaAppDetails?.supportsAutomotive ?: false) {
+        if (mediaAppDetails?.supportsAutomotive == true) {
             testList += automotiveTests
             val automotiveTestSuite = MediaAppTestSuite("Automotive Tests", "Includdes support for Android automotive tests.", testList, testSuiteResults, this)
             testSuites.add(automotiveTestSuite)
         }
         val iDToPositionMap = hashMapOf<Int, Int>()
-        for(i in testList.indices){
+        for (i in testList.indices) {
             iDToPositionMap[testList[i].id] = i
         }
 
@@ -902,7 +876,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
             tests[iDToPositionMap[testId]!!].testResult = result
             tests[iDToPositionMap[testId]!!].testLogs = testLogs
-            Log.d("TAG", "Using OG callback")
             notifyItemChanged(iDToPositionMap[testId]!!)
         }
 
@@ -924,7 +897,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             )
             if (tests[position].testResult != TestResult.NONE) {
                 resultsContainer.removeAllViews()
-                for(line in tests[position].testLogs){
+                for (line in tests[position].testLogs) {
                     val tv_newLine = TextView(applicationContext)
                     tv_newLine.text = line
                     resultsContainer.addView(tv_newLine)
