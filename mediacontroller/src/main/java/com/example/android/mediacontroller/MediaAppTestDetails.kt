@@ -243,6 +243,7 @@ class TestOptionDetails(val id: Int,
                         val desc: String,
                         var testResult: TestResult,
                         var testLogs: ArrayList<String>,
+                        val queryRequired: Boolean,
                         val runTest: (query: String,
                                       callback: (result: TestResult, testId: Int, ArrayList<String>) -> Unit,
                                       testId: Int) -> Unit)
@@ -253,7 +254,7 @@ enum class TestType {
 }
 
 enum class TestResult {
-    NONE, PASS, FAIL, OPTIONAL_FAIL
+    NONE, PASS, FAIL, OPTIONAL_FAIL, CONFIG_REQUIRED
 }
 
 enum class TestStepStatus {

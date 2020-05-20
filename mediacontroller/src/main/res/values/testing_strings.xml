@@ -194,4 +194,5 @@
     <!-- For example, the command `adb shell input text hello%sworld` will add the string "hello world" to the input field (%s indicates a space) -->
     <string name="tv_text_input">%s\nSelect this test to open the query input field. To input text via adb, enter `adb shell input text [query]`.</string>
     <string name="tv_text_input_with_query">%s\nSelect this test to open the query input field. To input text via adb, enter `adb shell input text [query]`.\n\nEntered query: [%s]</string>
+    <string name="close_results_button">Close</string>
 </resources>

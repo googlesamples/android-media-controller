@@ -5,12 +5,12 @@ import android.content.Context
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.Window
+import android.view.*
+import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
@@ -35,11 +35,19 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
     private val iDToPositionMap = hashMapOf<Int, Int>()
     private val TAG = "MediaAppTestSuite"
     private var suiteRunning = false
+    private var screenHeight = 0
+    private val TEST_SLEEP_TIME = 1000L
 
     init {
         for(i in testList.indices){
             iDToPositionMap[testList[i].id] = i
         }
+        context.applicationContext
+        val displayMetrics = DisplayMetrics()
+        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val display = windowManager.defaultDisplay
+        display.getMetrics(displayMetrics)
+        screenHeight = displayMetrics.heightPixels
     }
 
     val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
@@ -63,10 +71,15 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
         thread(start=true) {
             Looper.prepare()
             for (test in singleSuiteTestList) {
+                Thread.sleep(TEST_SLEEP_TIME)
+                if (test.queryRequired){
+                    test.testResult = TestResult.CONFIG_REQUIRED
+                    val index = iDToPositionMap[test.id]
+                    mHandler.post {   resultsAdapter.notifyItemChanged(index!!) }
+                    continue
+                }
                 testSemaphore.acquire()
-                Log.i(TAG, "Starting test:" + test.name)
                 test.runTest("", callback, test.id);
-
             }
             suiteRunning = false
         }
@@ -110,16 +123,25 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
             if (tests[position].testResult == TestResult.PASS){
                 holder.cardView.tests_passing.text = "1"
                 holder.cardView.loading_bar.visibility = View.INVISIBLE
+                holder.cardView.tests_passing_header.text = "Passing: "
                 holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.test_result_pass))
             }
             else if(tests[position].testResult == TestResult.FAIL){
                 holder.cardView.tests_passing.text = "0"
                 holder.cardView.loading_bar.visibility = View.INVISIBLE
+                holder.cardView.tests_passing_header.text = "Passing: "
                 holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.test_result_fail))
+            }
+            else if(tests[position].testResult == TestResult.CONFIG_REQUIRED){
+                holder.cardView.tests_passing.text = "?"
+                holder.cardView.tests_passing_header.text = "Configuration Required for testing: "
+                holder.cardView.loading_bar.visibility = View.INVISIBLE
+                holder.cardView.setCardBackgroundColor(Color.GRAY)
             }
             else{
                 holder.cardView.tests_passing.text = "?"
                 holder.cardView.loading_bar.visibility = View.VISIBLE
+                holder.cardView.tests_passing_header.text = "Passing: "
                 holder.cardView.setCardBackgroundColor(Color.WHITE)
             }
             val onResultsClickedListener = OnResultsClickedListener(tests[position], this@MediaAppTestSuite.context)
@@ -133,7 +155,7 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
     override fun onClick(p0: View?) {
 
     }
-    class OnResultsClickedListener(private val testDetails: TestOptionDetails, val context: Context): View.OnClickListener{
+    inner class OnResultsClickedListener(private val testDetails: TestOptionDetails, val context: Context): View.OnClickListener{
 
         override fun onClick(p0: View?) {
 
@@ -153,6 +175,10 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
                     results_log.addView(tv_newLine)
                 }
             }
+            val close_button = dialog.findViewById(R.id.close_results_button) as Button
+            val results_scroll_view = dialog.findViewById(R.id.results_scroll_view) as ScrollView
+            results_scroll_view.layoutParams.height = (screenHeight/2).toInt()
+            close_button.setOnClickListener(View.OnClickListener { dialog.dismiss() })
             dialog.show()
         }
     }

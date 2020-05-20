@@ -7,6 +7,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:padding="@dimen/margin_small"
         android:textStyle="bold"
         android:textSize="@dimen/tests_header_text_size"
@@ -15,18 +16,37 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/margin_small"
+        android:gravity="center"
         android:textSize="@dimen/tests_subheader_text_size"
         android:id="@+id/results_subtitle"/>
     <View
         android:layout_width="match_parent"
         android:layout_height="2dp"
         android:padding="@dimen/margin_small"
-        android:background="#c0c0c0"/>
-    <LinearLayout
-        android:orientation="vertical"
-        android:id="@+id/results_log"
+        android:background="@color/colorPrimary"/>
+
+    <ScrollView
+        android:id="@+id/results_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="@dimen/tests_details_text_size"/>
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:id="@+id/results_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/tests_details_text_size"/>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/close_results_button"
+        android:layout_width="match_parent"
+        android:background="@color/colorPrimary"
+        android:textColor="@color/background_white"
+        android:layout_height="match_parent"
+        android:text="@string/close_results_button"
+        android:layout_margin="@dimen/margin_small"
+        android:layout_weight="4"
+        />
 </LinearLayout>

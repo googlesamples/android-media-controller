@@ -491,7 +491,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_test_title),
                 getString(R.string.play_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId -> runPlayTest(testId, controller, callback) }
 
         /**
@@ -505,7 +506,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_search_test_title),
                 getString(R.string.play_search_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { query, callback, testId ->
             runPlayFromSearchTest(
                     testId, query, controller, callback)
@@ -523,7 +525,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_media_id_test_title),
                 getString(R.string.play_media_id_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                true
         ) { query, callback, testId ->
             runPlayFromMediaIdTest(
                     testId, query, controller, callback)
@@ -541,7 +544,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_uri_test_title),
                 getString(R.string.play_uri_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                true
         ) { query, callback, testId ->
             runPlayFromUriTest(
                     testId, query, controller, callback)
@@ -559,7 +563,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.pause_test_title),
                 getString(R.string.pause_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId -> runPauseTest(testId, controller, callback) }
 
         /**
@@ -573,7 +578,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.stop_test_title),
                 getString(R.string.stop_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId -> runStopTest(testId, controller, callback) }
 
         /**
@@ -590,7 +596,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.skip_next_test_title),
                 getString(R.string.skip_next_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runSkipToNextTest(
                     testId, controller, callback)
@@ -610,7 +617,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.skip_prev_test_title),
                 getString(R.string.skip_prev_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runSkipToPrevTest(
                     testId, controller, callback)
@@ -630,7 +638,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.skip_item_test_title),
                 getString(R.string.skip_item_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                true
         ) { query, callback, testId ->
             runSkipToItemTest(
                     testId, query, controller, callback)
@@ -651,7 +660,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.seek_test_title),
                 getString(R.string.seek_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                true
         ) { query, callback, testId ->
             runSeekToTest(
                     testId, query, controller, callback)
@@ -665,7 +675,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.browse_tree_depth_test_title),
                 getString(R.string.browse_tree_depth_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 runBrowseTreeDepthTest(
@@ -684,7 +695,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.media_artwork_test_title),
                 getString(R.string.media_artwork_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 runMediaArtworkTest(
@@ -703,7 +715,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.content_style_test_title),
                 getString(R.string.content_style_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runContentStyleTest(
                     testId, controller, mediaBrowser, callback)
@@ -714,7 +727,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.custom_actions_icon_test_title),
                 getString(R.string.custom_actions_icon_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runCustomActionIconTypeTest(
                     testId, applicationContext, controller, mediaAppDetails, callback)
@@ -725,7 +739,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.search_supported_test_title),
                 getString(R.string.search_supported_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runSearchTest(
                     testId, controller, mediaBrowser, callback)
@@ -736,7 +751,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.playback_state_test_title),
                 getString(R.string.playback_state_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runInitialPlaybackStateTest(
                     testId, controller, callback)
@@ -750,7 +766,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.browse_tree_structure_test_title),
                 getString(R.string.browse_tree_structure_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 runBrowseTreeStructureTest(
@@ -769,7 +786,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.preference_activity_test_title),
                 getString(R.string.preference_activity_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runPreferenceTest(
                     testId, controller, mediaAppDetails, packageManager, callback)
@@ -780,7 +798,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.error_resolution_test_title),
                 getString(R.string.error_resolution_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runErrorResolutionDataTest(
                     testId, controller, callback)
@@ -791,7 +810,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.launcher_intent_test_title),
                 getString(R.string.launcher_intent_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runLauncherTest(
                     testId, controller, mediaAppDetails, packageManager, callback)
@@ -799,16 +819,16 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         val basicTests = arrayOf(
 
-                //playFromSearch,
-                //playFromMediaId,
-                //playFromUri,
+                playFromSearch,
+                playFromMediaId,
+                playFromUri,
                 playTest,
                 pauseTest,
                 stopTest,
                 skipToNextTest,
-                skipToPrevTest
-               // skipToItemTest,
-               // seekToTest
+                skipToPrevTest,
+                skipToItemTest,
+                seekToTest
         )
 
         val commonTests = arrayOf(
