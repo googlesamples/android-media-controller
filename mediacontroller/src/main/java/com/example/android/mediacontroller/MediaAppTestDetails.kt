@@ -31,10 +31,12 @@ import android.util.TypedValue
 import androidx.annotation.RequiresApi
 import com.example.android.mediacontroller.Test.Companion.androidResources
 import java.text.DateFormat
-import java.util.*
+import java.util.Date
+import java.util.Stack
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 /**
@@ -48,6 +50,7 @@ class Test(
         val testType: TestType,
         val mediaController: MediaControllerCompat
 ) : HandlerThread(testName) {
+    private val TAG = "MediaAppTestDetails"
     private val steps = mutableListOf<TestStep>()
     private var stepIndex = 0
     var testLogs = arrayListOf<String>()
@@ -184,6 +187,7 @@ class Test(
         }
 
         callback = object : MediaControllerCompat.Callback() {
+            
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 Message.obtain(handler, STATE_CHANGED, state).sendToTarget()
             }
@@ -194,7 +198,7 @@ class Test(
         }
 
         // Start sending messages to looper
-        mediaController.registerCallback(callback)
+        mediaController.registerCallback(callback, handler)
         Message.obtain(handler, RUN_STEP).sendToTarget()
         handler.sendMessageDelayed(Message.obtain(handler, TIMED_OUT), TEST_TIMEOUT)
     }
@@ -232,6 +236,7 @@ class TestOptionDetails(val id: Int,
                         val desc: String,
                         var testResult: TestResult,
                         var testLogs: ArrayList<String>,
+                        val queryRequired: Boolean,
                         val runTest: (query: String,
                                       callback: (result: TestResult, testId: Int, ArrayList<String>) -> Unit,
                                       testId: Int) -> Unit)
@@ -242,7 +247,7 @@ enum class TestType {
 }
 
 enum class TestResult {
-    NONE, PASS, FAIL, OPTIONAL_FAIL
+    NONE, PASS, FAIL, OPTIONAL_FAIL, CONFIG_REQUIRED
 }
 
 enum class TestStepStatus {

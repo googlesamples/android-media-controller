@@ -29,12 +29,10 @@
         android:icon="@drawable/ic_test"
         app:showAsAction="ifRoom" />
 
-    <!-- To be implemented.
     <item
         android:id="@+id/test_suite_bottom_nav"
         android:enabled="true"
         android:title="@string/test_suite_nav_text"
         android:icon="@drawable/ic_test_suite"
         app:showAsAction="ifRoom" />
-    -->
 </menu>

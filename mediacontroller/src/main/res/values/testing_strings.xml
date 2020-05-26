@@ -37,6 +37,23 @@
     <string name="tests_results_header">Results</string>
     <string name="tests_query_hint">Query</string>
 
+    <!-- Test Suite UI -->
+    <string name="test_suite_options_header">Test Suites</string>
+    <string name="test_suite_iter_header"># Iterations</string>
+    <string name="test_suite_iter_default">1</string>
+    <string name="test_suite_results_passing_header">Passing: </string>
+    <string name="test_suite_results_passing_default">0</string>
+    <string name="test_suite_config_needed_header">Configuration Required for testing: </string>
+    <string name="test_suite_results_total_default">0</string>
+    <string name="test_suite_open_paren">(</string>
+    <string name="test_suite_close_paren">)</string>
+    <string name="test_suite_divide">/</string>
+    <string name="test_suite_unknown">?</string>
+    <string name= "test_suite_error_invalid_iter">Invalid iteration number, must be between (1..100).</string>
+    <string name= "test_suite_already_running">Please wait for current test suite to finish.</string>
+    <string name="close_results_button">Close</string>
+
+
     <!-- Logs Toggle -->
     <string name="logs_toggle_title">Logs Toggle</string>
     <string name="logs_formatted">Formatted</string>

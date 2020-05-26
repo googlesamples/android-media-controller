@@ -29,11 +29,11 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.MenuItem
+import android.view.Menu
+import android.view.LayoutInflater
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -48,33 +48,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
-
 import com.google.android.material.bottomnavigation.BottomNavigationView
-
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_info_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.toolbar
-import kotlinx.android.synthetic.main.activity_media_app_testing.view_pager
-import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
-import kotlinx.android.synthetic.main.media_controller_info.metadata_text
-import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_item_list
-import kotlinx.android.synthetic.main.media_controller_info.queue_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_title_text
-import kotlinx.android.synthetic.main.media_controller_info.repeat_mode_text
-import kotlinx.android.synthetic.main.media_controller_info.shuffle_mode_text
-import kotlinx.android.synthetic.main.media_queue_item.view.description_id
-import kotlinx.android.synthetic.main.media_queue_item.view.description_subtitle
-import kotlinx.android.synthetic.main.media_queue_item.view.description_title
-import kotlinx.android.synthetic.main.media_queue_item.view.description_uri
-import kotlinx.android.synthetic.main.media_queue_item.view.queue_id
-import kotlinx.android.synthetic.main.media_test_option.view.card_button
-import kotlinx.android.synthetic.main.media_test_option.view.card_header
-import kotlinx.android.synthetic.main.media_test_option.view.card_text
-import kotlinx.android.synthetic.main.media_tests.test_options_list
-import kotlinx.android.synthetic.main.media_tests.test_results_container
-import kotlinx.android.synthetic.main.media_tests.tests_query
-
+import kotlinx.android.synthetic.main.activity_media_app_testing.*
+import kotlinx.android.synthetic.main.media_controller_info.*
+import kotlinx.android.synthetic.main.media_queue_item.view.*
+import kotlinx.android.synthetic.main.media_test_option.view.*
+import kotlinx.android.synthetic.main.media_test_suites.*
+import kotlinx.android.synthetic.main.media_tests.*
 
 class MediaAppTestingActivity : AppCompatActivity() {
     private var mediaAppDetails: MediaAppDetails? = null
@@ -129,7 +109,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         // Set up page navigation
-        val pages = arrayOf(media_controller_info_page, media_controller_test_page)
+        val pages = arrayOf(media_controller_info_page, media_controller_test_page, media_controller_test_suite_page)
         viewPager.offscreenPageLimit = pages.size
         viewPager.adapter = object : PagerAdapter() {
             override fun getCount(): Int {
@@ -153,6 +133,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
                 R.id.test_bottom_nav -> {
                     viewPager.currentItem = 1
+                    true
+                }
+
+                R.id.test_suite_bottom_nav -> {
+                    viewPager.currentItem = 2
                     true
                 }
                 else -> false
@@ -415,6 +400,54 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
     }
 
+    // Adapter to display test suite details
+    inner class TestSuiteAdapter(
+            private val testSuites: Array<MediaAppTestSuite>
+    ) : RecyclerView.Adapter<TestSuiteAdapter.ViewHolder>() {
+        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+
+        override fun onCreateViewHolder(
+                parent: ViewGroup,
+                viewType: Int
+        ): TestSuiteAdapter.ViewHolder {
+            val cardView = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.media_test_option, parent, false) as CardView
+            return ViewHolder(cardView)
+        }
+
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.cardView.card_header.text = testSuites[position].name
+            holder.cardView.card_text.text = testSuites[position].description
+            holder.cardView.card_button.text = "Run Suite"
+            var suiteRunning = false
+            holder.cardView.card_button.setOnClickListener {
+                var numIter = test_suite_num_iter.text.toString().toIntOrNull()
+                if (numIter == null) {
+                    Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
+
+                } else if (numIter > 100 || numIter < 1) {
+                    Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
+                } else if (isSuiteRunning()) {
+                    Toast.makeText(applicationContext, getText(R.string.test_suite_already_running), Toast.LENGTH_SHORT).show()
+                } else {
+                    testSuites[position].runSuite(numIter)
+                }
+            }
+        }
+
+        override fun getItemCount() = testSuites.size
+
+        private fun isSuiteRunning(): Boolean {
+            for (test in testSuites) {
+                if (test.suiteIsRunning()) {
+                    return true
+                }
+            }
+            return false
+        }
+    }
+
     private fun setupTests() {
         // setupTests() should only be called after the mediaController is connected, so this
         // should never enter the if block
@@ -436,7 +469,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_test_title),
                 getString(R.string.play_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId -> runPlayTest(testId, controller, callback) }
 
         /**
@@ -450,7 +484,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_search_test_title),
                 getString(R.string.play_search_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { query, callback, testId ->
             runPlayFromSearchTest(
                     testId, query, controller, callback)
@@ -468,7 +503,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_media_id_test_title),
                 getString(R.string.play_media_id_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                true
         ) { query, callback, testId ->
             runPlayFromMediaIdTest(
                     testId, query, controller, callback)
@@ -486,7 +522,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.play_uri_test_title),
                 getString(R.string.play_uri_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                true
         ) { query, callback, testId ->
             runPlayFromUriTest(
                     testId, query, controller, callback)
@@ -504,7 +541,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.pause_test_title),
                 getString(R.string.pause_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId -> runPauseTest(testId, controller, callback) }
 
         /**
@@ -518,7 +556,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.stop_test_title),
                 getString(R.string.stop_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId -> runStopTest(testId, controller, callback) }
 
         /**
@@ -535,7 +574,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.skip_next_test_title),
                 getString(R.string.skip_next_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runSkipToNextTest(
                     testId, controller, callback)
@@ -555,7 +595,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.skip_prev_test_title),
                 getString(R.string.skip_prev_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runSkipToPrevTest(
                     testId, controller, callback)
@@ -575,7 +616,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.skip_item_test_title),
                 getString(R.string.skip_item_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                true
         ) { query, callback, testId ->
             runSkipToItemTest(
                     testId, query, controller, callback)
@@ -596,7 +638,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.seek_test_title),
                 getString(R.string.seek_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                true
         ) { query, callback, testId ->
             runSeekToTest(
                     testId, query, controller, callback)
@@ -610,7 +653,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.browse_tree_depth_test_title),
                 getString(R.string.browse_tree_depth_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 runBrowseTreeDepthTest(
@@ -629,7 +673,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.media_artwork_test_title),
                 getString(R.string.media_artwork_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 runMediaArtworkTest(
@@ -648,7 +693,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.content_style_test_title),
                 getString(R.string.content_style_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runContentStyleTest(
                     testId, controller, mediaBrowser, callback)
@@ -659,7 +705,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.custom_actions_icon_test_title),
                 getString(R.string.custom_actions_icon_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runCustomActionIconTypeTest(
                     testId, applicationContext, controller, mediaAppDetails, callback)
@@ -670,7 +717,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.search_supported_test_title),
                 getString(R.string.search_supported_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runSearchTest(
                     testId, controller, mediaBrowser, callback)
@@ -681,7 +729,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.playback_state_test_title),
                 getString(R.string.playback_state_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runInitialPlaybackStateTest(
                     testId, controller, callback)
@@ -695,7 +744,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.browse_tree_structure_test_title),
                 getString(R.string.browse_tree_structure_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 runBrowseTreeStructureTest(
@@ -714,7 +764,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.preference_activity_test_title),
                 getString(R.string.preference_activity_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runPreferenceTest(
                     testId, controller, mediaAppDetails, packageManager, callback)
@@ -725,7 +776,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.error_resolution_test_title),
                 getString(R.string.error_resolution_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runErrorResolutionDataTest(
                     testId, controller, callback)
@@ -736,17 +788,19 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 getString(R.string.launcher_intent_test_title),
                 getString(R.string.launcher_intent_test_desc),
                 TestResult.NONE,
-                Test.NO_LOGS
+                Test.NO_LOGS,
+                false
         ) { _, callback, testId ->
             runLauncherTest(
                     testId, controller, mediaAppDetails, packageManager, callback)
         }
 
         val basicTests = arrayOf(
-                playTest,
+
                 playFromSearch,
                 playFromMediaId,
                 playFromUri,
+                playTest,
                 pauseTest,
                 stopTest,
                 skipToNextTest,
@@ -772,26 +826,45 @@ class MediaAppTestingActivity : AppCompatActivity() {
         )
 
         var testList = basicTests
+        var testSuites: ArrayList<MediaAppTestSuite> = ArrayList()
+        var testSuiteResults = test_suite_results_container as RecyclerView
 
+        val basicTestSuite = MediaAppTestSuite("Basic Tests", "Basic media tests.", basicTests, testSuiteResults, this)
+        testSuites.add(basicTestSuite)
         if (mediaAppDetails?.supportsAuto == true || mediaAppDetails?.supportsAutomotive == true) {
             testList += commonTests
+            val autoTestSuite = MediaAppTestSuite("Auto Tests", "Includes support for android auto tests.", testList, testSuiteResults, this)
+            testSuites.add(autoTestSuite)
         }
         if (mediaAppDetails?.supportsAutomotive == true) {
             testList += automotiveTests
+            val automotiveTestSuite = MediaAppTestSuite("Automotive Tests", "Includdes support for Android automotive tests.", testList, testSuiteResults, this)
+            testSuites.add(automotiveTestSuite)
+        }
+        val iDToPositionMap = hashMapOf<Int, Int>()
+        for (i in testList.indices) {
+            iDToPositionMap[testList[i].id] = i
         }
 
-        val testOptionAdapter = TestOptionAdapter(testList)
+        val testOptionAdapter = TestOptionAdapter(testList, iDToPositionMap)
 
         val testOptionsList = test_options_list
         testOptionsList.layoutManager = LinearLayoutManager(this)
         testOptionsList.setHasFixedSize(true)
         testOptionsList.adapter = testOptionAdapter
 
+        // Set up test suites display.
+        val testSuiteAdapter = TestSuiteAdapter(testSuites.toTypedArray())
+        val testSuiteList = test_suite_options_list
+        testSuiteList.layoutManager = LinearLayoutManager(this)
+        testSuiteList.setHasFixedSize(true)
+        testSuiteList.adapter = testSuiteAdapter
     }
 
     // Adapter to display test details
     inner class TestOptionAdapter(
-            private val tests: Array<TestOptionDetails>
+            private val tests: Array<TestOptionDetails>,
+            private val iDToPositionMap: HashMap<Int, Int>
     ) : RecyclerView.Adapter<TestOptionAdapter.ViewHolder>() {
         inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
 
@@ -805,9 +878,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
-            tests[testId].testResult = result
-            tests[testId].testLogs = testLogs
-            notifyItemChanged(testId)
+            tests[iDToPositionMap[testId]!!].testResult = result
+            tests[iDToPositionMap[testId]!!].testLogs = testLogs
+            notifyItemChanged(iDToPositionMap[testId]!!)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
