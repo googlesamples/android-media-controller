@@ -14,12 +14,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
     android:id="@+id/test_suite_configure_dialog"
     android:layout_height="match_parent"
     android:orientation="vertical">
+
     <TextView
         android:id="@+id/title"
         android:layout_width="match_parent"
@@ -27,28 +27,27 @@
         android:gravity="center"
         android:padding="@dimen/margin_small"
         android:textStyle="bold"
-        android:textSize="@dimen/tests_header_text_size"
-        />
+        android:textSize="@dimen/tests_header_text_size" />
 
     <TextView
         android:id="@+id/subtitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:textSize="@dimen/tests_subheader_text_size"
-       />
+        android:textSize="@dimen/tests_subheader_text_size" />
+
     <View
         android:layout_width="match_parent"
         android:layout_height="2dp"
         android:padding="@dimen/margin_small"
-        android:background="@color/colorPrimary"/>
+        android:background="@color/colorPrimary" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/test_to_configure_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fillViewport="true"
-        android:background="@color/background_grey"/>
+        android:background="@color/background_grey" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -63,8 +62,7 @@
             android:layout_height="match_parent"
             android:text="@string/reset_button_text"
             android:layout_margin="@dimen/margin_small"
-            android:layout_weight="1"
-            />
+            android:layout_weight="1" />
 
         <Button
             android:id="@+id/done_button"
@@ -74,8 +72,7 @@
             android:layout_height="match_parent"
             android:text="@string/done_configure_button"
             android:layout_margin="@dimen/margin_small"
-            android:layout_weight="1"
-            />
+            android:layout_weight="1" />
 
 
     </LinearLayout>

@@ -34,7 +34,13 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.DisplayMetrics
 import android.util.Log
-import android.view.*
+import android.view.View
+import android.view.ViewGroup
+import android.view.MenuItem
+import android.view.Menu
+import android.view.LayoutInflater
+import android.view.Window
+import android.view.WindowManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -422,7 +428,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             val testSuite = testSuites[position]
             holder.cardView.card_header.text = testSuite.name
             holder.cardView.card_text.text = testSuite.description
-            holder.cardView.card_button.text = "Run Suite"
+            holder.cardView.card_button.text = resources.getText(R.string.run_suite_button)
 
             val configurableTests = testSuite.getConfigurableTests()
             if (!configurableTests.isEmpty()) {
@@ -1193,11 +1199,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         private const val TAG = "MediaAppTestingActivity"
 
-        // Shared pref key name for test suite config
-        const val SHARED_PREF_KEY_SUITE_CONFIG = ""
 
-        // Shared pref suite no configuration setup
-        const val NO_CONFIG = ""
 
         // Key names for external extras.
         private const val PACKAGE_NAME_EXTRA = "com.example.android.mediacontroller.PACKAGE_NAME"
@@ -1209,6 +1211,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
         // Key name used for saving/restoring instance state.
         private const val STATE_APP_DETAILS_KEY =
                 "com.example.android.mediacontroller.STATE_APP_DETAILS_KEY"
+
+        // Shared pref key name for test suite config
+        const val SHARED_PREF_KEY_SUITE_CONFIG = ""
+
+        // Shared pref suite no configuration setup
+        const val NO_CONFIG = ""
 
         /**
          * Builds an [Intent] to launch this Activity with a set of extras.
@@ -1226,6 +1234,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             return intent
         }
 
+        // Gets the current screen height in pixels
         fun getScreenHeightPx(context: Context): Int {
             val displayMetrics = DisplayMetrics()
             val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
