@@ -93,14 +93,14 @@
             android:layout_margin="@dimen/margin_small"
             android:fillViewport="true">
 
-            <LinearLayout
+            <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/test_suite_results_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:showDividers="middle"
                 android:divider="@drawable/test_result_divider">
-            </LinearLayout>
+            </androidx.recyclerview.widget.RecyclerView>
         </ScrollView>
     </LinearLayout>
 </LinearLayout>
