@@ -21,13 +21,11 @@ import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -46,7 +44,9 @@ import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 
 
-class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList: Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context) {
+class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList:
+    Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context) {
+
     val name = testSuiteName
     val description = testSuiteDescription
     private val singleSuiteTestList = testList
@@ -110,7 +110,9 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
                     continue
                 }
 
-                // For tests that don't require queries, run normally.
+                if (query == MediaAppTestingActivity.NO_CONFIG){
+                    query = ""
+                }
                 testSemaphore.acquire()
                 test.runTest(query, callback, test.id)
             }

@@ -55,15 +55,45 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
+
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlinx.android.synthetic.main.activity_media_app_testing.*
-import kotlinx.android.synthetic.main.config_item.view.*
-import kotlinx.android.synthetic.main.media_controller_info.*
-import kotlinx.android.synthetic.main.media_queue_item.view.*
-import kotlinx.android.synthetic.main.media_test_option.view.*
-import kotlinx.android.synthetic.main.media_test_suites.*
-import kotlinx.android.synthetic.main.media_tests.*
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.*
+import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_page
+import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_suite_page
+import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_info_page
+import kotlinx.android.synthetic.main.activity_media_app_testing.toolbar
+import kotlinx.android.synthetic.main.activity_media_app_testing.view_pager
+import kotlinx.android.synthetic.main.config_item.view.test_name_config
+import kotlinx.android.synthetic.main.config_item.view.test_query_config
+import kotlinx.android.synthetic.main.media_controller_info.queue_item_list
+import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
+import kotlinx.android.synthetic.main.media_controller_info.metadata_text
+import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
+import kotlinx.android.synthetic.main.media_controller_info.queue_text
+import kotlinx.android.synthetic.main.media_controller_info.repeat_mode_text
+import kotlinx.android.synthetic.main.media_controller_info.queue_title_text
+import kotlinx.android.synthetic.main.media_controller_info.shuffle_mode_text
+import kotlinx.android.synthetic.main.media_queue_item.view.queue_id
+import kotlinx.android.synthetic.main.media_queue_item.view.description_title
+import kotlinx.android.synthetic.main.media_queue_item.view.description_subtitle
+import kotlinx.android.synthetic.main.media_queue_item.view.description_id
+import kotlinx.android.synthetic.main.media_queue_item.view.description_uri
+import kotlinx.android.synthetic.main.media_test_option.view.configure_test_suite_button
+import kotlinx.android.synthetic.main.media_test_option.view.card_text
+import kotlinx.android.synthetic.main.media_test_option.view.card_header
+import kotlinx.android.synthetic.main.media_test_option.view.card_button
+
+import kotlinx.android.synthetic.main.media_test_suites.test_suite_options_list
+import kotlinx.android.synthetic.main.media_test_suites.test_suite_results_container
+import kotlinx.android.synthetic.main.media_test_suites.test_suite_num_iter
+import kotlinx.android.synthetic.main.media_tests.test_results_container
+import kotlinx.android.synthetic.main.media_tests.tests_query
+import kotlinx.android.synthetic.main.media_tests.test_options_list
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.test_to_configure_list
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.reset_results_button
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.subtitle
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.title
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.done_button
+
 
 class MediaAppTestingActivity : AppCompatActivity() {
     private var mediaAppDetails: MediaAppDetails? = null
@@ -435,33 +465,33 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 holder.cardView.configure_test_suite_button.visibility = View.VISIBLE
                 holder.cardView.configure_test_suite_button.setOnClickListener {
                     val configAdapter = ConfigurationAdapter(configurableTests)
-
-                    var dialog = Dialog(this@MediaAppTestingActivity)
-                    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-                    dialog.setContentView(R.layout.test_suite_configure_dialog)
-                    dialog.title.text = testSuite.name + " Configuration"
-                    dialog.subtitle.text = testSuite.description
-                    dialog.test_to_configure_list.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
-                    dialog.test_to_configure_list.layoutParams.height = getScreenHeightPx(this@MediaAppTestingActivity) / 2
-                    dialog.test_to_configure_list.adapter = configAdapter
                     val sharedPreferences = getSharedPreferences(SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
+                    Dialog(this@MediaAppTestingActivity).apply {
+                        // Init dialog
+                        requestWindowFeature(Window.FEATURE_NO_TITLE)
+                        setContentView(R.layout.test_suite_configure_dialog)
+                        title.text = testSuite.name + " Configuration"
+                        subtitle.text = testSuite.description
+                        test_to_configure_list.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
+                        test_to_configure_list.layoutParams.height = getScreenHeightPx(this@MediaAppTestingActivity) / 2
+                        test_to_configure_list.adapter = configAdapter
 
-                    // Reset config button clicked
-                    dialog.reset_results_button.setOnClickListener {
-                        sharedPreferences.edit().apply {
-                            for (i in configurableTests.indices) {
-                                putString(configurableTests[i].name, NO_CONFIG)
-                                configAdapter.notifyItemChanged(i)
-                            }
-                        }.apply()
-                        dialog.dismiss()
-                    }
+                        // Reset config button clicked
+                        reset_results_button.setOnClickListener {
+                            sharedPreferences.edit().apply {
+                                for (i in configurableTests.indices) {
+                                    putString(configurableTests[i].name, NO_CONFIG)
+                                    configAdapter.notifyItemChanged(i)
+                                }
+                            }.apply()
+                            dismiss()
+                        }
 
-                    // Done button pressed
-                    dialog.done_button.setOnClickListener {
-                        dialog.dismiss()
-                    }
-                    dialog.show()
+                        // Done button pressed
+                        done_button.setOnClickListener {
+                            dismiss()
+                        }
+                    }.show()
                 }
             }
 
@@ -520,12 +550,10 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 }
 
                 override fun beforeTextChanged(s: CharSequence, start: Int,
-                                               count: Int, after: Int) {
-                }
+                                               count: Int, after: Int) = Unit
 
                 override fun onTextChanged(s: CharSequence, start: Int,
-                                           before: Int, count: Int) {
-                }
+                                           before: Int, count: Int) = Unit
             })
 
             val previousConfig = sharedPreferences.getString(test.name, NO_CONFIG)
@@ -1199,8 +1227,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         private const val TAG = "MediaAppTestingActivity"
 
-
-
         // Key names for external extras.
         private const val PACKAGE_NAME_EXTRA = "com.example.android.mediacontroller.PACKAGE_NAME"
 
@@ -1213,10 +1239,10 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 "com.example.android.mediacontroller.STATE_APP_DETAILS_KEY"
 
         // Shared pref key name for test suite config
-        const val SHARED_PREF_KEY_SUITE_CONFIG = ""
+        const val SHARED_PREF_KEY_SUITE_CONFIG = "mct-test-suite-config"
 
         // Shared pref suite no configuration setup
-        const val NO_CONFIG = ""
+        const val NO_CONFIG = "no-conf"
 
         /**
          * Builds an [Intent] to launch this Activity with a set of extras.
@@ -1237,7 +1263,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         // Gets the current screen height in pixels
         fun getScreenHeightPx(context: Context): Int {
             val displayMetrics = DisplayMetrics()
-            val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            val windowManager = ContextCompat.getSystemService(context, WindowManager::class.java)
             val display = windowManager.defaultDisplay
             display.getMetrics(displayMetrics)
             return displayMetrics.heightPixels
