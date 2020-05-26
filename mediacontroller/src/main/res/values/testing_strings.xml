@@ -52,6 +52,10 @@
     <string name= "test_suite_error_invalid_iter">Invalid iteration number, must be between (1..100).</string>
     <string name= "test_suite_already_running">Please wait for current test suite to finish.</string>
     <string name="close_results_button">Close</string>
+    <string name="configure_button">Configure</string>
+    <string name="done_configure_button">Done</string>
+    <string name="reset_button_text">Reset</string>
+    <string name="query_hint">Query</string>
 
 
     <!-- Logs Toggle -->
@@ -200,8 +204,4 @@
     <!-- For example, the command `adb shell input text hello%sworld` will add the string "hello world" to the input field (%s indicates a space) -->
     <string name="tv_text_input">%s\nSelect this test to open the query input field. To input text via adb, enter `adb shell input text [query]`.</string>
     <string name="tv_text_input_with_query">%s\nSelect this test to open the query input field. To input text via adb, enter `adb shell input text [query]`.\n\nEntered query: [%s]</string>
-    <string name="configure_button">Configure</string>
-    <string name="done_configure_button">Done</string>
-    <string name="reset_button_text">Reset</string>
-    <string name="query_hint">Query</string>
 </resources>

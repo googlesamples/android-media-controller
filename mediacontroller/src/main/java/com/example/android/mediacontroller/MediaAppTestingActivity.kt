@@ -161,7 +161,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
     }
 
 
-
     override fun onDestroy() {
         mediaController?.run {
             unregisterCallback(controllerCallback)
@@ -426,9 +425,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
             holder.cardView.card_button.text = "Run Suite"
 
             val configurableTests = testSuite.getConfigurableTests()
-            if(!configurableTests.isEmpty()){
+            if (!configurableTests.isEmpty()) {
                 holder.cardView.configure_test_suite_button.visibility = View.VISIBLE
-                holder.cardView.configure_test_suite_button.setOnClickListener{
+                holder.cardView.configure_test_suite_button.setOnClickListener {
                     val configAdapter = ConfigurationAdapter(configurableTests)
 
                     var dialog = Dialog(this@MediaAppTestingActivity)
@@ -442,7 +441,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     val sharedPreferences = getSharedPreferences(SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
 
                     // Reset config button clicked
-                    dialog.reset_results_button.setOnClickListener{
+                    dialog.reset_results_button.setOnClickListener {
                         sharedPreferences.edit().apply {
                             for (i in configurableTests.indices) {
                                 putString(configurableTests[i].name, NO_CONFIG)
@@ -453,7 +452,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     }
 
                     // Done button pressed
-                    dialog.done_button.setOnClickListener{
+                    dialog.done_button.setOnClickListener {
                         dialog.dismiss()
                     }
                     dialog.show()
@@ -509,7 +508,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             holder.cardView.test_query_config.addTextChangedListener(object : TextWatcher {
 
                 override fun afterTextChanged(s: Editable) {
-                    sharedPreferences.edit().apply{
+                    sharedPreferences.edit().apply {
                         putString(test.name, holder.cardView.test_query_config.text.toString())
                     }.apply()
                 }
@@ -525,7 +524,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
             val previousConfig = sharedPreferences.getString(test.name, NO_CONFIG)
             holder.cardView.test_query_config.setText((previousConfig))
-            if (previousConfig == NO_CONFIG){
+            if (previousConfig == NO_CONFIG) {
                 holder.cardView.test_query_config.setText("")
                 holder.cardView.test_query_config.hint = "Query"
                 return
@@ -1195,7 +1194,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         private const val TAG = "MediaAppTestingActivity"
 
         // Shared pref key name for test suite config
-        const val SHARED_PREF_KEY_SUITE_CONFIG = "mct-shared-pref"
+        const val SHARED_PREF_KEY_SUITE_CONFIG = ""
 
         // Shared pref suite no configuration setup
         const val NO_CONFIG = ""

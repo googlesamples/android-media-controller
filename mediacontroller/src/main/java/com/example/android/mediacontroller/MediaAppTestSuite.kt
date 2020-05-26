@@ -46,7 +46,7 @@ import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 
 
-class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList: Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context){
+class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList: Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context) {
     val name = testSuiteName
     val description = testSuiteDescription
     private val singleSuiteTestList = testList
@@ -60,7 +60,6 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
     private var screenHeight = 0
     private val SLEEP_TIME = 1000L
     private val sharedPreferences: SharedPreferences
-
 
     init {
         for (i in testList.indices) {
@@ -81,8 +80,8 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
 
     fun getConfigurableTests(): ArrayList<TestOptionDetails> {
         var configTests = ArrayList<TestOptionDetails>()
-        for(test in singleSuiteTestList){
-            if(test.queryRequired){
+        for (test in singleSuiteTestList) {
+            if (test.queryRequired) {
                 configTests.add(test)
             }
         }
@@ -102,14 +101,13 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
                 // Flush out any residual media control commands from previous test
                 Thread.sleep(SLEEP_TIME)
 
-
                 // In the event that a query is not specified, don't run the test.
                 var query = sharedPreferences.getString(test.name, MediaAppTestingActivity.NO_CONFIG)
                 if (test.queryRequired && query == MediaAppTestingActivity.NO_CONFIG) {
-                        test.testResult = TestResult.CONFIG_REQUIRED
-                        val index = iDToPositionMap[test.id]
-                        mHandler.post { resultsAdapter.notifyItemChanged(index!!) }
-                        continue
+                    test.testResult = TestResult.CONFIG_REQUIRED
+                    val index = iDToPositionMap[test.id]
+                    mHandler.post { resultsAdapter.notifyItemChanged(index!!) }
+                    continue
                 }
 
                 // For tests that don't require queries, run normally.
@@ -191,7 +189,6 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
     inner class OnResultsClickedListener(private val testDetails: TestOptionDetails, val context: Context) : View.OnClickListener {
 
         override fun onClick(p0: View?) {
-
             var dialog = Dialog(context)
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
             dialog.setContentView(R.layout.test_suite_results_dialog)
