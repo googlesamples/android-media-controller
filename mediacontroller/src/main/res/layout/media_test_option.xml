@@ -45,13 +45,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             tools:text="Test Description"/>
-
-        <Button
-            android:id="@+id/card_button"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:text="@string/tests_run_button" />
+            android:orientation="horizontal"
+            android:gravity="right"
+            android:weightSum="10">
+
+            <Button
+                android:id="@+id/configure_test_suite_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="invisible"
+                android:layout_gravity="end"
+                android:layout_weight="1"
+                android:text="@string/configure_button" />
+
+            <Button
+                android:id="@+id/card_button"
+                android:layout_weight="1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="@string/tests_run_button" />
+        </LinearLayout>
 
     </LinearLayout>
 
