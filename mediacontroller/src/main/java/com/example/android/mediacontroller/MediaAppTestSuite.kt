@@ -45,7 +45,7 @@ import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 
 
-class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList: Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context) : View.OnClickListener {
+class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList: Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context){
     val name = testSuiteName
     val description = testSuiteDescription
     private val singleSuiteTestList = testList
@@ -178,10 +178,6 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
         override fun getItemCount() = tests.size
     }
 
-
-    override fun onClick(p0: View?) {
-
-    }
 
     inner class OnResultsClickedListener(private val testDetails: TestOptionDetails, val context: Context) : View.OnClickListener {
 

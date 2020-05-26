@@ -50,9 +50,9 @@ class Test(
         val testType: TestType,
         val mediaController: MediaControllerCompat
 ) : HandlerThread(testName) {
+    private val TAG = "MediaAppTestDetails"
     private val steps = mutableListOf<TestStep>()
     private var stepIndex = 0
-    private val TAG = "MediaAppTestDetails"
     var testLogs = arrayListOf<String>()
     var origState: PlaybackStateCompat? = null
     var origMetadata: MediaMetadataCompat? = null
@@ -187,7 +187,7 @@ class Test(
         }
 
         callback = object : MediaControllerCompat.Callback() {
-
+            
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 Message.obtain(handler, STATE_CHANGED, state).sendToTarget()
             }
@@ -652,7 +652,6 @@ class WaitForPlaying(override val test: Test) : TestStep {
             currState?.state == null -> {
                 test.logTestUpdate(logTag, androidResources.getString(R.string.test_warn_state_null))
                 TestStepStatus.STEP_CONTINUE
-
             }
             currState.state == PlaybackStateCompat.STATE_PLAYING -> {
                 TestStepStatus.STEP_PASS
