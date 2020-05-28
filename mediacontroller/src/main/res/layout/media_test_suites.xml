@@ -26,8 +26,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/test_suite_options_header"
-        android:textSize="@dimen/tests_header_text_size"
-        android:textStyle="bold" />
+        style="@style/Header" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -40,7 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/test_suite_iter_header"
-            android:textSize="@dimen/tests_subheader_text_size"/>
+            style="@style/SubHeader"/>
 
         <EditText
             android:id="@+id/test_suite_num_iter"
@@ -70,8 +69,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/tests_results_header"
-        android:textSize="@dimen/tests_header_text_size"
-        android:textStyle="bold" />
+        style="@style/Header" />
 
 
     <androidx.recyclerview.widget.RecyclerView

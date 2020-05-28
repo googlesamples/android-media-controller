@@ -43,8 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_state"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header" />
 
         <TextView
             android:id="@+id/playback_state_text"
@@ -61,8 +60,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_metadata"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header"  />
 
         <TextView
             android:id="@+id/metadata_text"
@@ -79,8 +77,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_repeat"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header" />
 
         <TextView
             android:id="@+id/repeat_mode_text"
@@ -97,8 +94,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_shuffle"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header" />
 
         <TextView
             android:id="@+id/shuffle_mode_text"
@@ -115,8 +111,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_queue_title"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header"  />
 
         <TextView
             android:id="@+id/queue_title_text"
@@ -134,8 +129,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_queue"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header"  />
 
         <TextView
             android:id="@+id/queue_text"

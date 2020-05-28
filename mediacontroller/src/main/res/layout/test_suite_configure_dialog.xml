@@ -26,8 +26,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:padding="@dimen/margin_small"
-        android:textStyle="bold"
-        android:textSize="@dimen/tests_header_text_size" />
+        style="@style/Header" />
 
     <TextView
         android:id="@+id/subtitle"
@@ -35,7 +34,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textSize="@dimen/tests_subheader_text_size"
-        style="@style/SubText"/>
+        style="@style/SubHeader"/>
 
     <View
         android:layout_width="match_parent"
