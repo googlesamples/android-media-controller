@@ -1264,8 +1264,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
         fun getScreenHeightPx(context: Context): Int {
             val displayMetrics = DisplayMetrics()
             val windowManager = ContextCompat.getSystemService(context, WindowManager::class.java)
-            val display = windowManager.defaultDisplay
-            display.getMetrics(displayMetrics)
+            val display = windowManager?.defaultDisplay
+            display?.getMetrics(displayMetrics)
             return displayMetrics.heightPixels
         }
     }
