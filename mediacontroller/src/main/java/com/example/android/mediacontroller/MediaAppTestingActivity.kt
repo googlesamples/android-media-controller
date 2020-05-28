@@ -50,6 +50,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -1263,7 +1264,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         // Gets the current screen height in pixels
         fun getScreenHeightPx(context: Context): Int {
             val displayMetrics = DisplayMetrics()
-            val windowManager = context.getSystemService(WindowManager::class.java)
+            val windowManager = getSystemService(context, WindowManager::class.java)
                     ?: throw IllegalStateException("Could not get WindowManager")
             val display = windowManager.defaultDisplay
             display.getMetrics(displayMetrics)
