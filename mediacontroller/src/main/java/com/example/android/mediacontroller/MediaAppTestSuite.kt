@@ -17,16 +17,15 @@ package com.example.android.mediacontroller
 
 import android.app.Dialog
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -45,7 +44,9 @@ import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 
 
-class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList: Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context){
+class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList:
+    Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context) {
+
     val name = testSuiteName
     val description = testSuiteDescription
     private val singleSuiteTestList = testList
@@ -58,19 +59,14 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
     private var suiteRunning = false
     private var screenHeight = 0
     private val SLEEP_TIME = 1000L
+    private val sharedPreferences: SharedPreferences
 
     init {
         for (i in testList.indices) {
             iDToPositionMap[testList[i].id] = i
         }
         context.applicationContext
-
-        // Get screen height for dialog display purposes.
-        val displayMetrics = DisplayMetrics()
-        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val display = windowManager.defaultDisplay
-        display.getMetrics(displayMetrics)
-        screenHeight = displayMetrics.heightPixels
+        sharedPreferences = context.getSharedPreferences(MediaAppTestingActivity.SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
     }
 
     val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
@@ -80,6 +76,16 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
         testList[index].testLogs = testLogs
         mHandler.post { resultsAdapter.notifyItemChanged(index) }
         testSemaphore.release()
+    }
+
+    fun getConfigurableTests(): ArrayList<TestOptionDetails> {
+        var configTests = ArrayList<TestOptionDetails>()
+        for (test in singleSuiteTestList) {
+            if (test.queryRequired) {
+                configTests.add(test)
+            }
+        }
+        return configTests
     }
 
     fun suiteIsRunning(): Boolean {
@@ -96,16 +102,19 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
                 Thread.sleep(SLEEP_TIME)
 
                 // In the event that a query is not specified, don't run the test.
-                if (test.queryRequired) {
+                var query = sharedPreferences.getString(test.name, MediaAppTestingActivity.NO_CONFIG)
+                if (test.queryRequired && query == MediaAppTestingActivity.NO_CONFIG) {
                     test.testResult = TestResult.CONFIG_REQUIRED
                     val index = iDToPositionMap[test.id]
                     mHandler.post { resultsAdapter.notifyItemChanged(index!!) }
                     continue
                 }
 
-                // For tests that don't require queries, run normally.
+                if (query == MediaAppTestingActivity.NO_CONFIG){
+                    query = ""
+                }
                 testSemaphore.acquire()
-                test.runTest("", callback, test.id)
+                test.runTest(query, callback, test.id)
             }
             suiteRunning = false
         }
@@ -182,7 +191,6 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
     inner class OnResultsClickedListener(private val testDetails: TestOptionDetails, val context: Context) : View.OnClickListener {
 
         override fun onClick(p0: View?) {
-
             var dialog = Dialog(context)
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
             dialog.setContentView(R.layout.test_suite_results_dialog)
@@ -201,7 +209,7 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
             }
             val close_button = dialog.findViewById(R.id.close_results_button) as Button
             val results_scroll_view = dialog.findViewById(R.id.results_scroll_view) as ScrollView
-            results_scroll_view.layoutParams.height = (screenHeight / 2).toInt()
+            results_scroll_view.layoutParams.height = (MediaAppTestingActivity.getScreenHeightPx(context) / 2).toInt()
             close_button.setOnClickListener(View.OnClickListener { dialog.dismiss() })
             dialog.show()
         }

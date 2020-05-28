@@ -17,7 +17,7 @@
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/card_view"
+    android:id="@+id/card_view_config"
     android:layout_gravity="center"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -26,50 +26,23 @@
     card_view:cardCornerRadius="4dp">
 
     <LinearLayout
-        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="@dimen/margin_small"
-        android:orientation="vertical">
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:weightSum="5">
 
         <TextView
-            android:id="@+id/card_header"
+            android:id="@+id/test_name_config"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Test Name"
-            android:textSize="@dimen/tests_subheader_text_size"
-            android:textStyle="italic"
-            android:textColor="#000" />
+            android:textSize="@dimen/tests_subheader_text_size" />
 
-        <TextView
-            android:id="@+id/card_text"
+        <EditText
+            android:id="@+id/test_query_config"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Test Description" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="right"
-            android:weightSum="10">
-
-            <Button
-                android:id="@+id/configure_test_suite_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:visibility="invisible"
-                android:layout_gravity="end"
-                android:layout_weight="1"
-                android:text="@string/configure_button" />
-
-            <Button
-                android:id="@+id/card_button"
-                android:layout_weight="1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="@string/tests_run_button" />
-        </LinearLayout>
+            android:hint="@string/query_hint"
+            android:textSize="@dimen/tests_subheader_text_size" />
 
     </LinearLayout>
 

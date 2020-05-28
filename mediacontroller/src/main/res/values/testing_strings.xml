@@ -52,6 +52,11 @@
     <string name= "test_suite_error_invalid_iter">Invalid iteration number, must be between (1..100).</string>
     <string name= "test_suite_already_running">Please wait for current test suite to finish.</string>
     <string name="close_results_button">Close</string>
+    <string name="configure_button">Configure</string>
+    <string name="done_configure_button">Done</string>
+    <string name="reset_button_text">Reset</string>
+    <string name="query_hint">Query</string>
+    <string name="run_suite_button">Run Suite</string>
 
 
     <!-- Logs Toggle -->
