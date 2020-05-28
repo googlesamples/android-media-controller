@@ -58,7 +58,8 @@
             android:id="@+id/card_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Test Description" />
+            tools:text="Test Description"
+            style="@style/SubText"/>
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -70,42 +71,48 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:text="@string/test_suite_results_passing_header" />
+                android:text="@string/test_suite_results_passing_header"
+                style="@style/SubText"/>
 
             <TextView
                 android:id="@+id/tests_passing_open_paren"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:text="@string/test_suite_open_paren" />
+                android:text="@string/test_suite_open_paren"
+                style="@style/SubText"/>
 
             <TextView
                 android:id="@+id/tests_passing"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:text="@string/test_suite_results_passing_default" />
+                android:text="@string/test_suite_results_passing_default"
+                style="@style/SubText"/>
 
             <TextView
                 android:id="@+id/tests_passing_divide"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:text="@string/test_suite_divide" />
+                android:text="@string/test_suite_divide"
+                style="@style/SubText"/>
 
             <TextView
                 android:id="@+id/total_tests"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:text="@string/test_suite_results_total_default" />
+                android:text="@string/test_suite_results_total_default"
+                style="@style/SubText"/>
 
             <TextView
                 android:id="@+id/tests_passing_close_paren"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
-                android:text="@string/test_suite_close_paren" />
+                android:text="@string/test_suite_close_paren"
+                style="@style/SubText"/>
         </LinearLayout>
 
 

@@ -44,7 +44,8 @@
             android:id="@+id/card_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Test Description" />
+            tools:text="Test Description"
+            style="@style/SubText"/>
 
         <LinearLayout
             android:layout_width="match_parent"

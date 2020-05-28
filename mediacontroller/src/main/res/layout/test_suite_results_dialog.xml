@@ -34,7 +34,8 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textSize="@dimen/tests_subheader_text_size"
-        android:id="@+id/results_subtitle"/>
+        android:id="@+id/results_subtitle"
+        style="@style/SubText"/>
     <View
         android:layout_width="match_parent"
         android:layout_height="2dp"
