@@ -42,6 +42,7 @@
                 android:layout_height="wrap_content"
                 tools:text="Test Name"
                 android:textStyle="italic"
+                android:layout_weight="1"
                 style="@style/SubHeader"/>
 
             <ProgressBar
