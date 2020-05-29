@@ -38,7 +38,7 @@ import kotlin.concurrent.thread
 
 class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: String, private val testList:
     Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, val context: Context) {
-    
+
     private val TAG = "MediaAppTestSuite"
 
     /**
