@@ -15,6 +15,7 @@
  */
 package com.example.android.mediacontroller
 
+import android.animation.ArgbEvaluator
 import android.app.Dialog
 import android.content.Context
 import android.content.SharedPreferences
@@ -26,20 +27,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
+import android.widget.*
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.animation.ArgbEvaluatorCompat
 import kotlinx.android.synthetic.main.media_test_option.view.card_header
 import kotlinx.android.synthetic.main.media_test_option.view.card_text
-import kotlinx.android.synthetic.main.media_test_suite_result.view.tests_passing_header
-import kotlinx.android.synthetic.main.media_test_suite_result.view.loading_bar
-import kotlinx.android.synthetic.main.media_test_suite_result.view.tests_passing
-import kotlinx.android.synthetic.main.media_test_suite_result.view.total_tests
+import kotlinx.android.synthetic.main.media_test_suite_result.view.*
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 
@@ -47,34 +43,56 @@ import kotlin.concurrent.thread
 class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, testList:
     Array<TestOptionDetails>, private val testSuiteResultsLayout: RecyclerView, context: Context) {
 
+    private val SLEEP_TIME = 1000L
+    private val TAG = "MediaAppTestSuite"
+    private val PASSING_COLOR = ContextCompat.getColor(context, R.color.test_result_pass)
+    private val FAILING_COLOR = ContextCompat.getColor(context, R.color.test_result_fail)
+
     val name = testSuiteName
     val description = testSuiteDescription
     private val singleSuiteTestList = testList
     val context = context
-    private val resultsAdapter = ResultsAdapter(singleSuiteTestList)
+    private var resultsAdapter = ResultsAdapter(singleSuiteTestList)
     private val testSemaphore = Semaphore(1)
     private val mHandler = Handler(Looper.getMainLooper())
-    private val iDToPositionMap = hashMapOf<Int, Int>()
-    private val TAG = "MediaAppTestSuite"
+    private val positionToIDMap = hashMapOf<Int, Int>()
+    private val iDToResultsMap = hashMapOf<Int, TestCaseResults>()
     private var suiteRunning = false
-    private var screenHeight = 0
-    private val SLEEP_TIME = 1000L
+    private var argbEvaluator = ArgbEvaluator()
     private val sharedPreferences: SharedPreferences
+    private lateinit var suiteThread: Thread
+
 
     init {
         for (i in testList.indices) {
-            iDToPositionMap[testList[i].id] = i
+            positionToIDMap[i] = testList[i].id
+            iDToResultsMap[testList[i].id] = TestCaseResults()
         }
-        context.applicationContext
         sharedPreferences = context.getSharedPreferences(MediaAppTestingActivity.SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
     }
 
-    val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
-        val index = iDToPositionMap[testId]
-        Log.d(TAG, "Finished Test: " + testList[index!!].name + " with result " + result)
-        testList[index].testResult = result
-        testList[index].testLogs = testLogs
-        mHandler.post { resultsAdapter.notifyItemChanged(index) }
+    private val callback = { result: TestResult, testId: Int, testLogs: ArrayList<String> ->
+        val testCaseResults = iDToResultsMap[testId]!!
+        Log.d(TAG, "Finished Test: $testId with result $result")
+        testCaseResults.totalRuns += 1
+        when (result) {
+            TestResult.PASS -> {
+                testCaseResults.numPassing += 1
+                testCaseResults.passingLogs.add(testLogs)
+            }
+            TestResult.FAIL -> {
+                testCaseResults.failingLogs.add(testLogs)
+            }
+            TestResult.OPTIONAL_FAIL -> {
+                testCaseResults.failingLogs.add(testLogs)
+            }
+            TestResult.CONFIG_REQUIRED -> {
+                testCaseResults.totalRuns -= 1
+            }
+            else -> {
+                Log.d(TAG, "There was an error with $testId return code")
+            }
+        }
         testSemaphore.release()
     }
 
@@ -93,46 +111,106 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
     }
 
     fun runSuite(numIter: Int) {
-        suiteRunning = true
         resetTests()
-        thread(start = true) {
-            Looper.prepare()
-            for (test in singleSuiteTestList) {
-                // Flush out any residual media control commands from previous test
-                Thread.sleep(SLEEP_TIME)
-
-                // In the event that a query is not specified, don't run the test.
-                var query = sharedPreferences.getString(test.name, MediaAppTestingActivity.NO_CONFIG)
-                if (test.queryRequired && query == MediaAppTestingActivity.NO_CONFIG) {
-                    test.testResult = TestResult.CONFIG_REQUIRED
-                    val index = iDToPositionMap[test.id]
-                    mHandler.post { resultsAdapter.notifyItemChanged(index!!) }
-                    continue
-                }
-
-                if (query == MediaAppTestingActivity.NO_CONFIG){
-                    query = ""
-                }
-                testSemaphore.acquire()
-                test.runTest(query, callback, test.id)
+        var progressBar :ProgressBar
+        val dialog = Dialog(context)
+        dialog.apply {
+            setCancelable(false)
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+            setContentView(R.layout.run_suite_iter_dialog)
+            progressBar = findViewById<ProgressBar>(R.id.suite_iter_progress_bar).apply {
+                max = numIter * singleSuiteTestList.size
+                progress = -1
             }
-            suiteRunning = false
-        }
-        displayResults()
+            findViewById<Button>(R.id.quit_suite_iter_button).setOnClickListener{
+                interrupt()
+                dismiss()
+            }
+            window.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        }.show()
+        runSuiteImpl(dialog, progressBar, numIter)
     }
 
-    private fun resetTests() {
+    private fun runSuiteImpl(dialog: Dialog, progressBar: ProgressBar, numIter: Int){
+        resultsAdapter = ResultsAdapter(singleSuiteTestList)
+        suiteRunning = true
+        suiteThread = thread(start = true) {
+            Looper.prepare()
+            try {
+                for(i in 0 until numIter) {
+                    for (test in singleSuiteTestList) {
+                        resetSingleResults()
+                        progressBar.incrementProgressBy(1)
+
+                        // Flush out any residual media control commands from previous test
+                        Thread.sleep(SLEEP_TIME)
+
+                        // In the event that a query is not specified, don't run the test.
+                        var query = sharedPreferences.getString(test.name, MediaAppTestingActivity.NO_CONFIG)
+                        if (test.queryRequired && query == MediaAppTestingActivity.NO_CONFIG) {
+                            test.testResult = TestResult.CONFIG_REQUIRED
+                            val index = positionToIDMap[test.id]
+                            mHandler.post { resultsAdapter.notifyItemChanged(index!!) }
+                            continue
+                        }
+
+                        if (query == MediaAppTestingActivity.NO_CONFIG) {
+                            query = ""
+                        }
+                        testSemaphore.acquire()
+                        test.runTest(query, callback, test.id)
+                    }
+                }
+            } catch(e: InterruptedException){
+                Thread.currentThread().interrupt()
+            }
+            suiteRunning = false
+            mHandler.post {
+                Log.i(TAG, "Starting to display results")
+                displayResults()
+                Log.i(TAG, "Finished displaying results")
+                dialog.dismiss()
+            }
+        }
+    }
+
+    private fun interrupt(){
+        if (!this::suiteThread.isInitialized){
+            return
+        }
+        suiteThread.interrupt()
+        suiteRunning = false
+        resetTests()
+    }
+
+    private fun resetSingleResults(){
         for (test in singleSuiteTestList) {
             test.testResult = TestResult.NONE
             test.testLogs = Test.NO_LOGS
-            mHandler.post { resultsAdapter.notifyItemChanged(test.id) }
         }
+    }
+
+    private fun resetTests() {
+        resetSingleResults()
+        for (test in singleSuiteTestList) {
+            iDToResultsMap[test.id] = TestCaseResults()
+        }
+        resultsAdapter = ResultsAdapter(arrayOf<TestOptionDetails>())
+        testSuiteResultsLayout.removeAllViews()
+        displayResults()
     }
 
     private fun displayResults() {
         testSuiteResultsLayout.layoutManager = LinearLayoutManager(context)
         testSuiteResultsLayout.setHasFixedSize(true)
         testSuiteResultsLayout.adapter = resultsAdapter
+    }
+
+    inner class TestCaseResults() {
+        var totalRuns = 0
+        var numPassing = 0
+        var passingLogs = arrayListOf<ArrayList<String>>()
+        var failingLogs = arrayListOf<ArrayList<String>>()
     }
 
     // Adapter to display test result details
@@ -151,44 +229,28 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val testID = positionToIDMap[position]
+            val testCaseResults = iDToResultsMap[testID]!!
             holder.cardView.card_header.text = tests[position].name
             holder.cardView.card_text.text = tests[position].desc
-            holder.cardView.total_tests.text = "1"
-            when (tests[position].testResult) {
-                TestResult.PASS -> {
-                    holder.cardView.tests_passing.text = "1"
-                    holder.cardView.loading_bar.visibility = View.INVISIBLE
-                    holder.cardView.tests_passing_header.text = context.getString(R.string.test_suite_results_passing_header)
-                    holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.test_result_pass))
-                }
-                TestResult.FAIL -> {
-                    holder.cardView.tests_passing.text = "0"
-                    holder.cardView.loading_bar.visibility = View.INVISIBLE
-                    holder.cardView.tests_passing_header.text = context.getString(R.string.test_suite_results_passing_header)
-                    holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.test_result_fail))
-                }
-                TestResult.CONFIG_REQUIRED -> {
-                    holder.cardView.tests_passing.text = context.getString(R.string.test_suite_unknown)
-                    holder.cardView.tests_passing_header.text = context.getString(R.string.test_suite_config_needed_header)
-                    holder.cardView.loading_bar.visibility = View.INVISIBLE
-                    holder.cardView.setCardBackgroundColor(Color.GRAY)
-                }
-                else -> {
-                    holder.cardView.tests_passing.text = context.getString(R.string.test_suite_unknown)
-                    holder.cardView.loading_bar.visibility = View.VISIBLE
-                    holder.cardView.tests_passing_header.text = context.getString(R.string.test_suite_results_passing_header)
-                    holder.cardView.setCardBackgroundColor(Color.WHITE)
-                }
+            holder.cardView.total_tests.text = testCaseResults.totalRuns.toString()
+            holder.cardView.tests_passing.text = testCaseResults.numPassing.toString()
+            if(testCaseResults.totalRuns == 0){
+                holder.cardView.tests_passing_header.text = context.getString(R.string.test_suite_config_needed_header)
+                holder.cardView.setCardBackgroundColor(Color.GRAY)
+                return
             }
-            val onResultsClickedListener = OnResultsClickedListener(tests[position], this@MediaAppTestSuite.context)
-            holder.cardView.setOnClickListener(onResultsClickedListener)
+            val passPercentage = testCaseResults.numPassing.toFloat() / testCaseResults.totalRuns.toFloat()
+            holder.cardView.setCardBackgroundColor((argbEvaluator.evaluate(passPercentage, FAILING_COLOR, PASSING_COLOR )) as Int)
+            //val onResultsClickedListener = OnResultsClickedListener(testID, this@MediaAppTestSuite.context)
+            //holder.cardView.setOnClickListener(onResultsClickedListener)
         }
 
         override fun getItemCount() = tests.size
     }
 
-
-    inner class OnResultsClickedListener(private val testDetails: TestOptionDetails, val context: Context) : View.OnClickListener {
+/*
+    inner class OnResultsClickedListener(private val testId: Int, val context: Context) : View.OnClickListener {
 
         override fun onClick(p0: View?) {
             var dialog = Dialog(context)
@@ -215,4 +277,5 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
             dialog.show()
         }
     }
+    */
 }

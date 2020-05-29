@@ -34,13 +34,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.DisplayMetrics
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
-import android.view.MenuItem
-import android.view.Menu
-import android.view.LayoutInflater
-import android.view.Window
-import android.view.WindowManager
+import android.view.*
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -89,11 +83,7 @@ import kotlinx.android.synthetic.main.media_test_suites.test_suite_num_iter
 import kotlinx.android.synthetic.main.media_tests.test_results_container
 import kotlinx.android.synthetic.main.media_tests.tests_query
 import kotlinx.android.synthetic.main.media_tests.test_options_list
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.test_to_configure_list
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.reset_results_button
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.subtitle
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.title
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.done_button
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.*
 
 
 class MediaAppTestingActivity : AppCompatActivity() {
@@ -501,7 +491,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 if (numIter == null) {
                     Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
 
-                } else if (numIter > 100 || numIter < 1) {
+                } else if (numIter > MAX_NUM_ITER || numIter < 1) {
                     Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
                 } else if (isSuiteRunning()) {
                     Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_already_running), Toast.LENGTH_SHORT).show()
@@ -545,9 +535,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
             holder.cardView.test_query_config.addTextChangedListener(object : TextWatcher {
 
                 override fun afterTextChanged(s: Editable) {
-                    sharedPreferences.edit().apply {
-                        putString(test.name, holder.cardView.test_query_config.text.toString())
-                    }.apply()
+                    val newText = holder.cardView.test_query_config.text.toString()
+                    if (newText != "") {
+                        sharedPreferences.edit().apply {
+                            putString(test.name, holder.cardView.test_query_config.text.toString())
+                        }.apply()
+                    }
                 }
 
                 override fun beforeTextChanged(s: CharSequence, start: Int,
@@ -933,9 +926,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val commonTests = arrayOf(
                 browseTreeDepthTest,
                 mediaArtworkTest,
-                contentStyleTest,
+                //TODO FIX contentStyleTest,
                 customActionIconTypeTest,
-                supportsSearchTest,
+                //TODO: FIX supportsSearchTest,
                 initialPlaybackStateTest
         )
 
@@ -1237,6 +1230,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
         private const val APP_DETAILS_EXTRA =
                 "com.example.android.mediacontroller.APP_DETAILS_EXTRA"
 
+        // The max number of test suite iterations
+        private const val MAX_NUM_ITER = 10
+
         // Key name used for saving/restoring instance state.
         private const val STATE_APP_DETAILS_KEY =
                 "com.example.android.mediacontroller.STATE_APP_DETAILS_KEY"
@@ -1271,6 +1267,16 @@ class MediaAppTestingActivity : AppCompatActivity() {
             val display = windowManager.defaultDisplay
             display.getMetrics(displayMetrics)
             return displayMetrics.heightPixels
+        }
+
+        // Gets the current screen width in pixels
+        fun getScreenWidthPx(context: Context): Int {
+            val displayMetrics = DisplayMetrics()
+            val windowManager = getSystemService(context, WindowManager::class.java)
+                    ?: throw IllegalStateException("Could not get WindowManager")
+            val display = windowManager.defaultDisplay
+            display.getMetrics(displayMetrics)
+            return displayMetrics.widthPixels
         }
     }
 }

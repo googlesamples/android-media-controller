@@ -45,13 +45,6 @@
                 android:layout_weight="1"
                 style="@style/SubHeader"/>
 
-            <ProgressBar
-                android:id="@+id/loading_bar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="visible"
-                android:layout_weight="4" />
-
         </LinearLayout>
 
         <TextView
