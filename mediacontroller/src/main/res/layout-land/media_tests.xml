@@ -33,8 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_options_header"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/test_options_list"
@@ -67,8 +66,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_results_header"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header" />
 
         <ScrollView
             android:layout_width="match_parent"

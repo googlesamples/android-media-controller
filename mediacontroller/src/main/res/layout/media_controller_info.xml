@@ -43,8 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_state"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header" />
 
         <TextView
             android:id="@+id/playback_state_text"
@@ -53,15 +52,15 @@
             android:textIsSelectable="true"
             android:textSize="@dimen/tests_details_text_size"
             android:typeface="monospace"
-            tools:text="PlaybackState" />
+            tools:text="PlaybackState"
+            style="@style/SubText"/>
 
         <TextView
             android:id="@+id/metadata_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_metadata"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header"  />
 
         <TextView
             android:id="@+id/metadata_text"
@@ -70,15 +69,15 @@
             android:textIsSelectable="true"
             android:textSize="@dimen/tests_details_text_size"
             android:typeface="monospace"
-            tools:text="Metadata" />
+            tools:text="Metadata"
+            style="@style/SubText"/>
 
         <TextView
             android:id="@+id/repeat_mode_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_repeat"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header" />
 
         <TextView
             android:id="@+id/repeat_mode_text"
@@ -87,15 +86,15 @@
             android:textIsSelectable="true"
             android:textSize="@dimen/tests_details_text_size"
             android:typeface="monospace"
-            tools:text="RepeatMode" />
+            tools:text="RepeatMode"
+            style="@style/SubText"/>
 
         <TextView
             android:id="@+id/shuffle_mode_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_shuffle"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header" />
 
         <TextView
             android:id="@+id/shuffle_mode_text"
@@ -104,15 +103,15 @@
             android:textIsSelectable="true"
             android:textSize="@dimen/tests_details_text_size"
             android:typeface="monospace"
-            tools:text="ShuffleMode" />
+            tools:text="ShuffleMode"
+            style="@style/SubText"/>
 
         <TextView
             android:id="@+id/queue_title_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_queue_title"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header"  />
 
         <TextView
             android:id="@+id/queue_title_text"
@@ -121,24 +120,25 @@
             android:textIsSelectable="true"
             android:textSize="@dimen/tests_details_text_size"
             android:typeface="monospace"
-            tools:text="QueueTitle" />
+            android:textColor="@color/text_light"
+            tools:text="QueueTitle"
+            style="@style/SubText"/>
 
         <TextView
             android:id="@+id/queue_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/tests_info_queue"
-            android:textSize="@dimen/tests_header_text_size"
-            android:textStyle="bold" />
+            style="@style/Header"  />
 
         <TextView
             android:id="@+id/queue_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textIsSelectable="true"
-            android:textSize="@dimen/tests_details_text_size"
             android:typeface="monospace"
-            tools:text="Queue" />
+            tools:text="Queue"
+            style="@style/SubText"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/queue_item_list"

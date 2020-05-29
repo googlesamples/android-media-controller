@@ -28,21 +28,20 @@
     <LinearLayout
         android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:weightSum="5">
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/test_name_config"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="@dimen/tests_subheader_text_size" />
+            style="@style/SubText" />
 
         <EditText
             android:id="@+id/test_query_config"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/query_hint"
-            android:textSize="@dimen/tests_subheader_text_size" />
+            style="@style/SubText"/>
 
     </LinearLayout>
 

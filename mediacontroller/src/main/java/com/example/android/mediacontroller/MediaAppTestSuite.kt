@@ -204,6 +204,7 @@ class MediaAppTestSuite(testSuiteName: String, testSuiteDescription: String, tes
                 for (line in testDetails.testLogs) {
                     val tv_newLine = TextView(context)
                     tv_newLine.text = line
+                    tv_newLine.setTextAppearance(context, R.style.SubText)
                     results_log.addView(tv_newLine)
                 }
             }

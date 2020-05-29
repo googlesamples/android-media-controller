@@ -49,4 +49,20 @@
         <item name="android:layout_marginStart">@dimen/margin_inner_drawable</item>
     </style>
 
+    <style name="Header" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/text_dark</item>
+        <item name="android:textSize">@dimen/tests_header_text_size</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="SubHeader" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/text_dark</item>
+        <item name="android:textSize">@dimen/tests_subheader_text_size</item>
+    </style>
+
+    <style name="SubText" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/text_light</item>
+        <item name="android:textSize">@dimen/tests_details_text_size</item>
+    </style>
+
 </resources>

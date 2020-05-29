@@ -1025,6 +1025,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 for (line in tests[position].testLogs) {
                     val tv_newLine = TextView(applicationContext)
                     tv_newLine.text = line
+                    tv_newLine.setTextAppearance(applicationContext, R.style.SubText)
                     resultsContainer.addView(tv_newLine)
                 }
             }
@@ -1220,6 +1221,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                         ))
                     }
                     queueText.text = getString(R.string.queue_size, queue?.size ?: 0)
+                    queueText.setTextAppearance(applicationContext, R.style.SubText)
                     populateQueue(queue)
                 }
             }
