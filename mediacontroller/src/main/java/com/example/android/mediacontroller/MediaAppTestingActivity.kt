@@ -447,8 +447,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val testSuite = testSuites[position]
-            holder.cardView.card_header.text = testSuite.name
-            holder.cardView.card_text.text = testSuite.description
+            holder.cardView.card_header.text = testSuite.testSuiteName
+            holder.cardView.card_text.text = testSuite.testSuiteDescription
             holder.cardView.card_button.text = resources.getText(R.string.run_suite_button)
 
             val configurableTests = testSuite.getConfigurableTests()
@@ -461,10 +461,11 @@ class MediaAppTestingActivity : AppCompatActivity() {
                         // Init dialog
                         requestWindowFeature(Window.FEATURE_NO_TITLE)
                         setContentView(R.layout.test_suite_configure_dialog)
-                        title.text = testSuite.name + " Configuration"
-                        subtitle.text = testSuite.description
+                        title.text = testSuite.testSuiteName + " Configuration"
+                        subtitle.text = testSuite.testSuiteDescription
                         test_to_configure_list.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
                         test_to_configure_list.layoutParams.height = getScreenHeightPx(this@MediaAppTestingActivity) / 2
+                        test_to_configure_list.setHasFixedSize(true)
                         test_to_configure_list.adapter = configAdapter
 
                         // Reset config button clicked
@@ -525,6 +526,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         ): ConfigurationAdapter.ViewHolder {
             val cardView = LayoutInflater.from(parent.context)
                     .inflate(R.layout.config_item, parent, false) as CardView
+
             return ViewHolder(cardView)
         }
 

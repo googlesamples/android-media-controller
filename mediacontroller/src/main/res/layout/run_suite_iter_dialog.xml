@@ -21,6 +21,15 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/suite_is_running_title"
+        style="@style/Header">
+
+    </TextView>
+
     <ProgressBar
         android:id="@+id/suite_iter_progress_bar"
         android:layout_margin="@dimen/activity_horizontal_margin"
