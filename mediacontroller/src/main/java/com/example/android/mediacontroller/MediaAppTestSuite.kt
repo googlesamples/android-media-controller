@@ -23,15 +23,26 @@ import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.*
-import android.widget.*
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.view.LayoutInflater
+import android.view.Window
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.ProgressBar
+import android.widget.Button
+import android.widget.ScrollView
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.media_test_option.view.card_header
 import kotlinx.android.synthetic.main.media_test_option.view.card_text
-import kotlinx.android.synthetic.main.media_test_suite_result.view.*
+import kotlinx.android.synthetic.main.media_test_suite_result.view.tests_passing
+import kotlinx.android.synthetic.main.media_test_suite_result.view.tests_passing_header
+import kotlinx.android.synthetic.main.media_test_suite_result.view.total_tests
+
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 

@@ -34,7 +34,14 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.DisplayMetrics
 import android.util.Log
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import android.view.Window
+import android.view.WindowManager
+
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -83,7 +90,11 @@ import kotlinx.android.synthetic.main.media_test_suites.test_suite_num_iter
 import kotlinx.android.synthetic.main.media_tests.test_results_container
 import kotlinx.android.synthetic.main.media_tests.tests_query
 import kotlinx.android.synthetic.main.media_tests.test_options_list
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.*
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.done_button
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.reset_results_button
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.title
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.subtitle
+import kotlinx.android.synthetic.main.test_suite_configure_dialog.test_to_configure_list
 
 
 class MediaAppTestingActivity : AppCompatActivity() {
