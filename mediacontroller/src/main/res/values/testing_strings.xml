@@ -44,12 +44,13 @@
     <string name="test_suite_results_passing_header">Passing: </string>
     <string name="test_suite_results_passing_default">0</string>
     <string name="test_suite_config_needed_header">Configuration Required for testing: </string>
+    <string name="test_suite_optional_fail_header">Optional test: </string>
     <string name="test_suite_results_total_default">0</string>
     <string name="test_suite_open_paren">(</string>
     <string name="test_suite_close_paren">)</string>
     <string name="test_suite_divide">/</string>
     <string name="test_suite_unknown">?</string>
-    <string name= "test_suite_error_invalid_iter">Invalid iteration number, must be between (1..100).</string>
+    <string name= "test_suite_error_invalid_iter">Invalid iteration number, must be between (1..10).</string>
     <string name= "test_suite_already_running">Please wait for current test suite to finish.</string>
     <string name="close_results_button">Close</string>
     <string name="configure_button">Configure</string>
@@ -57,6 +58,11 @@
     <string name="reset_button_text">Reset</string>
     <string name="query_hint">Query</string>
     <string name="run_suite_button">Run Suite</string>
+    <string name="cancel_suite_button">Cancel Suite</string>
+    <string name="suite_is_running_title">Suite is running...</string>
+    <string name="failing_logs_header">Failing Logs:</string>
+    <string name="passing_logs_header">Passing Logs:</string>
+    <string name="test_iter_divider">--- Iteration ---</string>
 
 
     <!-- Logs Toggle -->

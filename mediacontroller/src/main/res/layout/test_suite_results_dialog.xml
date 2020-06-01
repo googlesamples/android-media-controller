@@ -48,13 +48,41 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1">
-
         <LinearLayout
-            android:orientation="vertical"
-            android:id="@+id/results_log"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="@dimen/tests_details_text_size"/>
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/passing_logs_header"
+                android:text="@string/passing_logs_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/tests_subheader_text_size"
+                style="@style/SubHeader"/>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:id="@+id/passing_results_log"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/tests_details_text_size"/>
+
+            <TextView
+                android:id="@+id/failing_logs_header"
+                android:text="@string/failing_logs_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/tests_subheader_text_size"
+                style="@style/SubHeader"/>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:id="@+id/failing_results_log"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/tests_details_text_size"/>
+        </LinearLayout>
     </ScrollView>
 
     <Button
