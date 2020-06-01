@@ -472,7 +472,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                         // Init dialog
                         requestWindowFeature(Window.FEATURE_NO_TITLE)
                         setContentView(R.layout.test_suite_configure_dialog)
-                        title.text = "${testSuite.testSuiteName} Configuration"
+                        title.text = getString(R.string.configure_dialog_title, testSuite.testSuiteName)
                         subtitle.text = testSuite.testSuiteDescription
                         test_to_configure_list.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
                         test_to_configure_list.layoutParams.height = getScreenHeightPx(this@MediaAppTestingActivity) / 2
