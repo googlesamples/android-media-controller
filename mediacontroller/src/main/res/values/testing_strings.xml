@@ -63,6 +63,7 @@
     <string name="failing_logs_header">Failing Logs:</string>
     <string name="passing_logs_header">Passing Logs:</string>
     <string name="test_iter_divider">--- Iteration ---</string>
+    <string name="configure_dialog_title">%1$s Configuration</string>
 
 
     <!-- Logs Toggle -->
