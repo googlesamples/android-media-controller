@@ -15,6 +15,7 @@
  */
 package com.example.android.mediacontroller;
 
+import static androidx.media.MediaBrowserServiceCompat.BrowserRoot.EXTRA_SUGGESTED;
 import static java.util.Arrays.asList;
 
 import android.app.Activity;
@@ -119,10 +120,12 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
     private MediaBrowserCompat mBrowser;
+    private MediaBrowserCompat mBrowserExtraSuggested;
     private AudioFocusHelper mAudioFocusHelper;
     private RatingUiHelper mRatingUiHelper;
     private CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
     private BrowseMediaItemsAdapter mBrowseMediaItemsAdapter = new BrowseMediaItemsAdapter();
+    private BrowseMediaItemsAdapter mBrowseMediaItemsExtraSuggestedAdapter = new BrowseMediaItemsAdapter();
     private SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter();
 
     private ViewPager mViewPager;
@@ -246,6 +249,13 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         browseTreeList.setAdapter(mBrowseMediaItemsAdapter);
         mBrowseMediaItemsAdapter.init(findViewById(R.id.media_browse_tree_top),
                 findViewById(R.id.media_browse_tree_up));
+
+        final RecyclerView browseTreeListExtraSuggested = findViewById(R.id.media_items_list_extra_suggested);
+        browseTreeListExtraSuggested.setLayoutManager(new LinearLayoutManager(this));
+        browseTreeListExtraSuggested.setHasFixedSize(true);
+        browseTreeListExtraSuggested.setAdapter(mBrowseMediaItemsExtraSuggestedAdapter);
+        mBrowseMediaItemsExtraSuggestedAdapter.init(findViewById(R.id.media_browse_tree_top_extra_suggested),
+                findViewById(R.id.media_browse_tree_up_extra_suggested));
 
         final RecyclerView searchItemsList = findViewById(R.id.search_items_list);
         searchItemsList.setLayoutManager(new LinearLayoutManager(this));
@@ -387,13 +397,36 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
                         @Override
                         public void onConnectionFailed() {
-
                             showToastAndFinish(getString(
                                     R.string.connection_failed_msg, mMediaAppDetails.appName));
                         }
 
                     }, null);
             mBrowser.connect();
+
+            Bundle bundle = new Bundle();
+            bundle.putBoolean(EXTRA_SUGGESTED, true);
+
+            mBrowserExtraSuggested = new MediaBrowserCompat(this, mMediaAppDetails.componentName,
+                    new MediaBrowserCompat.ConnectionCallback() {
+                        @Override
+                        public void onConnected() {
+                            mBrowseMediaItemsExtraSuggestedAdapter.setRoot(mBrowserExtraSuggested.getRoot());
+                        }
+
+                        @Override
+                        public void onConnectionSuspended() {
+                            mBrowseMediaItemsExtraSuggestedAdapter.setRoot(null);
+                        }
+
+                        @Override
+                        public void onConnectionFailed() {
+                            showToastAndFinish(getString(
+                                    R.string.connection_failed_msg, mMediaAppDetails.appName));
+                        }
+
+                    }, bundle);
+            mBrowserExtraSuggested.connect();
         } else if (mMediaAppDetails.sessionToken != null) {
             setupMediaController();
         } else {
