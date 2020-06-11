@@ -63,7 +63,6 @@
             </intent-filter>
         </activity>
 
-        <!--
         <activity
             android:name=".tv.TvLauncherActivity"
             android:configChanges="keyboard|keyboardHidden"
@@ -87,7 +86,6 @@
                 <action android:name="android.intent.action.VIEW" />
             </intent-filter>
         </activity>
-        -->
 
         <service
             android:name=".NotificationListener"
