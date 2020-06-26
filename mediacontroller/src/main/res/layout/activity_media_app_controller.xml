@@ -62,6 +62,10 @@
                 layout="@layout/media_browse_tree" />
 
             <include
+                android:id="@+id/browse_tree_page_extra_suggested"
+                layout="@layout/media_browse_tree_extra_suggested" />
+
+            <include
                 android:id="@+id/media_search_page"
                 layout="@layout/media_search_controls" />
 

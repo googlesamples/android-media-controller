@@ -115,6 +115,7 @@
     <string name="media_browse_tree_top">Top</string>
     <string name="media_browse_tree_up">Up</string>
     <string name="media_browse_tree_header">App-provided MediaItems</string>
+    <string name="media_browse_tree_extra_suggested_header">App-provided MediaItems Extra Suggested Flag</string>
     <string name="media_no_browser">No Browser</string>
     <string name="media_browse_tree_loading">Loading…</string>
     <string name="media_browse_tree_empty">Empty.</string>
