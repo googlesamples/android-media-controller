@@ -119,6 +119,7 @@
     <string name="media_no_browser">No Browser</string>
     <string name="media_browse_tree_loading">Loading…</string>
     <string name="media_browse_tree_empty">Empty.</string>
+    <string name="media_browse_tree_save">Save to file</string>
     <string name="search_media">Search</string>
 
     <string name="rating_thumb_up">Thumb Up</string>
