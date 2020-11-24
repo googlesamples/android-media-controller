@@ -248,7 +248,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         browseTreeList.setHasFixedSize(true);
         browseTreeList.setAdapter(mBrowseMediaItemsAdapter);
         mBrowseMediaItemsAdapter.init(findViewById(R.id.media_browse_tree_top),
-                findViewById(R.id.media_browse_tree_up));
+                findViewById(R.id.media_browse_tree_up), findViewById(R.id.media_browse_tree_save));
 
         final RecyclerView browseTreeListExtraSuggested = findViewById(R.id.media_items_list_extra_suggested);
         browseTreeListExtraSuggested.setLayoutManager(new LinearLayoutManager(this));
@@ -1206,7 +1206,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
          * Assigns click handlers to the buttons if provided for moving to the top of the tree or
          * for moving up one level in the tree.
          */
-        void init(View topButtonView, View upButtonView) {
+        void init(View topButtonView, View upButtonView, View saveButtonView) {
             if (topButtonView != null) {
                 topButtonView.setOnClickListener(v -> {
                     if (mNodes.size() > 1) {
@@ -1227,6 +1227,75 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                         subscribe();
                     }
                 });
+            }
+	
+	    if (saveButtonView != null) {
+        	saveButtonView.setOnClickListener(v -> {
+              	    if (mNodes.isEmpty()) {
+                        Toast toast =
+                    Toast.makeText(
+                        getApplicationContext(), "List Empty, nothing saved! ", Toast.LENGTH_LONG);
+                toast.setMargin(50, 50);
+                toast.show();
+                return;
+              }
+              File root = android.os.Environment.getExternalStorageDirectory();
+              File dir = new File(root.getAbsolutePath() + "/Temp");
+              dir.mkdirs();
+              File file = new File(dir, "_BrowseTreeContent.txt");
+              if (file.exists()) {
+                file.delete();
+              }
+              try {
+                FileOutputStream f = new FileOutputStream(file);
+                PrintWriter pw = new PrintWriter(f);
+                // We print the file path at the beginning of the file so that we can use it
+                // to pull the file from android to local computer in case user have forgotten.
+                pw.println(file.toString());
+
+                for (MediaBrowserCompat.MediaItem item : mItems) {
+                  MediaDescriptionCompat descriptionCompat = item.getDescription();
+                  if (descriptionCompat != null) {
+                    String infoStr =
+                        "Title:" + descriptionCompat.getTitle() != null
+                            ? descriptionCompat.getTitle().toString()
+                            : "NAN";
+                    infoStr +=
+                        ",Subtitle:" + descriptionCompat.getSubtitle() != null
+                            ? descriptionCompat.getSubtitle().toString()
+                            : "NAN";
+                    infoStr +=
+                        ",MediaId:" + descriptionCompat.getMediaId() != null
+                            ? descriptionCompat.getMediaId().toString()
+                            : "NAN";
+                    infoStr +=
+                        ",Uri:" + descriptionCompat.getMediaUri() != null
+                            ? descriptionCompat.getMediaUri().toString()
+                            : "NAN";
+                    infoStr +=
+                        ",Description:" + descriptionCompat.getDescription() != null
+                            ? descriptionCompat.getDescription().toString()
+                            : "NAN";
+                    pw.println(infoStr);
+                  }
+                }
+
+                pw.flush();
+                pw.close();
+                f.close();
+                Toast toast =
+                    Toast.makeText(
+                        getApplicationContext(),
+                        "MediaItems saved to " + file.getAbsolutePath(),
+                        Toast.LENGTH_LONG);
+                toast.setMargin(50, 50);
+                toast.show();
+              } catch (FileNotFoundException e) {
+                e.printStackTrace();
+              } catch (IOException e) {
+                e.printStackTrace();
+              }
+            });
             }
         }
 
