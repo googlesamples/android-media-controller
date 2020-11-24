@@ -44,6 +44,12 @@
             android:layout_height="wrap_content"
             android:text="@string/media_browse_tree_up" />
 
+        <Button
+            android:id="@+id/media_browse_tree_save_extra_suggested"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/media_browse_tree_up" />
+
     </LinearLayout>
 
     <TextView
