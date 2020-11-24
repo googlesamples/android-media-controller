@@ -33,6 +33,7 @@ import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -73,6 +74,11 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -255,13 +261,13 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         browseTreeListExtraSuggested.setHasFixedSize(true);
         browseTreeListExtraSuggested.setAdapter(mBrowseMediaItemsExtraSuggestedAdapter);
         mBrowseMediaItemsExtraSuggestedAdapter.init(findViewById(R.id.media_browse_tree_top_extra_suggested),
-                findViewById(R.id.media_browse_tree_up_extra_suggested));
+                findViewById(R.id.media_browse_tree_up_extra_suggested), findViewById(R.id.media_browse_tree_save_extra_suggested));
 
         final RecyclerView searchItemsList = findViewById(R.id.search_items_list);
         searchItemsList.setLayoutManager(new LinearLayoutManager(this));
         searchItemsList.setHasFixedSize(true);
         searchItemsList.setAdapter(mSearchMediaItemsAdapter);
-        mSearchMediaItemsAdapter.init(null, null);
+        mSearchMediaItemsAdapter.init(null, null, null);
 
         findViewById(R.id.search_button).setOnClickListener(v -> {
             CharSequence queryText = ((TextView) findViewById(R.id.search_query)).getText();
