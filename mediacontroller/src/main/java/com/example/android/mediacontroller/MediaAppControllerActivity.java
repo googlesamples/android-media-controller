@@ -30,7 +30,11 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
@@ -60,6 +64,7 @@ import android.widget.ToggleButton;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -67,6 +72,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.os.HandlerCompat;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -91,6 +97,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Lock;
 
 /**
  * This class connects to a {@link MediaBrowserServiceCompat}
@@ -1247,6 +1259,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
          * Assigns click handlers to the buttons if provided for moving to the top of the tree or
          * for moving up one level in the tree.
          */
+        @RequiresApi(api = Build.VERSION_CODES.N)
         void init(View topButtonView, View upButtonView, View saveButtonView) {
             if (topButtonView != null) {
                 topButtonView.setOnClickListener(v -> {
@@ -1271,6 +1284,14 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
             if (saveButtonView != null) {
                 notifyDataSetChanged();
+
+                // Go to root of browse tree
+                unsubscribe();
+                while (mNodes.size() > 1) {
+                    mNodes.pop();
+                }
+                subscribe();
+
                 saveButtonView.setOnClickListener(
                         v -> {
 
@@ -1283,76 +1304,137 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                                 return;
                             }
                             File root = android.os.Environment.getExternalStorageDirectory();
+                            String dirs_path = root.getAbsolutePath() + "/Temp/";
+                            File dirs = new File(dirs_path);
+                            File file = new File(dirs.getAbsolutePath(), "_BrowseTreeContent.txt");
+                            if(file.exists()){
+                                file.delete();
+                            }
                             try {
-                                String dirs_path = root.getAbsolutePath() + "/Temp/";
-                                File dirs = new File(dirs_path);
-                                File file = new File(dirs.getAbsolutePath(), "_BrowseTreeContent.txt");
-                                FileOutputStream f = new FileOutputStream(file);
-                                PrintWriter pw = new PrintWriter(f);
-                                // We print the file path at the beginning of the file so that we can use it
-                                // to pull the file from platform to local computer.
+                                final FileOutputStream f = new FileOutputStream(file);
 
-                                pw.println(file.toString());
-                                if(mItems == null){
-                                    Toast toast =
-                                            Toast.makeText(
-                                                    getApplicationContext(),
-                                                    "No media items found, could not save tree.",
-                                                    Toast.LENGTH_LONG);
-                                    toast.setMargin(50, 50);
-                                    toast.show();
-                                    return;
-                                }
+                            PrintWriter pw = new PrintWriter(f);
+                            // We print the file path at the beginning of the file so that we can use it
+                            // to pull the file from platform to local computer.
 
-                                for (MediaBrowserCompat.MediaItem item : mItems) {
-                                    if(item != null) {
-                                        Log.i(TAG, "Logging media item");
-                                        MediaDescriptionCompat descriptionCompat = item.getDescription();
-                                        if (descriptionCompat != null) {
-                                            String infoStr = "Title:";
-                                            infoStr += descriptionCompat.getTitle() != null
-                                                            ? descriptionCompat.getTitle().toString()
-                                                            : "NAN";
-
-                                            infoStr += ",Subtitle:";
-                                            infoStr += descriptionCompat.getSubtitle() != null
-                                                            ? descriptionCompat.getSubtitle().toString()
-                                                            : "NAN";
-
-                                            infoStr += ",MediaId:";
-                                            infoStr += descriptionCompat.getMediaId() != null
-                                                            ? descriptionCompat.getMediaId().toString()
-                                                            : "NAN";
-                                            infoStr += ",Uri:";
-                                            infoStr += descriptionCompat.getMediaUri() != null
-                                                            ? descriptionCompat.getMediaUri().toString()
-                                                            : "NAN";
-                                            infoStr += ",Description:";
-                                            infoStr += descriptionCompat.getDescription() != null
-                                                            ? descriptionCompat.getDescription().toString()
-                                                            : "NAN";
-
-                                            pw.println(infoStr);
-                                        }
-                                    }
-                                }
-
-                                pw.flush();
-                                pw.close();
-                                f.close();
+                            pw.println(file.toString());
+                            if(mItems == null){
                                 Toast toast =
                                         Toast.makeText(
                                                 getApplicationContext(),
-                                                "MediaItems saved to " + file.getAbsolutePath(),
+                                                "No media items found, could not save tree.",
                                                 Toast.LENGTH_LONG);
                                 toast.setMargin(50, 50);
                                 toast.show();
+                                return;
+                            }
+                            pw.println("Root:");
+                            Semaphore writeCompleted = new Semaphore(1);
+                            ExecutorService executorService = Executors.newFixedThreadPool(4);
+                            executorService.execute(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                for (MediaBrowserCompat.MediaItem item : mItems) {
+                                    try {
+                                        writeCompleted.acquire();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    writeMediaItemToFile(item, pw, 1, executorService);
+                                    writeCompleted.release();
+
+                                }
+
+                                Log.i(TAG, "CLOSING FILE");
+                                pw.flush();
+                                pw.close();
+                                try {
+                                    f.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        Toast toast =
+                                                Toast.makeText(
+                                                        getApplicationContext(),
+                                                        "MediaItems saved to " + file.getAbsolutePath(),
+                                                        Toast.LENGTH_LONG);
+                                        toast.setMargin(50, 50);
+                                        toast.show();
+                                    }
+                                });
+                            }});
                             } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            } catch (IOException e) {
                                 e.printStackTrace();
                             }
                         });
+            }
+
+        }
+
+        @RequiresApi(api = Build.VERSION_CODES.N)
+        private void writeMediaItemToFile(MediaItem mediaItem, PrintWriter printWriter, int depth, ExecutorService executorService){
+            if(mediaItem != null) {
+                MediaDescriptionCompat descriptionCompat = mediaItem.getDescription();
+                if (descriptionCompat != null) {
+
+                    // Tab the media item to the respective depth
+                    String tabStr = new String(new char[depth]).replace("\0", "\t");
+
+                    String titleStr = descriptionCompat.getTitle() != null
+                            ? descriptionCompat.getTitle().toString()
+                            : "NAN";
+                    String subTitleStr = descriptionCompat.getSubtitle() != null
+                            ? descriptionCompat.getSubtitle().toString()
+                            : "NAN";
+                    String mIDStr = descriptionCompat.getMediaId() != null
+                            ? descriptionCompat.getMediaId().toString()
+                            : "NAN";
+                    String uriStr = descriptionCompat.getMediaUri() != null
+                            ? descriptionCompat.getMediaUri().toString()
+                            : "NAN";
+                    String desStr = descriptionCompat.getDescription() != null
+                            ? descriptionCompat.getDescription().toString()
+                            : "NAN";
+                    String infoStr = String.format("%sTitle:%s,Subtitle:%s,MediaId:%s,URI:%s,Description:%s", tabStr, titleStr, subTitleStr, mIDStr, uriStr, desStr);
+                    Log.i(TAG, "Logging media item: " + infoStr + " at depth: " + depth);
+                    printWriter.println(infoStr);
+                }
+                if (mediaItem.isBrowsable()) {
+                    Log.i(TAG, "Media Item is browseable");
+                    Semaphore loaded = new Semaphore(1);
+                    try {
+                        loaded.acquire();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    final List<MediaItem> mChildren = new ArrayList<MediaItem>();
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            mBrowser.subscribe(mediaItem.getMediaId(), new MediaBrowserCompat.SubscriptionCallback() {
+                                @Override
+                                public void onChildrenLoaded(@NonNull String parentId, @NonNull List<MediaItem> children) {
+                                    Log.i(TAG, "Children loaded");
+                                    mChildren.addAll(children);
+                                    loaded.release();
+                                    super.onChildrenLoaded(parentId, children);
+                                }
+                            });
+                        }
+                    });
+
+                    try {
+                        loaded.acquire();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    Log.i(TAG, "Childeren finished loading");
+                    for (MediaItem mediaItemChild : mChildren) {
+                        writeMediaItemToFile(mediaItemChild, printWriter, depth + 1, executorService);
+                    }
+                }
             }
 
         }
