@@ -1155,6 +1155,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         private List<MediaBrowserCompat.MediaItem> mItems;
         private final Stack<String> mNodes = new Stack<>();
+        private MediaBrowseTreeSnapshot mMediaBrowseTreeSnapshot;
 
         MediaBrowserCompat.SubscriptionCallback callback =
                 new MediaBrowserCompat.SubscriptionCallback() {
@@ -1180,7 +1181,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         public void onBindViewHolder(@NonNull ViewHolder holder, int position){
             Log.i(TAG, "On Bind view holder");
             if (mNodes.size() == 0) {
-                Log.i(TAG, "Setting to no browser");
                 holder.name.setText(getString(R.string.media_no_browser));
                 holder.name.setVisibility(View.VISIBLE);
                 holder.description.setVisibility(View.GONE);
@@ -1268,7 +1268,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
          * Assigns click handlers to the buttons if provided for moving to the top of the tree or
          * for moving up one level in the tree.
          */
-        @RequiresApi(api = Build.VERSION_CODES.N)
         void init(View topButtonView, View upButtonView, View saveButtonView) {
             if (topButtonView != null) {
                 topButtonView.setOnClickListener(v -> {
@@ -1292,172 +1291,26 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 });
             }
             if (saveButtonView != null) {
-
-                // Go to root of browse tree
-                // TODO: Fix race condition with subscription callback
-                unsubscribe();
-                while (mNodes.size() > 1) {
-                    mNodes.pop();
-                }
-                subscribe();
-                saveButtonView.setOnClickListener(
-                        v -> {
-
-                            if (mNodes.isEmpty()) {
-                                Toast toast =
-                                        Toast.makeText(
-                                                getApplicationContext(),
-                                                "List Empty, nothing saved! ", Toast.LENGTH_LONG);
-                                toast.setMargin(50, 50);
-                                toast.show();
-                                return;
-                            }
-
-                            // Create output file
-                            File root = android.os.Environment.getExternalStorageDirectory();
-                            String dirs_path = root.getAbsolutePath() + "/Temp/";
-                            File dirs = new File(dirs_path);
-                            dirs.mkdirs();
-                            File file = new File(dirs.getAbsolutePath(),
-                                    "_BrowseTreeContent.txt");
-                            if (file.exists()) {
-                                file.delete();
-                            }
-                            try {
-                                final FileOutputStream f = new FileOutputStream(file);
-                                PrintWriter pw = new PrintWriter(f);
-                                if(mItems == null){
-                                    Log.i(TAG, "Nodes: " + mNodes.toString());
-                                    subscribe();
-                                    Toast toast =
-                                            Toast.makeText(
-                                                    getApplicationContext(),
-                                                    "No media items found, could not save tree.",
-                                                    Toast.LENGTH_LONG);
-                                    toast.setMargin(50, 50);
-                                    toast.show();
-                                    return;
-                                }
-                                pw.println("Root:");
-                                Semaphore writeCompleted = new Semaphore(1);
-                                ExecutorService executorService =
-                                        Executors.newFixedThreadPool(4);
-                                executorService.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        for (MediaBrowserCompat.MediaItem item : mItems) {
-                                            try {
-                                                writeCompleted.acquire();
-                                            } catch (InterruptedException e) {
-                                                e.printStackTrace();
-                                            }
-                                            writeMediaItemToFile(item, pw, 1,
-                                                    executorService);
-                                            writeCompleted.release();
-
-                                        }
-                                        pw.flush();
-                                        pw.close();
-                                        try {
-                                            f.close();
-                                        } catch (IOException e) {
-                                            e.printStackTrace();
-                                        }
-                                        runOnUiThread(new Runnable() {
-                                            public void run() {
-                                                Toast toast =
-                                                        Toast.makeText(
-                                                                getApplicationContext(),
-                                                                "MediaItems saved to " +
-                                                                        file.getAbsolutePath(),
-                                                                Toast.LENGTH_LONG);
-                                                toast.setMargin(50, 50);
-                                                toast.show();
-                                            }
-                                        });
-                                    }
-                                });
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
+                saveButtonView.setOnClickListener(v -> {
+                    if(mMediaBrowseTreeSnapshot != null) {
+                        mMediaBrowseTreeSnapshot.takeBrowserSnapshot();
+                    }
+                    else if(mBrowser != null) {
+                        mMediaBrowseTreeSnapshot = new MediaBrowseTreeSnapshot(mBrowser, getApplicationContext());
+                        mMediaBrowseTreeSnapshot.takeBrowserSnapshot();
+                    }
+                    else{
+                        Log.e(TAG, "Media browser is null");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(),"No media browser to snapshot", Toast.LENGTH_SHORT).show();
                             }
                         });
+                    }
+                });
             }
 
-        }
-
-        @RequiresApi(api = Build.VERSION_CODES.N)
-        private void writeMediaItemToFile(MediaItem mediaItem, PrintWriter printWriter, int depth,
-                                          ExecutorService executorService) {
-            if (mediaItem != null) {
-                MediaDescriptionCompat descriptionCompat = mediaItem.getDescription();
-                if (descriptionCompat != null) {
-
-                    // Tab the media item to the respective depth
-                    String tabStr = new String(new char[depth]).replace("\0",
-                            "\t");
-
-                    String titleStr = descriptionCompat.getTitle() != null
-                            ? descriptionCompat.getTitle().toString()
-                            : "NAN";
-                    String subTitleStr = descriptionCompat.getSubtitle() != null
-                            ? descriptionCompat.getSubtitle().toString()
-                            : "NAN";
-                    String mIDStr = descriptionCompat.getMediaId() != null
-                            ? descriptionCompat.getMediaId()
-                            : "NAN";
-                    String uriStr = descriptionCompat.getMediaUri() != null
-                            ? descriptionCompat.getMediaUri().toString()
-                            : "NAN";
-                    String desStr = descriptionCompat.getDescription() != null
-                            ? descriptionCompat.getDescription().toString()
-                            : "NAN";
-                    String infoStr = String.format(
-                            "%sTitle:%s,Subtitle:%s,MediaId:%s,URI:%s,Description:%s",
-                            tabStr, titleStr, subTitleStr, mIDStr, uriStr, desStr);
-                    Log.i(TAG, "Logging media item: " + infoStr + " at depth: " + depth);
-                    printWriter.println(infoStr);
-                }
-                // If a media item is not a leaf continue DFS on it
-                if (mediaItem.isBrowsable()) {
-                    Log.i(TAG, "Media Item is browseable");
-                    Semaphore loaded = new Semaphore(1);
-                    try {
-                        loaded.acquire();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    final List<MediaItem> mChildren = new ArrayList<MediaItem>();
-                    executorService.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            mBrowser.subscribe(mediaItem.getMediaId(),
-                                    new MediaBrowserCompat.SubscriptionCallback() {
-                                @Override
-                                public void onChildrenLoaded(@NonNull String parentId,
-                                                             @NonNull List<MediaItem> children) {
-                                    // Notify the main thread that all of the children have loaded
-                                    mChildren.addAll(children);
-                                    loaded.release();
-                                    super.onChildrenLoaded(parentId, children);
-                                }
-                            });
-                        }
-                    });
-
-                    // Wait for all of the media children to be loaded before continuing DFS
-                    try {
-                        loaded.acquire();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    // Run DFS on all of the nodes children
-                    for (MediaItem mediaItemChild : mChildren) {
-                        writeMediaItemToFile(mediaItemChild, printWriter, depth + 1,
-                                executorService);
-                    }
-                }
-            }
         }
 
         protected void subscribe() {
