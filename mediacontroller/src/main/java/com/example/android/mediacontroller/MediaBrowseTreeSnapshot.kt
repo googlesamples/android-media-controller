@@ -61,8 +61,6 @@ class MediaBrowseTreeSnapshot(private val mBrowser : MediaBrowserCompat, private
 
     private fun takeBrowserSnapshotImpl(mItems: MutableList<MediaBrowserCompat.MediaItem>, executorService: ExecutorService){
         // Create output file
-
-        // Create output file
         val root = Environment.getExternalStorageDirectory()
         val dirsPath = root.absolutePath + "/Temp/"
         val dirs = File(dirsPath)
@@ -84,7 +82,7 @@ class MediaBrowseTreeSnapshot(private val mBrowser : MediaBrowserCompat, private
                     } catch (e: InterruptedException) {
                         e.printStackTrace()
                     }
-                    writeMediaItemToFile(item, pw, 1,
+                    visitMediaItemNode(item, pw, 1,
                             executorService)
                     writeCompleted.release()
                 }
@@ -103,24 +101,13 @@ class MediaBrowseTreeSnapshot(private val mBrowser : MediaBrowserCompat, private
         }
     }
 
-    private fun writeMediaItemToFile(mediaItem: MediaBrowserCompat.MediaItem?, printWriter: PrintWriter, depth: Int,
-                                     executorService: ExecutorService) {
-        if (mediaItem != null) {
-            val descriptionCompat = mediaItem.description
 
-            // Tab the media item to the respective depth
-            val tabStr = String(CharArray(depth)).replace("\u0000",
-                    "\t")
-            val titleStr = if (descriptionCompat.title != null) descriptionCompat.title.toString() else "NAN"
-            val subTitleStr = if (descriptionCompat.subtitle != null) descriptionCompat.subtitle.toString() else "NAN"
-            val mIDStr = if (descriptionCompat.mediaId != null) descriptionCompat.mediaId else "NAN"
-            val uriStr = if (descriptionCompat.mediaUri != null) descriptionCompat.mediaUri.toString() else "NAN"
-            val desStr = if (descriptionCompat.description != null) descriptionCompat.description.toString() else "NAN"
-            val infoStr = String.format(
-                    "%sTitle:%s,Subtitle:%s,MediaId:%s,URI:%s,Description:%s",
-                    tabStr, titleStr, subTitleStr, mIDStr, uriStr, desStr)
-            printWriter.println(infoStr)
+    private fun visitMediaItemNode(mediaItem: MediaBrowserCompat.MediaItem?, printWriter: PrintWriter, depth: Int,
+                                   executorService: ExecutorService) {
+        if (mediaItem != null) {
+            printMediaItemDescription(printWriter, mediaItem, depth)
             val mid = if (mediaItem.mediaId != null) mediaItem.mediaId!! else ""
+
             // If a media item is not a leaf continue DFS on it
             if (mediaItem.isBrowsable && mid != "") {
                 val loaded = Semaphore(1)
@@ -152,11 +139,27 @@ class MediaBrowseTreeSnapshot(private val mBrowser : MediaBrowserCompat, private
 
                 // Run DFS on all of the nodes children
                 for (mediaItemChild in mChildren) {
-                    writeMediaItemToFile(mediaItemChild, printWriter, depth + 1,
+                    visitMediaItemNode(mediaItemChild, printWriter, depth + 1,
                             executorService)
                 }
             }
         }
+    }
+
+    private fun printMediaItemDescription(printWriter: PrintWriter, mediaItem: MediaBrowserCompat.MediaItem, depth: Int){
+        val descriptionCompat = mediaItem.description
+        // Tab the media item to the respective depth
+        val tabStr = String(CharArray(depth)).replace("\u0000",
+                "\t")
+        val titleStr = if (descriptionCompat.title != null) descriptionCompat.title.toString() else "NAN"
+        val subTitleStr = if (descriptionCompat.subtitle != null) descriptionCompat.subtitle.toString() else "NAN"
+        val mIDStr = if (descriptionCompat.mediaId != null) descriptionCompat.mediaId else "NAN"
+        val uriStr = if (descriptionCompat.mediaUri != null) descriptionCompat.mediaUri.toString() else "NAN"
+        val desStr = if (descriptionCompat.description != null) descriptionCompat.description.toString() else "NAN"
+        val infoStr = String.format(
+                "%sTitle:%s,Subtitle:%s,MediaId:%s,URI:%s,Description:%s",
+                tabStr, titleStr, subTitleStr, mIDStr, uriStr, desStr)
+        printWriter.println(infoStr)
     }
 
     private fun notifyUser(textToNotify: String) {
