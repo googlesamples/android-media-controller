@@ -30,15 +30,10 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
 import android.os.RemoteException;
 import android.support.v4.media.MediaBrowserCompat;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
-import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -64,7 +59,6 @@ import android.widget.ToggleButton;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -72,7 +66,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
-import androidx.core.os.HandlerCompat;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -82,11 +75,6 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -97,12 +85,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.Lock;
 
 /**
  * This class connects to a {@link MediaBrowserServiceCompat}
@@ -146,10 +128,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaBrowserCompat mBrowserExtraSuggested;
     private AudioFocusHelper mAudioFocusHelper;
     private RatingUiHelper mRatingUiHelper;
-    private final CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
-    private final BrowseMediaItemsAdapter mBrowseMediaItemsAdapter = new BrowseMediaItemsAdapter();
-    private final BrowseMediaItemsAdapter mBrowseMediaItemsExtraSuggestedAdapter = new BrowseMediaItemsAdapter();
-    private final SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter();
+    private CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
+    private BrowseMediaItemsAdapter mBrowseMediaItemsAdapter = new BrowseMediaItemsAdapter();
+    private BrowseMediaItemsAdapter mBrowseMediaItemsExtraSuggestedAdapter = new BrowseMediaItemsAdapter();
+    private SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter();
 
     private ViewPager mViewPager;
     private Spinner mInputTypeView;
@@ -176,7 +158,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
      * @return An Intent that can be used to start the Activity.
      */
     public static Intent buildIntent(final Activity activity,
-                                     final MediaAppDetails appDetails) {
+            final MediaAppDetails appDetails) {
         final Intent intent = new Intent(activity, MediaAppControllerActivity.class);
         intent.putExtra(APP_DETAILS_EXTRA, appDetails);
         return intent;
@@ -438,7 +420,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                         public void onConnected() {
                             setupMediaController();
                             mBrowseMediaItemsAdapter.setRoot(mBrowser.getRoot());
-                            Log.i(TAG, "Root of browse tree connected");
                         }
 
                         @Override
@@ -838,7 +819,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     }
 
     private boolean actionSupported(@PlaybackStateCompat.Actions long actions,
-                                    @PlaybackStateCompat.Actions long checkAction) {
+            @PlaybackStateCompat.Actions long checkAction) {
         return ((actions & checkAction) != 0);
     }
 
@@ -865,8 +846,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private final Spinner mFocusTypeSpinner;
 
         private AudioFocusHelper(@NonNull Context context,
-                                 @NonNull ToggleButton focusToggleButton,
-                                 @NonNull Spinner focusTypeSpinner) {
+            @NonNull ToggleButton focusToggleButton,
+            @NonNull Spinner focusTypeSpinner) {
 
             mAudioManager = (AudioManager) context.getSystemService(AUDIO_SERVICE);
             mToggleButton = focusToggleButton;
@@ -984,7 +965,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
 
         void setActions(MediaControllerCompat controller,
-                        List<PlaybackStateCompat.CustomAction> actions) {
+                List<PlaybackStateCompat.CustomAction> actions) {
             mControls = controller.getTransportControls();
             try {
                 mMediaAppResources = getPackageManager()
@@ -1046,9 +1027,9 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private final List<Integer> modes;
 
         ModeHelper(ViewGroup container,
-                   @IdRes int stateSpinnerView,
-                   @IdRes int iconImageView,
-                   List<Integer> modes) {
+                @IdRes int stateSpinnerView,
+                @IdRes int iconImageView,
+                List<Integer> modes) {
             this.context = container.getContext();
             this.spinner = container.findViewById(stateSpinnerView);
             this.icon = container.findViewById(iconImageView);
@@ -1161,8 +1142,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 new MediaBrowserCompat.SubscriptionCallback() {
                     @Override
                     public void onChildrenLoaded(@NonNull String parentId,
-                                                 @NonNull List<MediaItem> children) {
-                        Log.i(TAG, "Children loaded.");
+                            @NonNull List<MediaItem> children) {
                         updateItemsEmptyIfNull(children);
                     }
                 };
@@ -1175,11 +1155,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                             .inflate(R.layout.media_browse_item, parent, false));
         }
 
-
-
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position){
-            Log.i(TAG, "On Bind view holder");
             if (mNodes.size() == 0) {
                 holder.name.setText(getString(R.string.media_no_browser));
                 holder.name.setVisibility(View.VISIBLE);
@@ -1190,7 +1167,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 return;
             }
             if (mItems == null) {
-                Log.i(TAG, "Setting to loading");
                 holder.name.setText(getString(R.string.media_browse_tree_loading));
                 holder.name.setVisibility(View.VISIBLE);
                 holder.description.setVisibility(View.GONE);
@@ -1200,7 +1176,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 return;
             }
             if (mItems.size() == 0) {
-                Log.i(TAG, "Setting to empty");
                 holder.name.setText(getString(R.string.media_browse_tree_empty));
                 holder.name.setVisibility(View.VISIBLE);
                 holder.description.setVisibility(View.GONE);
@@ -1209,7 +1184,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 });
                 return;
             }
-            Log.i(TAG, "Populating media items");
             final MediaBrowserCompat.MediaItem item = mItems.get(position);
             holder.name.setText(item.getDescription().getTitle());
             holder.name.setVisibility(View.VISIBLE);
@@ -1240,7 +1214,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                     });
         }
 
-
         @Override
         public int getItemCount() {
             if (mNodes.size() == 0 || mItems == null || mItems.size() == 0) {
@@ -1251,7 +1224,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         void updateItemsEmptyIfNull(List<MediaBrowserCompat.MediaItem> items) {
             if (items == null) {
-                Log.i(TAG, "Trying to update an null list");
                 updateItems(Collections.emptyList());
             } else {
                 updateItems(items);
@@ -1259,7 +1231,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
 
         void updateItems(List<MediaBrowserCompat.MediaItem> items) {
-            Log.i(TAG, "Updating items");
             mItems = items;
             notifyDataSetChanged();
         }
@@ -1370,7 +1341,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 mBrowser.search(getCurrentNode(), null, new MediaBrowserCompat.SearchCallback() {
                     @Override
                     public void onSearchResult(@NonNull String query, Bundle extras,
-                                               @NonNull List<MediaBrowserCompat.MediaItem> items) {
+                            @NonNull List<MediaBrowserCompat.MediaItem> items) {
                         if (query.equals(getCurrentNode())) {
                             updateItemsEmptyIfNull(items);
                         }
