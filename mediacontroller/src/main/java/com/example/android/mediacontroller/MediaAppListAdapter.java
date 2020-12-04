@@ -124,7 +124,7 @@ public class MediaAppListAdapter extends RecyclerView.Adapter<ViewHolder> {
                     holder.appIconView.getContext().getString(R.string.app_icon_desc,
                             appDetails.appName));
             holder.appNameView.setText(appDetails.appName);
-            //holder.appPackageView.setText(appDetails.packageName);
+            holder.appPackageView.setText(appDetails.packageName);
 
             holder.controlButton.setOnClickListener(view ->
                     appSelectedListener.onMediaAppClicked(appDetails, false));

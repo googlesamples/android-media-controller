@@ -75,6 +75,8 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
 
+import java.io.FileNotFoundException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -113,6 +115,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     // Key name for Intent extras.
     private static final String APP_DETAILS_EXTRA =
             "com.example.android.mediacontroller.APP_DETAILS_EXTRA";
+    private static final String DEFAULT_BROWSE_TREE_FILE_NAME = "_BrowseTreeContent.txt";
 
     // Index values for spinner.
     private static final int SEARCH_INDEX = 0;
@@ -120,7 +123,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private static final int URI_INDEX = 2;
 
     // Used for user storage permission request
-    private static final int STORAGE_PERMISSION_REQUEST = 1;
+    private static final int CREATE_DOCUMENT_REQUEST_FOR_SNAPSHOT = 1;
 
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
@@ -148,6 +151,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
     private ViewGroup mRatingViewGroup;
 
+    private MediaBrowseTreeSnapshot mMediaBrowseTreeSnapshot;
+
     private final SparseArray<ImageButton> mActionButtonMap = new SparseArray<>();
 
     /**
@@ -172,8 +177,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
-        String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
-        ActivityCompat.requestPermissions(MediaAppControllerActivity.this, permissions, STORAGE_PERMISSION_REQUEST);
 
         mViewPager = findViewById(R.id.view_pager);
         mInputTypeView = findViewById(R.id.input_type);
@@ -279,28 +282,25 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         });
     }
 
-
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode,
-                permissions,
-                grantResults);
-
-        if (requestCode == STORAGE_PERMISSION_REQUEST) {
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(getApplicationContext(),
-                        "Storage Permission Granted, can save browse tree.",
-                        Toast.LENGTH_SHORT)
-                        .show();
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CREATE_DOCUMENT_REQUEST_FOR_SNAPSHOT) {
+            if (resultCode == RESULT_OK && mMediaBrowseTreeSnapshot != null) {
+                Uri uri = data.getData();
+                OutputStream outputStream = null;
+                try {
+                    outputStream = getContentResolver().openOutputStream(uri);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                mMediaBrowseTreeSnapshot.takeBrowserSnapshot(outputStream);
+                Toast.makeText(this, "Output file location: " + uri.getPath(), Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(getApplicationContext(),
-                        "Storage Permission Denied, can not save browse tree to file.",
-                        Toast.LENGTH_SHORT)
-                        .show();
+                Toast.makeText(this, "File could not be saved.", Toast.LENGTH_SHORT).show();
             }
+
+
         }
     }
 
@@ -1136,7 +1136,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         private List<MediaBrowserCompat.MediaItem> mItems;
         private final Stack<String> mNodes = new Stack<>();
-        private MediaBrowseTreeSnapshot mMediaBrowseTreeSnapshot;
+
 
         MediaBrowserCompat.SubscriptionCallback callback =
                 new MediaBrowserCompat.SubscriptionCallback() {
@@ -1263,25 +1263,33 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
             if (saveButtonView != null) {
                 saveButtonView.setOnClickListener(v -> {
-                    if(mMediaBrowseTreeSnapshot != null) {
-                        mMediaBrowseTreeSnapshot.takeBrowserSnapshot();
-                    }
-                    else if(mBrowser != null) {
-                        mMediaBrowseTreeSnapshot = new MediaBrowseTreeSnapshot(mBrowser, getApplicationContext());
-                        mMediaBrowseTreeSnapshot.takeBrowserSnapshot();
-                    }
-                    else{
-                        Log.e(TAG, "Media browser is null");
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(getApplicationContext(),"No media browser to snapshot", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
+                    takeMediaBrowseTreeSnapshot();
                 });
             }
 
+        }
+
+        private void takeMediaBrowseTreeSnapshot(){
+            if(mBrowser != null) {
+                if(mMediaBrowseTreeSnapshot == null) {
+                    mMediaBrowseTreeSnapshot = new MediaBrowseTreeSnapshot(MediaAppControllerActivity.this, mBrowser);
+                }
+                Intent saveTextFileIntent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                saveTextFileIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                saveTextFileIntent.setType("text/plain");
+                saveTextFileIntent.putExtra(
+                        Intent.EXTRA_TITLE, DEFAULT_BROWSE_TREE_FILE_NAME);
+                MediaAppControllerActivity.this.startActivityForResult(saveTextFileIntent, CREATE_DOCUMENT_REQUEST_FOR_SNAPSHOT);
+
+            }else{
+                Log.e(TAG, "Media browser is null");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(),"No media browser to snapshot", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         }
 
         protected void subscribe() {

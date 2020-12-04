@@ -1,25 +1,27 @@
 package com.example.android.mediacontroller
 
 import android.content.Context
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.SubscriptionCallback
 import android.util.Log
 import android.widget.Toast
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
+import java.io.OutputStream
 import java.io.PrintWriter
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 
-class MediaBrowseTreeSnapshot(private val mBrowser: MediaBrowserCompat, private val mContext: Context) {
+
+class MediaBrowseTreeSnapshot(private val context: Context, private val browser: MediaBrowserCompat) {
     private val TAG = "MediaBrowseTreeSnapshot"
 
-    fun takeBrowserSnapshot() {
+    /**
+     * Loads the browsers top level children and runs a DFS on them printing out
+     * each media item's contentes as it is visited.
+     */
+    fun takeBrowserSnapshot(outputStream: OutputStream) {
         val loaded = Semaphore(1)
         val executorService = Executors.newFixedThreadPool(4)
         val mItems: MutableList<MediaBrowserCompat.MediaItem> = ArrayList()
@@ -29,7 +31,7 @@ class MediaBrowseTreeSnapshot(private val mBrowser: MediaBrowserCompat, private 
             } catch (e: InterruptedException) {
                 e.printStackTrace()
             }
-            mBrowser.subscribe(mBrowser.root, object : SubscriptionCallback() {
+            browser.subscribe(browser.root, object : SubscriptionCallback() {
                 override fun onChildrenLoaded(parentId: String,
                                               children: List<MediaBrowserCompat.MediaItem>) {
                     // Notify the main thread that all of the children have loaded
@@ -49,42 +51,23 @@ class MediaBrowseTreeSnapshot(private val mBrowser: MediaBrowserCompat, private 
             }
 
             if (mItems.size > 0) {
-                initDFSOnBrowseTree(mItems, executorService)
+                runDFSOnBrowseTree(mItems, executorService, outputStream)
             } else {
                 notifyUser("No media items found, could not save tree.")
             }
         }
     }
 
-    private fun initDFSOnBrowseTree(mItems: MutableList<MediaBrowserCompat.MediaItem>, executorService: ExecutorService) {
-        val root = Environment.getExternalStorageDirectory()
-        val dirsPath = root.absolutePath + "/Temp/"
-        val dirs = File(dirsPath)
-        dirs.mkdirs()
-        val file = File(dirs.absolutePath,
-                "_BrowseTreeContent.txt")
-        if (file.exists()) {
-            file.delete()
-        }
-        try {
-            val f = FileOutputStream(file)
-            val pw = PrintWriter(f)
-            runDFSOnBrowseTree(mItems, executorService, pw)
-            pw.flush()
-            pw.close()
-            f.close()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        notifyUser("MediaItems saved to " +
-                file.absolutePath)
-    }
-
-    private fun runDFSOnBrowseTree(mItems: MutableList<MediaBrowserCompat.MediaItem>, executorService: ExecutorService, printWriter: PrintWriter) {
+    /**
+     * Kicks off the browse tree depth first search by visiting all of the top level media
+     * item nodes.
+     */
+    private fun runDFSOnBrowseTree(mediaItems: MutableList<MediaBrowserCompat.MediaItem>, executorService: ExecutorService, outputStream: OutputStream) {
+        val printWriter = PrintWriter(outputStream)
         printWriter.println("Root:")
         val writeCompleted = Semaphore(1)
         executorService.execute {
-            for (item in mItems) {
+            for (item in mediaItems) {
                 try {
                     writeCompleted.acquire()
                 } catch (e: InterruptedException) {
@@ -94,9 +77,16 @@ class MediaBrowseTreeSnapshot(private val mBrowser: MediaBrowserCompat, private 
                         executorService)
                 writeCompleted.release()
             }
+            printWriter.flush()
+            printWriter.close()
+            outputStream.close()
+            notifyUser("MediaItems saved to specified location.")
         }
     }
 
+    /**
+     * Visits a media item node by printing out its contents and then visiting all of its children.
+     */
     private fun visitMediaItemNode(mediaItem: MediaBrowserCompat.MediaItem?, printWriter: PrintWriter, depth: Int,
                                    executorService: ExecutorService) {
         if (mediaItem != null) {
@@ -111,14 +101,14 @@ class MediaBrowseTreeSnapshot(private val mBrowser: MediaBrowserCompat, private 
                 } catch (e: InterruptedException) {
                     e.printStackTrace()
                 }
-                val mChildren: MutableList<MediaBrowserCompat.MediaItem> = ArrayList()
+                val mediaChildren: MutableList<MediaBrowserCompat.MediaItem> = ArrayList()
                 executorService.execute {
-                    mBrowser.subscribe(mid,
+                    browser.subscribe(mid,
                             object : SubscriptionCallback() {
                                 override fun onChildrenLoaded(parentId: String,
                                                               children: List<MediaBrowserCompat.MediaItem>) {
                                     // Notify the main thread that all of the children have loaded
-                                    mChildren.addAll(children)
+                                    mediaChildren.addAll(children)
                                     loaded.release()
                                     super.onChildrenLoaded(parentId, children)
                                 }
@@ -133,7 +123,7 @@ class MediaBrowseTreeSnapshot(private val mBrowser: MediaBrowserCompat, private 
                 }
 
                 // Run visit on all of the nodes children
-                for (mediaItemChild in mChildren) {
+                for (mediaItemChild in mediaChildren) {
                     visitMediaItemNode(mediaItemChild, printWriter, depth + 1,
                             executorService)
                 }
@@ -141,6 +131,9 @@ class MediaBrowseTreeSnapshot(private val mBrowser: MediaBrowserCompat, private 
         }
     }
 
+    /**
+     * Prints the contents of a media item using a print writer.
+     */
     private fun printMediaItemDescription(printWriter: PrintWriter, mediaItem: MediaBrowserCompat.MediaItem, depth: Int) {
         val descriptionCompat = mediaItem.description
         // Tab the media item to the respective depth
@@ -154,13 +147,17 @@ class MediaBrowseTreeSnapshot(private val mBrowser: MediaBrowserCompat, private 
         val infoStr = String.format(
                 "%sTitle:%s,Subtitle:%s,MediaId:%s,URI:%s,Description:%s",
                 tabStr, titleStr, subTitleStr, mIDStr, uriStr, desStr)
+        Log.i(TAG, "Writing media Item");
         printWriter.println(infoStr)
     }
 
+    /**
+     * Display formatted toast to user.
+     */
     private fun notifyUser(textToNotify: String) {
         Handler(Looper.getMainLooper()).post {
             val toast = Toast.makeText(
-                    mContext,
+                    context,
                     textToNotify,
                     Toast.LENGTH_LONG)
             toast.setMargin(50f, 50f)
