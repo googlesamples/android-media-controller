@@ -260,7 +260,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         mBrowseMediaItemsAdapter.init(findViewById(R.id.media_browse_tree_top),
                 findViewById(R.id.media_browse_tree_up), findViewById(R.id.media_browse_tree_save));
 
-
         final RecyclerView browseTreeListExtraSuggested = findViewById(R.id.media_items_list_extra_suggested);
         browseTreeListExtraSuggested.setLayoutManager(new LinearLayoutManager(this));
         browseTreeListExtraSuggested.setHasFixedSize(true);
@@ -846,8 +845,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private final Spinner mFocusTypeSpinner;
 
         private AudioFocusHelper(@NonNull Context context,
-            @NonNull ToggleButton focusToggleButton,
-            @NonNull Spinner focusTypeSpinner) {
+                @NonNull ToggleButton focusToggleButton,
+                @NonNull Spinner focusTypeSpinner) {
 
             mAudioManager = (AudioManager) context.getSystemService(AUDIO_SERVICE);
             mToggleButton = focusToggleButton;
@@ -1137,7 +1136,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private List<MediaBrowserCompat.MediaItem> mItems;
         private final Stack<String> mNodes = new Stack<>();
 
-
         MediaBrowserCompat.SubscriptionCallback callback =
                 new MediaBrowserCompat.SubscriptionCallback() {
                     @Override
@@ -1156,7 +1154,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position){
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             if (mNodes.size() == 0) {
                 holder.name.setText(getString(R.string.media_no_browser));
                 holder.name.setVisibility(View.VISIBLE);
@@ -1184,6 +1182,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 });
                 return;
             }
+
             final MediaBrowserCompat.MediaItem item = mItems.get(position);
             holder.name.setText(item.getDescription().getTitle());
             holder.name.setVisibility(View.VISIBLE);
@@ -1272,21 +1271,24 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private void takeMediaBrowseTreeSnapshot(){
             if(mBrowser != null) {
                 if(mMediaBrowseTreeSnapshot == null) {
-                    mMediaBrowseTreeSnapshot = new MediaBrowseTreeSnapshot(MediaAppControllerActivity.this, mBrowser);
+                    mMediaBrowseTreeSnapshot = new MediaBrowseTreeSnapshot(
+                            MediaAppControllerActivity.this, mBrowser);
                 }
                 Intent saveTextFileIntent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                 saveTextFileIntent.addCategory(Intent.CATEGORY_OPENABLE);
                 saveTextFileIntent.setType("text/plain");
                 saveTextFileIntent.putExtra(
                         Intent.EXTRA_TITLE, DEFAULT_BROWSE_TREE_FILE_NAME);
-                MediaAppControllerActivity.this.startActivityForResult(saveTextFileIntent, CREATE_DOCUMENT_REQUEST_FOR_SNAPSHOT);
+                MediaAppControllerActivity.this.startActivityForResult(saveTextFileIntent,
+                        CREATE_DOCUMENT_REQUEST_FOR_SNAPSHOT);
 
             }else{
                 Log.e(TAG, "Media browser is null");
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(getApplicationContext(),"No media browser to snapshot", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(),"No media browser to snapshot",
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -1346,7 +1348,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         @Override
         protected void subscribe() {
             if (treeDepth() == 1) {
-                mBrowser.search(getCurrentNode(), null, new MediaBrowserCompat.SearchCallback() {
+                mBrowser.search(getCurrentNode(), null,
+                        new MediaBrowserCompat.SearchCallback() {
                     @Override
                     public void onSearchResult(@NonNull String query, Bundle extras,
                             @NonNull List<MediaBrowserCompat.MediaItem> items) {

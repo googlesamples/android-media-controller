@@ -7,125 +7,85 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.SubscriptionCallback
 import android.util.Log
 import android.widget.Toast
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import java.io.OutputStream
 import java.io.PrintWriter
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.Semaphore
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 
-class MediaBrowseTreeSnapshot(private val context: Context, private val browser: MediaBrowserCompat) {
+class MediaBrowseTreeSnapshot(private val context: Context, private val browser: MediaBrowserCompat):ViewModel() {
     private val TAG = "MediaBrowseTreeSnapshot"
+
 
     /**
      * Loads the browsers top level children and runs a DFS on them printing out
      * each media item's contentes as it is visited.
      */
     fun takeBrowserSnapshot(outputStream: OutputStream) {
-        val loaded = Semaphore(1)
-        val executorService = Executors.newFixedThreadPool(4)
-        val mItems: MutableList<MediaBrowserCompat.MediaItem> = ArrayList()
-        executorService.execute {
-            try {
-                loaded.acquire()
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-            browser.subscribe(browser.root, object : SubscriptionCallback() {
-                override fun onChildrenLoaded(parentId: String,
-                                              children: List<MediaBrowserCompat.MediaItem>) {
-                    // Notify the main thread that all of the children have loaded
-                    Log.i(TAG, "Children loaded for init")
-                    mItems.addAll(children)
-                    loaded.release()
 
-                    super.onChildrenLoaded(parentId, children)
+        viewModelScope.launch {
+            val mediaItems: MutableList<MediaBrowserCompat.MediaItem> = getChildNodes(browser.root)
+            if (mediaItems.isNotEmpty()) {
+                runDFSOnBrowseTree(mediaItems, outputStream)
+                for (item in mediaItems) {
+                    Log.i(TAG, item.toString())
                 }
-            })
-
-            // Wait for all of the media children to be loaded before starting snapshot
-            try {
-                loaded.acquire()
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-
-            if (mItems.size > 0) {
-                runDFSOnBrowseTree(mItems, executorService, outputStream)
             } else {
                 notifyUser("No media items found, could not save tree.")
             }
         }
     }
 
+    private suspend fun getChildNodes(rootItemMid: String): MutableList<MediaBrowserCompat.MediaItem> =
+            suspendCoroutine {
+                val mediaItems: MutableList<MediaBrowserCompat.MediaItem> = ArrayList()
+                browser.subscribe(rootItemMid, object : SubscriptionCallback() {
+                    override fun onChildrenLoaded(parentId: String,
+                                                  children: List<MediaBrowserCompat.MediaItem>) {
+                        // Notify the main thread that all of the children have loaded
+                        mediaItems.addAll(children)
+                        super.onChildrenLoaded(parentId, children)
+                        it.resume(mediaItems)
+                    }
+                })
+            }
+
     /**
      * Kicks off the browse tree depth first search by visiting all of the top level media
      * item nodes.
      */
-    private fun runDFSOnBrowseTree(mediaItems: MutableList<MediaBrowserCompat.MediaItem>, executorService: ExecutorService, outputStream: OutputStream) {
+    private suspend fun runDFSOnBrowseTree(mediaItems: MutableList<MediaBrowserCompat.MediaItem>, outputStream: OutputStream) {
         val printWriter = PrintWriter(outputStream)
         printWriter.println("Root:")
-        val writeCompleted = Semaphore(1)
-        executorService.execute {
-            for (item in mediaItems) {
-                try {
-                    writeCompleted.acquire()
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
-                visitMediaItemNode(item, printWriter, 1,
-                        executorService)
-                writeCompleted.release()
-            }
-            printWriter.flush()
-            printWriter.close()
-            outputStream.close()
-            notifyUser("MediaItems saved to specified location.")
+        for (item in mediaItems) {
+            visitMediaItemNode(item, printWriter, 1)
         }
+        printWriter.flush()
+        printWriter.close()
+        outputStream.close()
+        notifyUser("MediaItems saved to specified location.")
     }
 
     /**
      * Visits a media item node by printing out its contents and then visiting all of its children.
      */
-    private fun visitMediaItemNode(mediaItem: MediaBrowserCompat.MediaItem?, printWriter: PrintWriter, depth: Int,
-                                   executorService: ExecutorService) {
+    private suspend fun visitMediaItemNode(mediaItem: MediaBrowserCompat.MediaItem?, printWriter: PrintWriter, depth: Int) {
         if (mediaItem != null) {
             printMediaItemDescription(printWriter, mediaItem, depth)
             val mid = if (mediaItem.mediaId != null) mediaItem.mediaId!! else ""
 
             // If a media item is not a leaf continue DFS on it
             if (mediaItem.isBrowsable && mid != "") {
-                val loaded = Semaphore(1)
-                try {
-                    loaded.acquire()
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
-                val mediaChildren: MutableList<MediaBrowserCompat.MediaItem> = ArrayList()
-                executorService.execute {
-                    browser.subscribe(mid,
-                            object : SubscriptionCallback() {
-                                override fun onChildrenLoaded(parentId: String,
-                                                              children: List<MediaBrowserCompat.MediaItem>) {
-                                    // Notify the main thread that all of the children have loaded
-                                    mediaChildren.addAll(children)
-                                    loaded.release()
-                                    super.onChildrenLoaded(parentId, children)
-                                }
-                            })
-                }
 
-                // Wait for all of the media children to be loaded before continuing DFS
-                try {
-                    loaded.acquire()
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
+                val mediaChildren: MutableList<MediaBrowserCompat.MediaItem> = getChildNodes(mid)
 
                 // Run visit on all of the nodes children
                 for (mediaItemChild in mediaChildren) {
-                    visitMediaItemNode(mediaItemChild, printWriter, depth + 1,
-                            executorService)
+                    visitMediaItemNode(mediaItemChild, printWriter, depth + 1)
+                    Log.i(TAG, "Visiting:" + mediaItemChild.toString())
                 }
             }
         }
@@ -147,7 +107,6 @@ class MediaBrowseTreeSnapshot(private val context: Context, private val browser:
         val infoStr = String.format(
                 "%sTitle:%s,Subtitle:%s,MediaId:%s,URI:%s,Description:%s",
                 tabStr, titleStr, subTitleStr, mIDStr, uriStr, desStr)
-        Log.i(TAG, "Writing media Item");
         printWriter.println(infoStr)
     }
 
