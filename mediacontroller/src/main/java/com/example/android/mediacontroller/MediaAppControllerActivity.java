@@ -18,6 +18,7 @@ package com.example.android.mediacontroller;
 import static androidx.media.MediaBrowserServiceCompat.BrowserRoot.EXTRA_SUGGESTED;
 import static java.util.Arrays.asList;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -61,6 +62,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
@@ -73,6 +75,8 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
 
+import java.io.FileNotFoundException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -111,11 +115,15 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     // Key name for Intent extras.
     private static final String APP_DETAILS_EXTRA =
             "com.example.android.mediacontroller.APP_DETAILS_EXTRA";
+    private static final String DEFAULT_BROWSE_TREE_FILE_NAME = "_BrowseTreeContent.txt";
 
     // Index values for spinner.
     private static final int SEARCH_INDEX = 0;
     private static final int MEDIA_ID_INDEX = 1;
     private static final int URI_INDEX = 2;
+
+    // Used for user storage permission request
+    private static final int CREATE_DOCUMENT_REQUEST_FOR_SNAPSHOT = 1;
 
     private MediaAppDetails mMediaAppDetails;
     private MediaControllerCompat mController;
@@ -142,6 +150,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private ModeHelper mRepeatToggle;
 
     private ViewGroup mRatingViewGroup;
+
+    private MediaBrowseTreeSnapshot mMediaBrowseTreeSnapshot;
 
     private final SparseArray<ImageButton> mActionButtonMap = new SparseArray<>();
 
@@ -248,20 +258,20 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         browseTreeList.setHasFixedSize(true);
         browseTreeList.setAdapter(mBrowseMediaItemsAdapter);
         mBrowseMediaItemsAdapter.init(findViewById(R.id.media_browse_tree_top),
-                findViewById(R.id.media_browse_tree_up));
+                findViewById(R.id.media_browse_tree_up), findViewById(R.id.media_browse_tree_save));
 
         final RecyclerView browseTreeListExtraSuggested = findViewById(R.id.media_items_list_extra_suggested);
         browseTreeListExtraSuggested.setLayoutManager(new LinearLayoutManager(this));
         browseTreeListExtraSuggested.setHasFixedSize(true);
         browseTreeListExtraSuggested.setAdapter(mBrowseMediaItemsExtraSuggestedAdapter);
         mBrowseMediaItemsExtraSuggestedAdapter.init(findViewById(R.id.media_browse_tree_top_extra_suggested),
-                findViewById(R.id.media_browse_tree_up_extra_suggested));
+                findViewById(R.id.media_browse_tree_up_extra_suggested), findViewById(R.id.media_browse_tree_save));
 
         final RecyclerView searchItemsList = findViewById(R.id.search_items_list);
         searchItemsList.setLayoutManager(new LinearLayoutManager(this));
         searchItemsList.setHasFixedSize(true);
         searchItemsList.setAdapter(mSearchMediaItemsAdapter);
-        mSearchMediaItemsAdapter.init(null, null);
+        mSearchMediaItemsAdapter.init(null, null, null);
 
         findViewById(R.id.search_button).setOnClickListener(v -> {
             CharSequence queryText = ((TextView) findViewById(R.id.search_query)).getText();
@@ -269,6 +279,28 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 mSearchMediaItemsAdapter.setRoot(queryText.toString());
             }
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CREATE_DOCUMENT_REQUEST_FOR_SNAPSHOT) {
+            if (resultCode == RESULT_OK && mMediaBrowseTreeSnapshot != null) {
+                Uri uri = data.getData();
+                OutputStream outputStream = null;
+                try {
+                    outputStream = getContentResolver().openOutputStream(uri);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                mMediaBrowseTreeSnapshot.takeBrowserSnapshot(outputStream);
+                Toast.makeText(this, "Output file location: " + uri.getPath(), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "File could not be saved.", Toast.LENGTH_SHORT).show();
+            }
+
+
+        }
     }
 
     @Override
@@ -1102,7 +1134,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             RecyclerView.Adapter<BrowseMediaItemsAdapter.ViewHolder> {
 
         private List<MediaBrowserCompat.MediaItem> mItems;
-        private Stack<String> mNodes = new Stack<>();
+        private final Stack<String> mNodes = new Stack<>();
 
         MediaBrowserCompat.SubscriptionCallback callback =
                 new MediaBrowserCompat.SubscriptionCallback() {
@@ -1206,7 +1238,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
          * Assigns click handlers to the buttons if provided for moving to the top of the tree or
          * for moving up one level in the tree.
          */
-        void init(View topButtonView, View upButtonView) {
+        void init(View topButtonView, View upButtonView, View saveButtonView) {
             if (topButtonView != null) {
                 topButtonView.setOnClickListener(v -> {
                     if (mNodes.size() > 1) {
@@ -1225,6 +1257,38 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                         unsubscribe();
                         mNodes.pop();
                         subscribe();
+                    }
+                });
+            }
+            if (saveButtonView != null) {
+                saveButtonView.setOnClickListener(v -> {
+                    takeMediaBrowseTreeSnapshot();
+                });
+            }
+
+        }
+
+        private void takeMediaBrowseTreeSnapshot(){
+            if(mBrowser != null) {
+                if(mMediaBrowseTreeSnapshot == null) {
+                    mMediaBrowseTreeSnapshot = new MediaBrowseTreeSnapshot(
+                            MediaAppControllerActivity.this, mBrowser);
+                }
+                Intent saveTextFileIntent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                saveTextFileIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                saveTextFileIntent.setType("text/plain");
+                saveTextFileIntent.putExtra(
+                        Intent.EXTRA_TITLE, DEFAULT_BROWSE_TREE_FILE_NAME);
+                MediaAppControllerActivity.this.startActivityForResult(saveTextFileIntent,
+                        CREATE_DOCUMENT_REQUEST_FOR_SNAPSHOT);
+
+            }else{
+                Log.e(TAG, "Media browser is null");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(),"No media browser to snapshot",
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -1284,7 +1348,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         @Override
         protected void subscribe() {
             if (treeDepth() == 1) {
-                mBrowser.search(getCurrentNode(), null, new MediaBrowserCompat.SearchCallback() {
+                mBrowser.search(getCurrentNode(), null,
+                        new MediaBrowserCompat.SearchCallback() {
                     @Override
                     public void onSearchResult(@NonNull String query, Bundle extras,
                             @NonNull List<MediaBrowserCompat.MediaItem> items) {
