@@ -30,15 +30,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.media.MediaBrowserServiceCompat;
 
-import android.support.v4.media.session.MediaSessionCompat;
-import android.util.Log;
-
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -103,10 +101,15 @@ public class MediaAppDetails implements Parcelable {
             FeatureInfo[] features = pm.getPackageInfo(
                     packageName, PackageManager.GET_CONFIGURATIONS).reqFeatures;
 
-            supportsAutomotive = features != null && Arrays.stream(features)
-                    .filter(f -> "android.hardware.type.automotive".equals(f.name))
-                    .findAny()
-                    .orElse(null) != null;
+            supportsAutomotive = false;
+            if (features != null) {
+                for (FeatureInfo f : features) {
+                    if (f.name != null && f.name.equals("android.hardware.type.automotive")) {
+                        supportsAutomotive = true;
+                        break;
+                    }
+                }
+            }
 
             Bundle metaData = pm.getApplicationInfo(packageName,
                     PackageManager.GET_META_DATA).metaData;
