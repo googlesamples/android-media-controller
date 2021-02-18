@@ -104,7 +104,7 @@ public class MediaAppDetails implements Parcelable {
             supportsAutomotive = false;
             if (features != null) {
                 for (FeatureInfo f : features) {
-                    if ("android.hardware.type.automotive".equals(f.name)) {
+                    if (f.name != null && f.name.equals("android.hardware.type.automotive")) {
                         supportsAutomotive = true;
                         break;
                     }
