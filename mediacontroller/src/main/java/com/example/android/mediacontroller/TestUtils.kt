@@ -226,10 +226,14 @@ fun formatPlaybackStateExtras(extras: Bundle?): String {
     }
 
     var out = ""
-    for (key in extras.keySet()) {
-        out += "${key}: ${extras.get(key)} \n"
+    try {
+        for (key in extras.keySet()) {
+            out += "${key}: ${extras.get(key)} \n"
+        }
+    } catch (e: Exception) {
+        // might not be able to load all the keys from another app
+        e.printStackTrace()
     }
-
     return out
 }
 
