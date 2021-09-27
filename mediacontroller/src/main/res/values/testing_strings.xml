@@ -15,6 +15,9 @@
   -->
 
 <resources>
+    <!-- Test service -->
+    <string name="tests_service_not_bound">Currently not bound to test service.</string>
+
     <!-- MediaController Properties -->
     <string name="tests_info_state">Playback State</string>
     <string name="tests_info_metadata">Metadata</string>

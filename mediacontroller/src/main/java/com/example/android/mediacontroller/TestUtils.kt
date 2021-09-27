@@ -409,4 +409,3 @@ fun formatMillisToSeconds(value: Long?): String {
         "%.2fs".format(it / 1000f)
     } ?: "null"
 }
-

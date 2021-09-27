@@ -141,6 +141,8 @@
     <string name="bottom_nav_test_text">Tests</string>
     <string name="test_suite_nav_text">Test Suites</string>
 
+    <string name="notification_message">Running media controller test</string>
+
     <!--
     The order of these strings must match the order of the constants
     declared in MediaAppControllerActivity.AudioFocusHelper (FOCUS_TYPES).

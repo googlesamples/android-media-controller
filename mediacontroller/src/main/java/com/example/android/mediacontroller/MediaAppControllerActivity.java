@@ -482,8 +482,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
             // Ensure views are visible.
             mViewPager.setVisibility(View.VISIBLE);
-
-            Log.d(TAG, "MediaControllerCompat created");
         } catch (RemoteException remoteException) {
             Log.e(TAG, "Failed to create MediaController from session token", remoteException);
             showToastAndFinish(getString(R.string.media_controller_failed_msg));
