@@ -17,6 +17,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.android.mediacontroller">
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
@@ -96,5 +98,10 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <service
+            android:name=".MediaAppTestService"
+            android:enabled="true"
+            android:exported="true" />
     </application>
 </manifest>
