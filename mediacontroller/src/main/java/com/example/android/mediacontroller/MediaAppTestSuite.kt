@@ -37,11 +37,6 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.android.synthetic.main.media_test_option.view.card_header
-import kotlinx.android.synthetic.main.media_test_option.view.card_text
-import kotlinx.android.synthetic.main.media_test_suite_result.view.tests_passing
-import kotlinx.android.synthetic.main.media_test_suite_result.view.tests_passing_header
-import kotlinx.android.synthetic.main.media_test_suite_result.view.total_tests
 
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
@@ -162,7 +157,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                 interrupt()
                 dismiss()
             }
-            window.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            window!!.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         }.show()
         runSuiteImpl(dialog, progressBar, numIter)
     }
@@ -189,7 +184,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                         Thread.sleep(SLEEP_TIME)
 
                         // In the event that a query is not specified, don't run the test.
-                        var query = sharedPreferences.getString(test.name, MediaAppTestingActivity.NO_CONFIG)
+                        var query = sharedPreferences.getString(test.name, MediaAppTestingActivity.NO_CONFIG)!!
                         if (test.queryRequired && query == MediaAppTestingActivity.NO_CONFIG) {
                             test.testResult = TestResult.CONFIG_REQUIRED
                             val index = positionToIDMap[test.id]

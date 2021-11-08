@@ -57,47 +57,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
+import com.example.android.mediacontroller.databinding.ActivityMediaAppTestingBinding
 
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_suite_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_info_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.toolbar
-import kotlinx.android.synthetic.main.activity_media_app_testing.view_pager
-import kotlinx.android.synthetic.main.config_item.view.test_name_config
-import kotlinx.android.synthetic.main.config_item.view.test_query_config
-import kotlinx.android.synthetic.main.media_controller_info.queue_item_list
-import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
-import kotlinx.android.synthetic.main.media_controller_info.metadata_text
-import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_text
-import kotlinx.android.synthetic.main.media_controller_info.repeat_mode_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_title_text
-import kotlinx.android.synthetic.main.media_controller_info.shuffle_mode_text
-import kotlinx.android.synthetic.main.media_queue_item.view.queue_id
-import kotlinx.android.synthetic.main.media_queue_item.view.description_title
-import kotlinx.android.synthetic.main.media_queue_item.view.description_subtitle
-import kotlinx.android.synthetic.main.media_queue_item.view.description_id
-import kotlinx.android.synthetic.main.media_queue_item.view.description_uri
-import kotlinx.android.synthetic.main.media_test_option.view.configure_test_suite_button
-import kotlinx.android.synthetic.main.media_test_option.view.card_text
-import kotlinx.android.synthetic.main.media_test_option.view.card_header
-import kotlinx.android.synthetic.main.media_test_option.view.card_button
-
-import kotlinx.android.synthetic.main.media_test_suites.test_suite_options_list
-import kotlinx.android.synthetic.main.media_test_suites.test_suite_results_container
-import kotlinx.android.synthetic.main.media_test_suites.test_suite_num_iter
-import kotlinx.android.synthetic.main.media_tests.test_results_container
-import kotlinx.android.synthetic.main.media_tests.tests_query
-import kotlinx.android.synthetic.main.media_tests.test_options_list
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.done_button
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.reset_results_button
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.title
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.subtitle
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.test_to_configure_list
 
 
 class MediaAppTestingActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMediaAppTestingBinding
+
     private var mediaAppDetails: MediaAppDetails? = null
     private var mediaController: MediaControllerCompat? = null
     private var mediaBrowser: MediaBrowserCompat? = null
@@ -118,8 +85,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        binding = ActivityMediaAppTestingBinding.inflate(layoutInflater)
         setContentView(R.layout.activity_media_app_testing)
-        val toolbar: Toolbar = toolbar
+        val toolbar: Toolbar = binding.toolbar
         setSupportActionBar(toolbar)
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         supportActionBar!!.setDisplayShowHomeEnabled(true)
@@ -127,16 +95,16 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         Test.androidResources = resources
         bottomNavigationView = findViewById(R.id.bottom_navigation_view)
-        viewPager = view_pager
-        testsQuery = tests_query
-        resultsContainer = test_results_container
-        connectionErrorText = connection_error_text
-        playbackStateText = playback_state_text
-        metadataText = metadata_text
-        repeatModeText = repeat_mode_text
-        shuffleModeText = shuffle_mode_text
-        queueTitleText = queue_title_text
-        queueText = queue_text
+        viewPager = binding.viewPager
+        testsQuery = binding.mediaControllerTestPage.testsQuery
+        resultsContainer = binding.mediaControllerTestPage.testResultsContainer
+        connectionErrorText = binding.mediaControllerInfoPage.connectionErrorText
+        playbackStateText = binding.mediaControllerInfoPage.playbackStateText
+        metadataText = binding.mediaControllerInfoPage.metadataText
+        repeatModeText = binding.mediaControllerInfoPage.repeatModeText
+        shuffleModeText = binding.mediaControllerInfoPage.shuffleModeText
+        queueTitleText = binding.mediaControllerInfoPage.queueTitleText
+        queueText = binding.mediaControllerInfoPage.queueText
 
         handleIntent(intent)
 
@@ -149,7 +117,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         // Set up page navigation
-        val pages = arrayOf(media_controller_info_page, media_controller_test_page, media_controller_test_suite_page)
+        val pages = arrayOf(binding.mediaControllerInfoPage, binding.mediaControllerTestPage, binding.mediaControllerTestSuitePage)
         viewPager.offscreenPageLimit = pages.size
         viewPager.adapter = object : PagerAdapter() {
             override fun getCount(): Int {
@@ -260,7 +228,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val extras = intent.extras
         val hasAppDetailsExtra = extras?.containsKey(APP_DETAILS_EXTRA) ?: false
         if (hasAppDetailsExtra) {
-            mediaAppDetails = extras.getParcelable(APP_DETAILS_EXTRA)
+            mediaAppDetails = extras?.getParcelable(APP_DETAILS_EXTRA)
         }
 
         // Update MediaAppDetails object if needed (the if clause after the || handles the case when
@@ -308,11 +276,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (item == null) {
-            return true
-        }
-
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.logs_toggle) {
             if (printLogsFormatted) {
                 item.icon = ContextCompat.getDrawable(this, R.drawable.ic_parsable_logs_24dp)
