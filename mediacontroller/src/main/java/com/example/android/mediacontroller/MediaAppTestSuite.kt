@@ -33,10 +33,11 @@ import android.widget.TextView
 import android.widget.ProgressBar
 import android.widget.Button
 import android.widget.ScrollView
-import androidx.cardview.widget.CardView
+import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.android.mediacontroller.databinding.MediaTestSuiteResultBinding
 
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
@@ -305,34 +306,33 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
     inner class ResultsAdapter(
             private val tests: Array<TestOptionDetails>
     ) : RecyclerView.Adapter<ResultsAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+        inner class ViewHolder(val cardView: MediaTestSuiteResultBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
         ): ResultsAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_test_suite_result, parent, false) as CardView
+            val cardView = MediaTestSuiteResultBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val testID = positionToIDMap[position]!!
             val testCaseResults = iDToResultsMap[testID]!!
-            holder.cardView.card_header.text = tests[position].name
-            holder.cardView.card_text.text = tests[position].desc
-            holder.cardView.total_tests.text = testCaseResults.totalRuns.toString()
-            holder.cardView.tests_passing.text = testCaseResults.numPassing.toString()
+            holder.cardView.cardHeader.text = tests[position].name
+            holder.cardView.cardText.text = tests[position].desc
+            holder.cardView.totalTests.text = testCaseResults.totalRuns.toString()
+            holder.cardView.testsPassing.text = testCaseResults.numPassing.toString()
             if(testCaseResults.totalRuns == 0){
-                holder.cardView.setOnClickListener{}
-                holder.cardView.tests_passing_header.text = context.getString(R.string.test_suite_config_needed_header)
-                holder.cardView.setCardBackgroundColor(Color.GRAY)
+                holder.cardView.cardView.setOnClickListener{}
+                holder.cardView.testsPassingHeader.text = context.getString(R.string.test_suite_config_needed_header)
+                holder.cardView.cardView.setCardBackgroundColor(Color.GRAY)
                 return
             }
             val passPercentage = testCaseResults.numPassing.toFloat() / testCaseResults.totalRuns.toFloat()
-            holder.cardView.setCardBackgroundColor((argbEvaluator.evaluate(passPercentage, FAILING_COLOR, PASSING_COLOR )) as Int)
+            holder.cardView.cardView.setCardBackgroundColor((argbEvaluator.evaluate(passPercentage, FAILING_COLOR, PASSING_COLOR )) as Int)
             val onResultsClickedListener = OnResultsClickedListener(testID, tests[position].name, tests[position].desc, this@MediaAppTestSuite.context)
-            holder.cardView.setOnClickListener(onResultsClickedListener)
+            holder.cardView.cardView.setOnClickListener(onResultsClickedListener)
         }
 
         override fun getItemCount() = tests.size

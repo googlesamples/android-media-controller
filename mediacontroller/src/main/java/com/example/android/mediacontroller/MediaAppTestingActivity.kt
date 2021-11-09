@@ -46,10 +46,10 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.NonNull
 
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.res.ResourcesCompat
@@ -57,7 +57,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
-import com.example.android.mediacontroller.databinding.ActivityMediaAppTestingBinding
+import com.example.android.mediacontroller.databinding.*
 
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
@@ -408,43 +408,43 @@ class MediaAppTestingActivity : AppCompatActivity() {
     inner class TestSuiteAdapter(
             private val testSuites: Array<MediaAppTestSuite>
     ) : RecyclerView.Adapter<TestSuiteAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+        inner class ViewHolder(val cardView: MediaTestOptionBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
         ): TestSuiteAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_test_option, parent, false) as CardView
+            val cardView = MediaTestOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
-
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val testSuite = testSuites[position]
-            holder.cardView.card_header.text = testSuite.testSuiteName
-            holder.cardView.card_text.text = testSuite.testSuiteDescription
-            holder.cardView.card_button.text = resources.getText(R.string.run_suite_button)
+            holder.cardView.cardHeader.text = testSuite.testSuiteName
+            holder.cardView.cardText.text = testSuite.testSuiteDescription
+            holder.cardView.cardButton.text = resources.getText(R.string.run_suite_button)
 
             val configurableTests = testSuite.getConfigurableTests()
             if (!configurableTests.isEmpty()) {
-                holder.cardView.configure_test_suite_button.visibility = View.VISIBLE
-                holder.cardView.configure_test_suite_button.setOnClickListener {
+                holder.cardView.configureTestSuiteButton.visibility = View.VISIBLE
+                holder.cardView.configureTestSuiteButton.setOnClickListener {
                     val configAdapter = ConfigurationAdapter(configurableTests)
                     val sharedPreferences = getSharedPreferences(SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
+                    val dialog =
+                        TestSuiteConfigureDialogBinding.inflate(LayoutInflater.from(this@MediaAppTestingActivity))
                     Dialog(this@MediaAppTestingActivity).apply {
                         // Init dialog
                         requestWindowFeature(Window.FEATURE_NO_TITLE)
-                        setContentView(R.layout.test_suite_configure_dialog)
-                        title.text = getString(R.string.configure_dialog_title, testSuite.testSuiteName)
-                        subtitle.text = testSuite.testSuiteDescription
-                        test_to_configure_list.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
-                        test_to_configure_list.layoutParams.height = getScreenHeightPx(this@MediaAppTestingActivity) / 2
-                        test_to_configure_list.setHasFixedSize(true)
-                        test_to_configure_list.adapter = configAdapter
+                        setContentView(dialog.root)
+                        dialog.title.text = getString(R.string.configure_dialog_title, testSuite.testSuiteName)
+                        dialog.subtitle.text = testSuite.testSuiteDescription
+                        dialog.testToConfigureList.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
+                        dialog.testToConfigureList.layoutParams.height = getScreenHeightPx(this@MediaAppTestingActivity) / 2
+                        dialog.testToConfigureList.setHasFixedSize(true)
+                        dialog.testToConfigureList.adapter = configAdapter
 
                         // Reset config button clicked
-                        reset_results_button.setOnClickListener {
+                        dialog.resetResultsButton.setOnClickListener {
                             sharedPreferences.edit().apply {
                                 for (i in configurableTests.indices) {
                                     putString(configurableTests[i].name, NO_CONFIG)
@@ -455,15 +455,15 @@ class MediaAppTestingActivity : AppCompatActivity() {
                         }
 
                         // Done button pressed
-                        done_button.setOnClickListener {
+                        dialog.doneButton.setOnClickListener {
                             dismiss()
                         }
                     }.show()
                 }
             }
 
-            holder.cardView.card_button.setOnClickListener {
-                var numIter = test_suite_num_iter.text.toString().toIntOrNull()
+            holder.cardView.cardButton.setOnClickListener {
+                val numIter = this@MediaAppTestingActivity.binding.mediaControllerTestSuitePage.testSuiteNumIter.text.toString().toIntOrNull()
                 if (numIter == null) {
                     Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
 
@@ -493,29 +493,27 @@ class MediaAppTestingActivity : AppCompatActivity() {
     inner class ConfigurationAdapter(
             private val tests: ArrayList<TestOptionDetails>
     ) : RecyclerView.Adapter<ConfigurationAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+        inner class ViewHolder(val cardView: ConfigItemBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
         ): ConfigurationAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.config_item, parent, false) as CardView
-
+            val cardView = ConfigItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val test = tests[position]
-            holder.cardView.test_name_config.text = test.name
+            holder.cardView.testNameConfig.text = test.name
             val sharedPreferences = getSharedPreferences(SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
-            holder.cardView.test_query_config.addTextChangedListener(object : TextWatcher {
+            holder.cardView.testQueryConfig.addTextChangedListener(object : TextWatcher {
 
                 override fun afterTextChanged(s: Editable) {
-                    val newText = holder.cardView.test_query_config.text.toString()
+                    val newText = holder.cardView.testQueryConfig.text.toString()
                     if (newText != "") {
                         sharedPreferences.edit().apply {
-                            putString(test.name, holder.cardView.test_query_config.text.toString())
+                            putString(test.name, holder.cardView.testQueryConfig.text.toString())
                         }.apply()
                     }
                 }
@@ -528,10 +526,10 @@ class MediaAppTestingActivity : AppCompatActivity() {
             })
 
             val previousConfig = sharedPreferences.getString(test.name, NO_CONFIG)
-            holder.cardView.test_query_config.setText((previousConfig))
+            holder.cardView.testQueryConfig.setText((previousConfig))
             if (previousConfig == NO_CONFIG) {
-                holder.cardView.test_query_config.setText("")
-                holder.cardView.test_query_config.hint = "Query"
+                holder.cardView.testQueryConfig.setText("")
+                holder.cardView.testQueryConfig.hint = "Query"
                 return
             }
         }
@@ -800,7 +798,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 false
         ) { _, callback, testId ->
             runCustomActionIconTypeTest(
-                    testId, applicationContext, controller, mediaAppDetails, callback)
+                    testId, applicationContext, controller, mediaAppDetails!!, callback)
         }
 
         val supportsSearchTest = TestOptionDetails(
@@ -917,8 +915,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
         )
 
         var testList = basicTests
-        var testSuites: ArrayList<MediaAppTestSuite> = ArrayList()
-        var testSuiteResults = test_suite_results_container as RecyclerView
+        val testSuites: ArrayList<MediaAppTestSuite> = ArrayList()
+        val testSuiteResults = this.binding.mediaControllerTestSuitePage.testSuiteResultsContainer
 
         val basicTestSuite = MediaAppTestSuite("Basic Tests", "Basic media tests.", basicTests, testSuiteResults, this)
         testSuites.add(basicTestSuite)
@@ -939,14 +937,14 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         val testOptionAdapter = TestOptionAdapter(testList, iDToPositionMap)
 
-        val testOptionsList = test_options_list
+        val testOptionsList = this.binding.mediaControllerTestPage.testOptionsList
         testOptionsList.layoutManager = LinearLayoutManager(this)
         testOptionsList.setHasFixedSize(true)
         testOptionsList.adapter = testOptionAdapter
 
         // Set up test suites display.
         val testSuiteAdapter = TestSuiteAdapter(testSuites.toTypedArray())
-        val testSuiteList = test_suite_options_list
+        val testSuiteList = this.binding.mediaControllerTestSuitePage.testSuiteOptionsList
         testSuiteList.layoutManager = LinearLayoutManager(this)
         testSuiteList.setHasFixedSize(true)
         testSuiteList.adapter = testSuiteAdapter
@@ -957,14 +955,13 @@ class MediaAppTestingActivity : AppCompatActivity() {
             private val tests: Array<TestOptionDetails>,
             private val iDToPositionMap: HashMap<Int, Int>
     ) : RecyclerView.Adapter<TestOptionAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+        inner class ViewHolder(val cardView: MediaTestOptionBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
         ): TestOptionAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_test_option, parent, false) as CardView
+            val cardView = MediaTestOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
@@ -975,9 +972,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.cardView.card_header.text = tests[position].name
-            holder.cardView.card_text.text = tests[position].desc
-            holder.cardView.setCardBackgroundColor(
+            holder.cardView.cardHeader.text = tests[position].name
+            holder.cardView.cardText.text = tests[position].desc
+            holder.cardView.cardView.setCardBackgroundColor(
                     when (tests[position].testResult) {
                         TestResult.FAIL -> ResourcesCompat
                                 .getColor(resources, R.color.test_result_fail, null)
@@ -1000,7 +997,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 }
             }
 
-            holder.cardView.card_button.setOnClickListener {
+            holder.cardView.cardButton.setOnClickListener {
                 tests[position].runTest(testsQuery.text.toString(), callback, tests[position].id)
             }
         }
@@ -1012,42 +1009,41 @@ class MediaAppTestingActivity : AppCompatActivity() {
     class QueueItemAdapter(
             private val items: MutableList<MediaSessionCompat.QueueItem>
     ) : RecyclerView.Adapter<QueueItemAdapter.ViewHolder>() {
-        class ViewHolder(val linearLayout: LinearLayout) : RecyclerView.ViewHolder(linearLayout)
+        class ViewHolder(val linearLayout: MediaQueueItemBinding) : RecyclerView.ViewHolder(linearLayout.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
-        ): QueueItemAdapter.ViewHolder {
-            val linearLayout = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_queue_item, parent, false) as LinearLayout
+        ): ViewHolder {
+            val linearLayout = MediaQueueItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(linearLayout)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.linearLayout.queue_id.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.queueId.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_id,
                             items[position].queueId
                     )
 
             val description = items[position].description
-            holder.linearLayout.description_title.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.descriptionTitle.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_title,
                             description.title
                     )
-            holder.linearLayout.description_subtitle.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.descriptionSubtitle.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_subtitle,
                             description.subtitle
                     )
-            holder.linearLayout.description_id.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.descriptionId.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_media_id,
                             description.mediaId
                     )
-            holder.linearLayout.description_uri.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.descriptionUri.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_media_uri,
                             description.mediaUri.toString()
                     )
@@ -1059,7 +1055,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
     private fun populateQueue(_queue: MutableList<MediaSessionCompat.QueueItem>?) {
         val queue = _queue ?: emptyList<MediaSessionCompat.QueueItem>().toMutableList()
         val queueItemAdapter = QueueItemAdapter(queue)
-        val queueList = queue_item_list
+        val queueList = this.binding.mediaControllerInfoPage.queueItemList
         queueList.layoutManager = object : LinearLayoutManager(this) {
             override fun canScrollVertically(): Boolean = false
         }

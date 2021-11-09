@@ -84,7 +84,7 @@ class TvTestingActivity : FragmentActivity() {
         val extras = intent.extras
         val hasAppDetailsExtra = extras?.containsKey(APP_DETAILS_EXTRA) ?: false
         if (hasAppDetailsExtra) {
-            mediaAppDetails = extras.getParcelable(APP_DETAILS_EXTRA)
+            mediaAppDetails = extras?.getParcelable(APP_DETAILS_EXTRA)
         }
 
         // Update MediaAppDetails object if needed (the if clause after the || handles the case when

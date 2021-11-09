@@ -29,6 +29,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.TypedValue
 import androidx.annotation.RequiresApi
+import androidx.core.content.res.ResourcesCompat
 import com.example.android.mediacontroller.Test.Companion.androidResources
 import java.text.DateFormat
 import java.util.Date
@@ -100,11 +101,7 @@ class Test(
         ))
 
         handler = object : Handler(this.looper) {
-            override fun handleMessage(msg: Message?) {
-                if (msg == null) {
-                    logTestUpdate(name, androidResources.getString(R.string.test_message_empty))
-                    return
-                }
+            override fun handleMessage(msg: Message) {
                 if (stepIndex >= steps.size) {
                     logTestUpdate(name, androidResources.getString(R.string.test_success))
                     endTest()
@@ -997,7 +994,7 @@ class CheckForPreferences(override val test: Test,
  */
 class CheckCustomActions(override val test: Test,
                          val context: Context,
-                         val appDetails: MediaAppDetails?) : TestStep {
+                         val appDetails: MediaAppDetails) : TestStep {
     override val logTag = "${test.name}.CCA"
     override fun execute(
             currState: PlaybackStateCompat?,
@@ -1012,12 +1009,12 @@ class CheckCustomActions(override val test: Test,
 
         var testStatus = TestStepStatus.STEP_PASS
 
-        val resources = context.packageManager.getResourcesForApplication(appDetails?.packageName)
+        val resources = context.packageManager.getResourcesForApplication(appDetails.packageName)
         for (action in customActions) {
             try {
-                val drawable = resources.getDrawable(action.icon, null)
+                val drawable = ResourcesCompat.getDrawable(resources, action.icon, null)
                 resources.getValue(action.icon, value, true)
-                var filename = value.string.toString()
+                val filename = value.string.toString()
 
                 if (drawable !is VectorDrawable) {
                     test.logTestUpdate(logTag, androidResources.getString(

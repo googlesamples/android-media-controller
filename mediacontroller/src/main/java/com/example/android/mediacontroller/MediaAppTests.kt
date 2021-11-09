@@ -147,7 +147,7 @@ fun runCustomActionIconTypeTest(
         testId: Int,
         context: Context,
         controller: MediaControllerCompat,
-        appDetails: MediaAppDetails?,
+        appDetails: MediaAppDetails,
         callback: (result: TestResult, testId: Int, testLogs: ArrayList<String>) -> Unit
 ) = Test(Test.androidResources
         .getString(R.string.custom_actions_icon_test_logs_title), TestType.REQUIRED, controller)

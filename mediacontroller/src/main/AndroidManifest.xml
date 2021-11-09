@@ -17,6 +17,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.android.mediacontroller">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
@@ -35,7 +37,8 @@
 
         <activity
             android:name=".LaunchActivity"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:exported="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -67,7 +70,8 @@
             android:name=".tv.TvLauncherActivity"
             android:configChanges="keyboard|keyboardHidden"
             android:launchMode="singleTask"
-            android:theme="@style/AppTheme.TV">
+            android:theme="@style/AppTheme.TV"
+            android:exported="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -90,7 +94,8 @@
         <service
             android:name=".NotificationListener"
             android:label="@string/app_name"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
 
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />

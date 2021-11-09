@@ -73,6 +73,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import com.example.android.mediacontroller.databinding.ActivityMediaAppControllerBinding;
 import com.google.android.material.tabs.TabLayout;
 
 import java.io.FileNotFoundException;
@@ -136,16 +137,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private BrowseMediaItemsAdapter mBrowseMediaItemsExtraSuggestedAdapter = new BrowseMediaItemsAdapter();
     private SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter();
 
-    private ViewPager mViewPager;
-    private Spinner mInputTypeView;
-    private EditText mUriInput;
-    private TextView mMediaInfoText;
-
-    private ImageView mMediaAlbumArtView;
-    private TextView mMediaTitleView;
-    private TextView mMediaArtistView;
-    private TextView mMediaAlbumView;
-
     private ModeHelper mShuffleToggle;
     private ModeHelper mRepeatToggle;
 
@@ -154,6 +145,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaBrowseTreeSnapshot mMediaBrowseTreeSnapshot;
 
     private final SparseArray<ImageButton> mActionButtonMap = new SparseArray<>();
+    private ActivityMediaAppControllerBinding binding;
 
     /**
      * Builds an {@link Intent} to launch this Activity with a set of extras.
@@ -172,21 +164,12 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_media_app_controller);
-        final Toolbar toolbar = findViewById(R.id.toolbar);
+        binding = ActivityMediaAppControllerBinding.inflate(LayoutInflater.from(this));
+        setContentView(binding.getRoot());
+        final Toolbar toolbar = binding.toolbar;
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
-
-        mViewPager = findViewById(R.id.view_pager);
-        mInputTypeView = findViewById(R.id.input_type);
-        mUriInput = findViewById(R.id.uri_id_query);
-        mMediaInfoText = findViewById(R.id.media_info);
-
-        mMediaAlbumArtView = findViewById(R.id.media_art);
-        mMediaTitleView = findViewById(R.id.media_title);
-        mMediaArtistView = findViewById(R.id.media_artist);
-        mMediaAlbumView = findViewById(R.id.media_album);
 
         mShuffleToggle = new ShuffleModeHelper();
         mRepeatToggle = new RepeatModeHelper();
@@ -195,7 +178,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         if (savedInstanceState != null) {
             mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
-            mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
+            binding.preparePlayPage.uriIdQuery.setText(savedInstanceState.getString(STATE_URI_KEY));
         }
 
         mMediaAppDetails = handleIntent(getIntent());
@@ -226,8 +209,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 R.id.media_search_page,
         };
         // Simplify the adapter by not keeping track of creating/destroying off-screen views.
-        mViewPager.setOffscreenPageLimit(pages.length);
-        mViewPager.setAdapter(new PagerAdapter() {
+        binding.viewPager.setOffscreenPageLimit(pages.length);
+        binding.viewPager.setAdapter(new PagerAdapter() {
 
             @Override
             public int getCount() {
@@ -246,7 +229,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
         });
         final TabLayout pageIndicator = findViewById(R.id.page_indicator);
-        pageIndicator.setupWithViewPager(mViewPager);
+        pageIndicator.setupWithViewPager(binding.viewPager);
 
         final RecyclerView customControlsList = findViewById(R.id.custom_controls_list);
         customControlsList.setLayoutManager(new LinearLayoutManager(this));
@@ -338,14 +321,14 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         if (extras != null) {
             // Pull data out of the extras, if they're there.
             if (extras.containsKey(SEARCH_EXTRA)) {
-                mInputTypeView.setSelection(SEARCH_INDEX);
-                mUriInput.setText(extras.getString(SEARCH_EXTRA));
+                binding.preparePlayPage.inputType.setSelection(SEARCH_INDEX);
+                binding.preparePlayPage.uriIdQuery.setText(extras.getString(SEARCH_EXTRA));
             } else if (extras.containsKey(MEDIA_ID_EXTRA)) {
-                mInputTypeView.setSelection(MEDIA_ID_INDEX);
-                mUriInput.setText(extras.getString(MEDIA_ID_EXTRA));
+                binding.preparePlayPage.inputType.setSelection(MEDIA_ID_INDEX);
+                binding.preparePlayPage.uriIdQuery.setText(extras.getString(MEDIA_ID_EXTRA));
             } else if (extras.containsKey(URI_EXTRA)) {
-                mInputTypeView.setSelection(URI_INDEX);
-                mUriInput.setText(extras.getString(URI_EXTRA));
+                binding.preparePlayPage.inputType.setSelection(URI_INDEX);
+                binding.preparePlayPage.uriIdQuery.setText(extras.getString(URI_EXTRA));
             }
 
             // It's also possible we're here from LaunchActivity, which did all this work for us.
@@ -371,7 +354,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         super.onSaveInstanceState(out);
 
         out.putParcelable(STATE_APP_DETAILS_KEY, mMediaAppDetails);
-        out.putString(STATE_URI_KEY, mUriInput.getText().toString());
+        out.putString(STATE_URI_KEY, binding.preparePlayPage.uriIdQuery.getText().toString());
     }
 
     @Override
@@ -379,7 +362,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         super.onRestoreInstanceState(savedInstanceState);
 
         mMediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY);
-        mUriInput.setText(savedInstanceState.getString(STATE_URI_KEY));
+        binding.preparePlayPage.uriIdQuery.setText(savedInstanceState.getString(STATE_URI_KEY));
     }
 
     @Override
@@ -481,7 +464,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             mCallback.onMetadataChanged(mController.getMetadata());
 
             // Ensure views are visible.
-            mViewPager.setVisibility(View.VISIBLE);
+            binding.viewPager.setVisibility(View.VISIBLE);
 
             Log.d(TAG, "MediaControllerCompat created");
         } catch (RemoteException remoteException) {
@@ -505,7 +488,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             final View button = findViewById(action.getId());
             button.setOnClickListener(view -> {
                 if (mController != null) {
-                    String id = mUriInput.getText().toString();
+                    String id = binding.preparePlayPage.uriIdQuery.getText().toString();
                     action.getMediaControllerAction().run(mController, id, null);
                 }
             });
@@ -545,18 +528,18 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                     getString(R.string.info_album_string),
                     mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM));
 
-            mMediaTitleView.setText(
+            binding.controlsPage.mediaTitle.setText(
                     mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
-            mMediaArtistView.setText(
+            binding.controlsPage.mediaArtist.setText(
                     mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
-            mMediaAlbumView.setText(
+            binding.controlsPage.mediaAlbum.setText(
                     mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ALBUM));
 
             final Bitmap art = mediaMetadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART);
             if (art != null) {
-                mMediaAlbumArtView.setImageBitmap(art);
+                binding.controlsPage.mediaArt.setImageBitmap(art);
             } else {
-                mMediaAlbumArtView.setImageResource(R.drawable.ic_album_black_24dp);
+                binding.controlsPage.mediaArt.setImageResource(R.drawable.ic_album_black_24dp);
             }
             // Prefer user rating, but fall back to global rating if available.
             RatingCompat rating =
@@ -566,8 +549,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             }
             mRatingUiHelper.setRating(rating);
         } else {
-            mMediaArtistView.setText(R.string.media_info_default);
-            mMediaAlbumArtView.setImageResource(R.drawable.ic_album_black_24dp);
+            binding.controlsPage.mediaArtist.setText(R.string.media_info_default);
+            binding.controlsPage.mediaArt.setImageResource(R.drawable.ic_album_black_24dp);
             mRatingUiHelper.setRating(null);
         }
 
@@ -710,7 +693,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             final int prepareOrPlay = button.getId() == R.id.action_prepare ? 0 : 1;
 
             final Action action;
-            switch (mInputTypeView.getSelectedItemPosition()) {
+            switch (binding.preparePlayPage.inputType.getSelectedItemPosition()) {
                 case INDEX_NO_PARAM:
                     action = mPreparePlayActions.get(ACTION_INDEX_NO_PARAM + prepareOrPlay);
                     break;
@@ -725,11 +708,11 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                     break;
                 default:
                     throw new IllegalStateException("Unknown input type: " +
-                            mInputTypeView.getSelectedItemPosition());
+                            binding.preparePlayPage.inputType.getSelectedItemPosition());
             }
 
             if (mController != null) {
-                final String data = mUriInput.getText().toString();
+                final String data = binding.preparePlayPage.uriIdQuery.getText().toString();
                 action.getMediaControllerAction().run(mController, data, null);
             }
         }
@@ -775,7 +758,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private void onUpdate() {
             String mediaInfoStr = fetchMediaInfo();
             if (mediaInfoStr != null) {
-                mMediaInfoText.setText(mediaInfoStr);
+                binding.preparePlayPage.mediaInfo.setText(mediaInfoStr);
             }
         }
     };
