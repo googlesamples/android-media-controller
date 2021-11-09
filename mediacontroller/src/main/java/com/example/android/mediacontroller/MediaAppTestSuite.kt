@@ -35,9 +35,13 @@ import android.widget.Button
 import android.widget.ScrollView
 import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat
+import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.android.mediacontroller.databinding.ActivityMediaAppTestingBinding
 import com.example.android.mediacontroller.databinding.MediaTestSuiteResultBinding
+import com.example.android.mediacontroller.databinding.RunSuiteIterDialogBinding
+import com.example.android.mediacontroller.databinding.TestSuiteResultsDialogBinding
 
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
@@ -149,7 +153,8 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
         dialog.apply {
             setCancelable(false)
             requestWindowFeature(Window.FEATURE_NO_TITLE)
-            setContentView(R.layout.run_suite_iter_dialog)
+            var binding = RunSuiteIterDialogBinding.inflate(layoutInflater)
+            setContentView(binding.root)
             progressBar = findViewById<ProgressBar>(R.id.suite_iter_progress_bar).apply {
                 max = numIter * testList.size
                 progress = -1
@@ -275,7 +280,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
         for (test in testList) {
             iDToResultsMap[test.id] = TestCaseResults()
         }
-        resultsAdapter = ResultsAdapter(arrayOf<TestOptionDetails>())
+        resultsAdapter = ResultsAdapter(arrayOf())
         testSuiteResultsLayout.removeAllViews()
         displayResults()
     }
@@ -293,7 +298,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
     /**
      * Class to store all of a tests resulting info.
      */
-    inner class TestCaseResults() {
+    inner class TestCaseResults {
         var totalRuns = 0
         var numPassing = 0
         var passingLogs = arrayListOf<ArrayList<String>>()
@@ -347,7 +352,9 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
         override fun onClick(p0: View?) {
             var dialog = Dialog(context).apply {
                 requestWindowFeature(Window.FEATURE_NO_TITLE)
-                setContentView(R.layout.test_suite_results_dialog)
+
+                val binding = TestSuiteResultsDialogBinding.inflate(layoutInflater)
+                setContentView(binding.root)
                 findViewById<TextView>(R.id.results_title).text = name
                 findViewById<TextView>(R.id.results_subtitle).text = description
 
@@ -358,15 +365,15 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                     for (logsList in iDToResultsMap[testId]!!.passingLogs) {
                         passing_results_log.addView(TextView(context).apply {
                             text = resources.getString(R.string.test_iter_divider)
-                            setTextAppearance(context, R.style.SubHeader)
+                            TextViewCompat.setTextAppearance(this, R.style.SubHeader)
                             gravity = Gravity.CENTER
                             setTextColor(PASSING_COLOR)
                         })
                         for (line in logsList) {
-                            var logLine = TextView(context).apply {
+                            val logLine = TextView(context).apply {
                                 text = line
 
-                                setTextAppearance(context, R.style.SubText)
+                                TextViewCompat.setTextAppearance(this, R.style.SubText)
                             }
                             passing_results_log.addView(logLine)
                         }
@@ -382,14 +389,14 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                     for (logsList in iDToResultsMap[testId]!!.failingLogs) {
                         failing_results_log.addView(TextView(context).apply {
                             text = resources.getString(R.string.test_iter_divider)
-                            setTextAppearance(context, R.style.SubHeader)
+                            TextViewCompat.setTextAppearance(this, R.style.SubHeader)
                             gravity = Gravity.CENTER
                             setTextColor(FAILING_COLOR)
                         })
                         for (line in logsList) {
-                            var logLine = TextView(context).apply {
+                            val logLine = TextView(context).apply {
                                 text = line
-                                setTextAppearance(context, R.style.SubText)
+                                TextViewCompat.setTextAppearance(this, R.style.SubText)
                             }
                             failing_results_log.addView(logLine)
                         }
@@ -399,7 +406,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                     findViewById<TextView>(R.id.failing_logs_header).visibility = View.GONE
                 }
                 findViewById<ScrollView>(R.id.results_scroll_view).layoutParams.height = (MediaAppTestingActivity.getScreenHeightPx(context) / 2).toInt()
-                findViewById<Button>(R.id.close_results_button).setOnClickListener(View.OnClickListener { dismiss() })
+                findViewById<Button>(R.id.close_results_button).setOnClickListener { dismiss() }
             }.show()
         }
     }

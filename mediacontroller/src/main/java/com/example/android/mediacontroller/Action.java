@@ -39,8 +39,8 @@ public class Action {
 
     private static final String TAG = Action.class.getSimpleName();
 
-    private int mId;
-    private String mName;
+    private final int mId;
+    private final String mName;
     private MediaControllerAction mControllerAction;
 
     public Action(String name) {

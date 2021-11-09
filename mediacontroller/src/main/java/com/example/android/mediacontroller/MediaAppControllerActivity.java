@@ -132,10 +132,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private MediaBrowserCompat mBrowserExtraSuggested;
     private AudioFocusHelper mAudioFocusHelper;
     private RatingUiHelper mRatingUiHelper;
-    private CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
-    private BrowseMediaItemsAdapter mBrowseMediaItemsAdapter = new BrowseMediaItemsAdapter();
-    private BrowseMediaItemsAdapter mBrowseMediaItemsExtraSuggestedAdapter = new BrowseMediaItemsAdapter();
-    private SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter();
+    private final CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
+    private final BrowseMediaItemsAdapter mBrowseMediaItemsAdapter = new BrowseMediaItemsAdapter();
+    private final BrowseMediaItemsAdapter mBrowseMediaItemsExtraSuggestedAdapter = new BrowseMediaItemsAdapter();
+    private final SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter();
 
     private ModeHelper mShuffleToggle;
     private ModeHelper mRepeatToggle;

@@ -28,11 +28,13 @@ import androidx.fragment.app.FragmentActivity
 import androidx.leanback.app.GuidedStepSupportFragment
 import com.example.android.mediacontroller.MediaAppDetails
 import com.example.android.mediacontroller.R
+import com.example.android.mediacontroller.databinding.ActivityTvTestingBinding
 
 /**
  * Sets up Media Controller/Browser connections and launches TvTestingFragment
  */
 class TvTestingActivity : FragmentActivity() {
+    private lateinit var binding: ActivityTvTestingBinding
     private var mediaAppDetails: MediaAppDetails? = null
     private var mediaController: MediaControllerCompat? = null
     private var mediaBrowser: MediaBrowserCompat? = null
@@ -47,7 +49,8 @@ class TvTestingActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_tv_testing)
+        binding = ActivityTvTestingBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         handleIntent(intent)
 
@@ -72,8 +75,7 @@ class TvTestingActivity : FragmentActivity() {
         }
 
         val data = intent.data
-        val appPackageName: String?
-        appPackageName = when {
+        val appPackageName: String? = when {
             data != null -> data.host
             intent.hasExtra(PACKAGE_NAME_EXTRA) -> intent.getStringExtra(PACKAGE_NAME_EXTRA)
             else -> null
