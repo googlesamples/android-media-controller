@@ -27,8 +27,10 @@ import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
 import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.widget.Toast;
 
+import com.example.android.mediacontroller.databinding.ActivityLaunchBinding;
 import com.example.android.mediacontroller.tasks.FindMediaAppsTask;
 import com.example.android.mediacontroller.tasks.FindMediaBrowserAppsTask;
 import com.example.android.mediacontroller.tasks.FindMediaSessionAppsTask;
@@ -120,13 +122,15 @@ public class LaunchActivity extends AppCompatActivity {
                     ? new MediaSessionListener()
                     : null;
 
+    private ActivityLaunchBinding binding;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_launch);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        binding = ActivityLaunchBinding.inflate(LayoutInflater.from(this));
+        setContentView(binding.getRoot());
+        setSupportActionBar(binding.toolbar);
 
         mediaAppsAdapter = new MediaAppListAdapter((app, isTest) -> {
             if (mSnackbar != null) {
@@ -144,7 +148,7 @@ public class LaunchActivity extends AppCompatActivity {
             mMediaSessionListener.onCreate(mediaAppsAdapter);
         }
 
-        RecyclerView mediaAppsList = findViewById(R.id.app_list);
+        RecyclerView mediaAppsList = binding.appList;
         mediaAppsList.setLayoutManager(new LinearLayoutManager(this));
         mediaAppsList.setHasFixedSize(true);
         mediaAppsList.setAdapter(mediaAppsAdapter);

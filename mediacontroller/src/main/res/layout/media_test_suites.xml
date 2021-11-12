@@ -61,7 +61,7 @@
         android:layout_weight="4"
         android:fillViewport="true"
         android:background="@color/background_grey"
-        app:layoutManager=""
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <TextView
@@ -79,7 +79,7 @@
         android:layout_weight="4"
         android:fillViewport="true"
         android:background="@color/background_grey"
-        app:layoutManager=""
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
 

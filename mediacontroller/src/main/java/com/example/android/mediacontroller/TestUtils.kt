@@ -353,11 +353,7 @@ fun formatMetadataParsable(metadata: MediaMetadataCompat?): String {
         return "!null!"
     }
 
-    val keys = metadata.keySet()
-    val map: MutableMap<String, String> = mutableMapOf()
-    keys.forEach { key ->
-        map.put(key, getMetadataKey(metadata, key))
-    }
+    val map = metadata.keySet().associateBy { getMetadataKey(metadata, it) }
     return JSONObject(map).toString()
 }
 

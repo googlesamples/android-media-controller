@@ -18,13 +18,17 @@ package com.example.android.mediacontroller.tv
 import android.os.Bundle
 import androidx.fragment.app.FragmentActivity
 import com.example.android.mediacontroller.R
+import com.example.android.mediacontroller.databinding.ActivityTvLaunchBinding
 
 /**
  * Controls the Android TV UI by managing the appropriate Fragments.
  */
 class TvLauncherActivity : FragmentActivity() {
+    private lateinit var binding: ActivityTvLaunchBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_tv_launch)
+        binding = ActivityTvLaunchBinding.inflate(layoutInflater)
+        setContentView(binding.root)
     }
 }

@@ -147,7 +147,7 @@
             android:layout_marginTop="@dimen/margin_small"
             android:layout_marginBottom="@dimen/activity_vertical_margin"
             android:background="@color/background_grey"
-            app:layoutManager="" />
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
     </LinearLayout>
 
 </ScrollView>

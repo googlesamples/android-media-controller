@@ -32,111 +32,41 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.DisplayMetrics
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
-import android.view.Window
-import android.view.WindowManager
-
-import android.widget.EditText
-import android.widget.LinearLayout
+import android.view.*
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
-
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_test_suite_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.media_controller_info_page
-import kotlinx.android.synthetic.main.activity_media_app_testing.toolbar
-import kotlinx.android.synthetic.main.activity_media_app_testing.view_pager
-import kotlinx.android.synthetic.main.config_item.view.test_name_config
-import kotlinx.android.synthetic.main.config_item.view.test_query_config
-import kotlinx.android.synthetic.main.media_controller_info.queue_item_list
-import kotlinx.android.synthetic.main.media_controller_info.connection_error_text
-import kotlinx.android.synthetic.main.media_controller_info.metadata_text
-import kotlinx.android.synthetic.main.media_controller_info.playback_state_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_text
-import kotlinx.android.synthetic.main.media_controller_info.repeat_mode_text
-import kotlinx.android.synthetic.main.media_controller_info.queue_title_text
-import kotlinx.android.synthetic.main.media_controller_info.shuffle_mode_text
-import kotlinx.android.synthetic.main.media_queue_item.view.queue_id
-import kotlinx.android.synthetic.main.media_queue_item.view.description_title
-import kotlinx.android.synthetic.main.media_queue_item.view.description_subtitle
-import kotlinx.android.synthetic.main.media_queue_item.view.description_id
-import kotlinx.android.synthetic.main.media_queue_item.view.description_uri
-import kotlinx.android.synthetic.main.media_test_option.view.configure_test_suite_button
-import kotlinx.android.synthetic.main.media_test_option.view.card_text
-import kotlinx.android.synthetic.main.media_test_option.view.card_header
-import kotlinx.android.synthetic.main.media_test_option.view.card_button
-
-import kotlinx.android.synthetic.main.media_test_suites.test_suite_options_list
-import kotlinx.android.synthetic.main.media_test_suites.test_suite_results_container
-import kotlinx.android.synthetic.main.media_test_suites.test_suite_num_iter
-import kotlinx.android.synthetic.main.media_tests.test_results_container
-import kotlinx.android.synthetic.main.media_tests.tests_query
-import kotlinx.android.synthetic.main.media_tests.test_options_list
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.done_button
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.reset_results_button
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.title
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.subtitle
-import kotlinx.android.synthetic.main.test_suite_configure_dialog.test_to_configure_list
-
+import com.example.android.mediacontroller.databinding.*
 
 class MediaAppTestingActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMediaAppTestingBinding
+
     private var mediaAppDetails: MediaAppDetails? = null
     private var mediaController: MediaControllerCompat? = null
     private var mediaBrowser: MediaBrowserCompat? = null
 
     private var printLogsFormatted: Boolean = true
 
-    private lateinit var viewPager: ViewPager
-    private lateinit var testsQuery: EditText
-    private lateinit var resultsContainer: LinearLayout
-    private lateinit var connectionErrorText: TextView
-    private lateinit var playbackStateText: TextView
-    private lateinit var metadataText: TextView
-    private lateinit var repeatModeText: TextView
-    private lateinit var shuffleModeText: TextView
-    private lateinit var queueTitleText: TextView
-    private lateinit var queueText: TextView
-    private lateinit var bottomNavigationView: BottomNavigationView
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_media_app_testing)
-        val toolbar: Toolbar = toolbar
+        binding = ActivityMediaAppTestingBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        val toolbar: Toolbar = binding.toolbar
         setSupportActionBar(toolbar)
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         supportActionBar!!.setDisplayShowHomeEnabled(true)
         toolbar.setNavigationOnClickListener { finish() }
 
         Test.androidResources = resources
-        bottomNavigationView = findViewById(R.id.bottom_navigation_view)
-        viewPager = view_pager
-        testsQuery = tests_query
-        resultsContainer = test_results_container
-        connectionErrorText = connection_error_text
-        playbackStateText = playback_state_text
-        metadataText = metadata_text
-        repeatModeText = repeat_mode_text
-        shuffleModeText = shuffle_mode_text
-        queueTitleText = queue_title_text
-        queueText = queue_text
 
         handleIntent(intent)
 
@@ -145,13 +75,21 @@ class MediaAppTestingActivity : AppCompatActivity() {
             setupMedia()
             setupToolbar(appDetails.appName, appDetails.icon)
         } else {
-            viewPager.visibility = View.GONE
+            binding.viewPager.visibility = View.GONE
         }
 
         // Set up page navigation
-        val pages = arrayOf(media_controller_info_page, media_controller_test_page, media_controller_test_suite_page)
-        viewPager.offscreenPageLimit = pages.size
-        viewPager.adapter = object : PagerAdapter() {
+        val pages = arrayOf(
+            binding.mediaControllerInfoPage,
+            binding.mediaControllerTestPage,
+            binding.mediaControllerTestSuitePage
+        )
+        // Remove so that instantiateItem can add at the right time
+        pages.forEach {
+            (it.root.parent as ViewGroup).removeView(it.root)
+        }
+        binding.viewPager.offscreenPageLimit = pages.size
+        binding.viewPager.adapter = object : PagerAdapter() {
             override fun getCount(): Int {
                 return pages.size
             }
@@ -161,39 +99,44 @@ class MediaAppTestingActivity : AppCompatActivity() {
             }
 
             override fun instantiateItem(container: ViewGroup, position: Int): Any {
-                return pages[position]
+                container.addView(pages[position].root)
+                return pages[position].root
             }
         }
-        bottomNavigationView.setOnNavigationItemSelectedListener { item: MenuItem ->
-            return@setOnNavigationItemSelectedListener when (item.itemId) {
+        binding.bottomNavigationView.setOnItemSelectedListener { item: MenuItem ->
+            return@setOnItemSelectedListener when (item.itemId) {
                 R.id.info_bottom_nav -> {
-                    viewPager.currentItem = 0
+                    binding.viewPager.currentItem = 0
                     true
                 }
 
                 R.id.test_bottom_nav -> {
-                    viewPager.currentItem = 1
+                    binding.viewPager.currentItem = 1
                     true
                 }
 
                 R.id.test_suite_bottom_nav -> {
-                    viewPager.currentItem = 2
+                    binding.viewPager.currentItem = 2
                     true
                 }
                 else -> false
             }
         }
-        viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+        binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
 
             override fun onPageScrollStateChanged(state: Int) {
             }
 
-            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+            override fun onPageScrolled(
+                position: Int,
+                positionOffset: Float,
+                positionOffsetPixels: Int
+            ) {
 
             }
 
             override fun onPageSelected(position: Int) {
-                bottomNavigationView.menu.getItem(position).isChecked = true
+                binding.bottomNavigationView.menu.getItem(position).isChecked = true
             }
         })
     }
@@ -229,7 +172,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             setupMedia()
             setupToolbar(appDetails.appName, appDetails.icon)
         } else {
-            viewPager.visibility = View.GONE
+            binding.viewPager.visibility = View.GONE
         }
     }
 
@@ -260,7 +203,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         val extras = intent.extras
         val hasAppDetailsExtra = extras?.containsKey(APP_DETAILS_EXTRA) ?: false
         if (hasAppDetailsExtra) {
-            mediaAppDetails = extras.getParcelable(APP_DETAILS_EXTRA)
+            mediaAppDetails = extras?.getParcelable(APP_DETAILS_EXTRA)
         }
 
         // Update MediaAppDetails object if needed (the if clause after the || handles the case when
@@ -299,8 +242,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
     }
 
     private fun showError(message: String) {
-        connectionErrorText.text = message
-        connectionErrorText.visibility = View.VISIBLE
+        binding.mediaControllerInfoPage.connectionErrorText.text = message
+        binding.mediaControllerInfoPage.connectionErrorText.visibility = View.VISIBLE
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -308,11 +251,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (item == null) {
-            return true
-        }
-
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.logs_toggle) {
             if (printLogsFormatted) {
                 item.icon = ContextCompat.getDrawable(this, R.drawable.ic_parsable_logs_24dp)
@@ -358,7 +297,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 mediaBrowser = MediaBrowserCompat(this, appDetails.componentName,
                         object : MediaBrowserCompat.ConnectionCallback() {
                             override fun onConnected() {
-                                connectionErrorText.visibility = View.GONE
+                                binding.mediaControllerInfoPage.connectionErrorText.visibility =
+                                    View.GONE
                                 setupMediaController(true)
                             }
 
@@ -393,14 +333,18 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 if (browser != null) {
                     token = browser.sessionToken
                 } else {
-                    Log.e(TAG, getString(
+                    Log.e(
+                        TAG, getString(
                             R.string.setup_media_controller_error_msg,
                             "MediaBrowser"
-                    ))
-                    showError(getString(
+                        )
+                    )
+                    showError(
+                        getString(
                             R.string.setup_media_controller_error_hint,
                             "MediaBrowser"
-                    ))
+                        )
+                    )
                     return
                 }
             } else {
@@ -408,14 +352,18 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 if (appDetails != null) {
                     token = appDetails.sessionToken
                 } else {
-                    Log.e(TAG, getString(
+                    Log.e(
+                        TAG, getString(
                             R.string.setup_media_controller_error_msg,
                             "MediaAppDetails"
-                    ))
-                    showError(getString(
+                        )
+                    )
+                    showError(
+                        getString(
                             R.string.setup_media_controller_error_hint,
                             "MediaAppDetails"
-                    ))
+                        )
+                    )
                     return
                 }
             }
@@ -431,7 +379,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
             setupTests()
 
             // Ensure views are visible
-            viewPager.visibility = View.VISIBLE
+            binding.viewPager.visibility = View.VISIBLE
 
             Log.d(TAG, getString(R.string.media_controller_created))
         } catch (remoteException: RemoteException) {
@@ -444,43 +392,43 @@ class MediaAppTestingActivity : AppCompatActivity() {
     inner class TestSuiteAdapter(
             private val testSuites: Array<MediaAppTestSuite>
     ) : RecyclerView.Adapter<TestSuiteAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+        inner class ViewHolder(val cardView: MediaTestOptionBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
         ): TestSuiteAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_test_option, parent, false) as CardView
+            val cardView = MediaTestOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
-
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val testSuite = testSuites[position]
-            holder.cardView.card_header.text = testSuite.testSuiteName
-            holder.cardView.card_text.text = testSuite.testSuiteDescription
-            holder.cardView.card_button.text = resources.getText(R.string.run_suite_button)
+            holder.cardView.cardHeader.text = testSuite.testSuiteName
+            holder.cardView.cardText.text = testSuite.testSuiteDescription
+            holder.cardView.cardButton.text = resources.getText(R.string.run_suite_button)
 
             val configurableTests = testSuite.getConfigurableTests()
-            if (!configurableTests.isEmpty()) {
-                holder.cardView.configure_test_suite_button.visibility = View.VISIBLE
-                holder.cardView.configure_test_suite_button.setOnClickListener {
+            if (configurableTests.isNotEmpty()) {
+                holder.cardView.configureTestSuiteButton.visibility = View.VISIBLE
+                holder.cardView.configureTestSuiteButton.setOnClickListener {
                     val configAdapter = ConfigurationAdapter(configurableTests)
                     val sharedPreferences = getSharedPreferences(SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
                     Dialog(this@MediaAppTestingActivity).apply {
                         // Init dialog
                         requestWindowFeature(Window.FEATURE_NO_TITLE)
-                        setContentView(R.layout.test_suite_configure_dialog)
-                        title.text = getString(R.string.configure_dialog_title, testSuite.testSuiteName)
-                        subtitle.text = testSuite.testSuiteDescription
-                        test_to_configure_list.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
-                        test_to_configure_list.layoutParams.height = getScreenHeightPx(this@MediaAppTestingActivity) / 2
-                        test_to_configure_list.setHasFixedSize(true)
-                        test_to_configure_list.adapter = configAdapter
+                        val dialog =
+                            TestSuiteConfigureDialogBinding.inflate(layoutInflater)
+                        setContentView(dialog.root)
+                        dialog.title.text = getString(R.string.configure_dialog_title, testSuite.testSuiteName)
+                        dialog.subtitle.text = testSuite.testSuiteDescription
+                        dialog.testToConfigureList.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
+                        dialog.testToConfigureList.layoutParams.height = getScreenHeightPx(this@MediaAppTestingActivity) / 2
+                        dialog.testToConfigureList.setHasFixedSize(true)
+                        dialog.testToConfigureList.adapter = configAdapter
 
                         // Reset config button clicked
-                        reset_results_button.setOnClickListener {
+                        dialog.resetResultsButton.setOnClickListener {
                             sharedPreferences.edit().apply {
                                 for (i in configurableTests.indices) {
                                     putString(configurableTests[i].name, NO_CONFIG)
@@ -491,15 +439,15 @@ class MediaAppTestingActivity : AppCompatActivity() {
                         }
 
                         // Done button pressed
-                        done_button.setOnClickListener {
+                        dialog.doneButton.setOnClickListener {
                             dismiss()
                         }
                     }.show()
                 }
             }
 
-            holder.cardView.card_button.setOnClickListener {
-                var numIter = test_suite_num_iter.text.toString().toIntOrNull()
+            holder.cardView.cardButton.setOnClickListener {
+                val numIter = this@MediaAppTestingActivity.binding.mediaControllerTestSuitePage.testSuiteNumIter.text.toString().toIntOrNull()
                 if (numIter == null) {
                     Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
 
@@ -529,29 +477,27 @@ class MediaAppTestingActivity : AppCompatActivity() {
     inner class ConfigurationAdapter(
             private val tests: ArrayList<TestOptionDetails>
     ) : RecyclerView.Adapter<ConfigurationAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+        inner class ViewHolder(val cardView: ConfigItemBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
         ): ConfigurationAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.config_item, parent, false) as CardView
-
+            val cardView = ConfigItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val test = tests[position]
-            holder.cardView.test_name_config.text = test.name
+            holder.cardView.testNameConfig.text = test.name
             val sharedPreferences = getSharedPreferences(SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
-            holder.cardView.test_query_config.addTextChangedListener(object : TextWatcher {
+            holder.cardView.testQueryConfig.addTextChangedListener(object : TextWatcher {
 
                 override fun afterTextChanged(s: Editable) {
-                    val newText = holder.cardView.test_query_config.text.toString()
+                    val newText = holder.cardView.testQueryConfig.text.toString()
                     if (newText != "") {
                         sharedPreferences.edit().apply {
-                            putString(test.name, holder.cardView.test_query_config.text.toString())
+                            putString(test.name, holder.cardView.testQueryConfig.text.toString())
                         }.apply()
                     }
                 }
@@ -564,10 +510,10 @@ class MediaAppTestingActivity : AppCompatActivity() {
             })
 
             val previousConfig = sharedPreferences.getString(test.name, NO_CONFIG)
-            holder.cardView.test_query_config.setText((previousConfig))
+            holder.cardView.testQueryConfig.setText((previousConfig))
             if (previousConfig == NO_CONFIG) {
-                holder.cardView.test_query_config.setText("")
-                holder.cardView.test_query_config.hint = "Query"
+                holder.cardView.testQueryConfig.setText("")
+                holder.cardView.testQueryConfig.hint = "Query"
                 return
             }
         }
@@ -836,7 +782,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 false
         ) { _, callback, testId ->
             runCustomActionIconTypeTest(
-                    testId, applicationContext, controller, mediaAppDetails, callback)
+                    testId, applicationContext, controller, mediaAppDetails!!, callback)
         }
 
         val supportsSearchTest = TestOptionDetails(
@@ -953,8 +899,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
         )
 
         var testList = basicTests
-        var testSuites: ArrayList<MediaAppTestSuite> = ArrayList()
-        var testSuiteResults = test_suite_results_container as RecyclerView
+        val testSuites: ArrayList<MediaAppTestSuite> = ArrayList()
+        val testSuiteResults = this.binding.mediaControllerTestSuitePage.testSuiteResultsContainer
 
         val basicTestSuite = MediaAppTestSuite("Basic Tests", "Basic media tests.", basicTests, testSuiteResults, this)
         testSuites.add(basicTestSuite)
@@ -965,7 +911,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
         if (mediaAppDetails?.supportsAutomotive == true) {
             testList += automotiveTests
-            val automotiveTestSuite = MediaAppTestSuite("Automotive Tests", "Includdes support for Android automotive tests.", testList, testSuiteResults, this)
+            val automotiveTestSuite = MediaAppTestSuite("Automotive Tests", "Includes support for Android automotive tests.", testList, testSuiteResults, this)
             testSuites.add(automotiveTestSuite)
         }
         val iDToPositionMap = hashMapOf<Int, Int>()
@@ -975,14 +921,14 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         val testOptionAdapter = TestOptionAdapter(testList, iDToPositionMap)
 
-        val testOptionsList = test_options_list
+        val testOptionsList = this.binding.mediaControllerTestPage.testOptionsList
         testOptionsList.layoutManager = LinearLayoutManager(this)
         testOptionsList.setHasFixedSize(true)
         testOptionsList.adapter = testOptionAdapter
 
         // Set up test suites display.
         val testSuiteAdapter = TestSuiteAdapter(testSuites.toTypedArray())
-        val testSuiteList = test_suite_options_list
+        val testSuiteList = this.binding.mediaControllerTestSuitePage.testSuiteOptionsList
         testSuiteList.layoutManager = LinearLayoutManager(this)
         testSuiteList.setHasFixedSize(true)
         testSuiteList.adapter = testSuiteAdapter
@@ -993,14 +939,13 @@ class MediaAppTestingActivity : AppCompatActivity() {
             private val tests: Array<TestOptionDetails>,
             private val iDToPositionMap: HashMap<Int, Int>
     ) : RecyclerView.Adapter<TestOptionAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+        inner class ViewHolder(val cardView: MediaTestOptionBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
         ): TestOptionAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_test_option, parent, false) as CardView
+            val cardView = MediaTestOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
@@ -1011,9 +956,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.cardView.card_header.text = tests[position].name
-            holder.cardView.card_text.text = tests[position].desc
-            holder.cardView.setCardBackgroundColor(
+            holder.cardView.cardHeader.text = tests[position].name
+            holder.cardView.cardText.text = tests[position].desc
+            holder.cardView.cardView.setCardBackgroundColor(
                     when (tests[position].testResult) {
                         TestResult.FAIL -> ResourcesCompat
                                 .getColor(resources, R.color.test_result_fail, null)
@@ -1027,17 +972,17 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     }
             )
             if (tests[position].testResult != TestResult.NONE) {
-                resultsContainer.removeAllViews()
+                binding.mediaControllerTestPage.testResultsContainer.removeAllViews()
                 for (line in tests[position].testLogs) {
-                    val tv_newLine = TextView(applicationContext)
-                    tv_newLine.text = line
-                    tv_newLine.setTextAppearance(applicationContext, R.style.SubText)
-                    resultsContainer.addView(tv_newLine)
+                    val tvNewLine = TextView(applicationContext)
+                    tvNewLine.text = line
+                    TextViewCompat.setTextAppearance(tvNewLine, R.style.SubText)
+                    binding.mediaControllerTestPage.testResultsContainer.addView(tvNewLine)
                 }
             }
 
-            holder.cardView.card_button.setOnClickListener {
-                tests[position].runTest(testsQuery.text.toString(), callback, tests[position].id)
+            holder.cardView.cardButton.setOnClickListener {
+                tests[position].runTest(binding.mediaControllerTestPage.testsQuery.text.toString(), callback, tests[position].id)
             }
         }
 
@@ -1048,42 +993,41 @@ class MediaAppTestingActivity : AppCompatActivity() {
     class QueueItemAdapter(
             private val items: MutableList<MediaSessionCompat.QueueItem>
     ) : RecyclerView.Adapter<QueueItemAdapter.ViewHolder>() {
-        class ViewHolder(val linearLayout: LinearLayout) : RecyclerView.ViewHolder(linearLayout)
+        class ViewHolder(val linearLayout: MediaQueueItemBinding) : RecyclerView.ViewHolder(linearLayout.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
-        ): QueueItemAdapter.ViewHolder {
-            val linearLayout = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_queue_item, parent, false) as LinearLayout
+        ): ViewHolder {
+            val linearLayout = MediaQueueItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(linearLayout)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.linearLayout.queue_id.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.queueId.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_id,
                             items[position].queueId
                     )
 
             val description = items[position].description
-            holder.linearLayout.description_title.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.descriptionTitle.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_title,
                             description.title
                     )
-            holder.linearLayout.description_subtitle.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.descriptionSubtitle.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_subtitle,
                             description.subtitle
                     )
-            holder.linearLayout.description_id.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.descriptionId.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_media_id,
                             description.mediaId
                     )
-            holder.linearLayout.description_uri.text =
-                    holder.linearLayout.context.getString(
+            holder.linearLayout.descriptionUri.text =
+                    holder.linearLayout.root.context.getString(
                             R.string.queue_item_media_uri,
                             description.mediaUri.toString()
                     )
@@ -1095,7 +1039,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
     private fun populateQueue(_queue: MutableList<MediaSessionCompat.QueueItem>?) {
         val queue = _queue ?: emptyList<MediaSessionCompat.QueueItem>().toMutableList()
         val queueItemAdapter = QueueItemAdapter(queue)
-        val queueList = queue_item_list
+        val queueList = this.binding.mediaControllerInfoPage.queueItemList
         queueList.layoutManager = object : LinearLayoutManager(this) {
             override fun canScrollVertically(): Boolean = false
         }
@@ -1126,108 +1070,135 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                     val s = formatPlaybackState(state)
                     if (printLogsFormatted) {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_formatted,
                                 getString(R.string.tests_info_state),
                                 s
-                        ))
+                            )
+                        )
                     } else {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_parsable,
                                 getString(R.string.tests_info_state),
                                 formatPlaybackStateParsable(state)
-                        ))
+                            )
+                        )
                     }
-                    playbackStateText.text = s
+                    binding.mediaControllerInfoPage.playbackStateText.text = s
                 }
 
                 override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
                     val s = formatMetadata(metadata)
                     if (printLogsFormatted) {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_formatted,
                                 getString(R.string.tests_info_metadata),
                                 s
-                        ))
+                            )
+                        )
                     } else {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_parsable,
                                 getString(R.string.tests_info_metadata),
                                 formatMetadataParsable(metadata)
-                        ))
+                            )
+                        )
                     }
-                    metadataText.text = s
+                    binding.mediaControllerInfoPage.metadataText.text = s
                 }
 
                 override fun onRepeatModeChanged(repeatMode: Int) {
                     val s = repeatModeToName(repeatMode)
                     if (printLogsFormatted) {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_formatted,
                                 getString(R.string.tests_info_repeat),
                                 s
-                        ))
+                            )
+                        )
                     } else {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_parsable,
                                 getString(R.string.tests_info_repeat),
                                 repeatMode.toString()
-                        ))
+                            )
+                        )
                     }
-                    repeatModeText.text = s
+                    binding.mediaControllerInfoPage.repeatModeText.text = s
                 }
 
                 override fun onShuffleModeChanged(shuffleMode: Int) {
                     val s = shuffleModeToName(shuffleMode)
                     if (printLogsFormatted) {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_formatted,
                                 getString(R.string.tests_info_shuffle),
                                 s
-                        ))
+                            )
+                        )
                     } else {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_parsable,
                                 getString(R.string.tests_info_shuffle),
                                 shuffleMode.toString()
-                        ))
+                            )
+                        )
                     }
-                    shuffleModeText.text = s
+                    binding.mediaControllerInfoPage.shuffleModeText.text = s
                 }
 
                 override fun onQueueTitleChanged(title: CharSequence?) {
                     if (printLogsFormatted) {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_formatted,
                                 getString(R.string.tests_info_queue_title),
                                 title
-                        ))
+                            )
+                        )
                     } else {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_parsable,
                                 getString(R.string.tests_info_queue_title),
                                 title
-                        ))
+                            )
+                        )
                     }
-                    queueTitleText.text = title
+                    binding.mediaControllerInfoPage.queueTitleText.text = title
                 }
 
                 override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
                     if (printLogsFormatted) {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_formatted,
                                 getString(R.string.tests_info_queue),
                                 queueToString(queue)
-                        ))
+                            )
+                        )
                     } else {
-                        Log.i(TAG, getString(
+                        Log.i(
+                            TAG, getString(
                                 R.string.logs_controller_info_parsable,
                                 getString(R.string.tests_info_queue),
                                 queueToStringParsable(queue)
-                        ))
+                            )
+                        )
                     }
-                    queueText.text = getString(R.string.queue_size, queue?.size ?: 0)
-                    queueText.setTextAppearance(applicationContext, R.style.SubText)
+                    binding.mediaControllerInfoPage.queueText.text =
+                        getString(R.string.queue_size, queue?.size ?: 0)
+                    TextViewCompat.setTextAppearance(binding.mediaControllerInfoPage.queueText,
+                        R.style.SubText
+                    )
                     populateQueue(queue)
                 }
             }
@@ -1274,22 +1245,12 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         // Gets the current screen height in pixels
         fun getScreenHeightPx(context: Context): Int {
-            val displayMetrics = DisplayMetrics()
-            val windowManager = getSystemService(context, WindowManager::class.java)
-                    ?: throw IllegalStateException("Could not get WindowManager")
-            val display = windowManager.defaultDisplay
-            display.getMetrics(displayMetrics)
-            return displayMetrics.heightPixels
+            return context.resources.displayMetrics.heightPixels
         }
 
         // Gets the current screen width in pixels
         fun getScreenWidthPx(context: Context): Int {
-            val displayMetrics = DisplayMetrics()
-            val windowManager = getSystemService(context, WindowManager::class.java)
-                    ?: throw IllegalStateException("Could not get WindowManager")
-            val display = windowManager.defaultDisplay
-            display.getMetrics(displayMetrics)
-            return displayMetrics.widthPixels
+            return context.resources.displayMetrics.widthPixels
         }
     }
 }

@@ -33,15 +33,15 @@ import android.widget.TextView
 import android.widget.ProgressBar
 import android.widget.Button
 import android.widget.ScrollView
-import androidx.cardview.widget.CardView
+import androidx.annotation.NonNull
 import androidx.core.content.ContextCompat
+import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.android.synthetic.main.media_test_option.view.card_header
-import kotlinx.android.synthetic.main.media_test_option.view.card_text
-import kotlinx.android.synthetic.main.media_test_suite_result.view.tests_passing
-import kotlinx.android.synthetic.main.media_test_suite_result.view.tests_passing_header
-import kotlinx.android.synthetic.main.media_test_suite_result.view.total_tests
+import com.example.android.mediacontroller.databinding.ActivityMediaAppTestingBinding
+import com.example.android.mediacontroller.databinding.MediaTestSuiteResultBinding
+import com.example.android.mediacontroller.databinding.RunSuiteIterDialogBinding
+import com.example.android.mediacontroller.databinding.TestSuiteResultsDialogBinding
 
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
@@ -153,7 +153,8 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
         dialog.apply {
             setCancelable(false)
             requestWindowFeature(Window.FEATURE_NO_TITLE)
-            setContentView(R.layout.run_suite_iter_dialog)
+            var binding = RunSuiteIterDialogBinding.inflate(layoutInflater)
+            setContentView(binding.root)
             progressBar = findViewById<ProgressBar>(R.id.suite_iter_progress_bar).apply {
                 max = numIter * testList.size
                 progress = -1
@@ -162,7 +163,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                 interrupt()
                 dismiss()
             }
-            window.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            window!!.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         }.show()
         runSuiteImpl(dialog, progressBar, numIter)
     }
@@ -189,7 +190,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                         Thread.sleep(SLEEP_TIME)
 
                         // In the event that a query is not specified, don't run the test.
-                        var query = sharedPreferences.getString(test.name, MediaAppTestingActivity.NO_CONFIG)
+                        var query = sharedPreferences.getString(test.name, MediaAppTestingActivity.NO_CONFIG)!!
                         if (test.queryRequired && query == MediaAppTestingActivity.NO_CONFIG) {
                             test.testResult = TestResult.CONFIG_REQUIRED
                             val index = positionToIDMap[test.id]
@@ -279,7 +280,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
         for (test in testList) {
             iDToResultsMap[test.id] = TestCaseResults()
         }
-        resultsAdapter = ResultsAdapter(arrayOf<TestOptionDetails>())
+        resultsAdapter = ResultsAdapter(arrayOf())
         testSuiteResultsLayout.removeAllViews()
         displayResults()
     }
@@ -297,7 +298,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
     /**
      * Class to store all of a tests resulting info.
      */
-    inner class TestCaseResults() {
+    inner class TestCaseResults {
         var totalRuns = 0
         var numPassing = 0
         var passingLogs = arrayListOf<ArrayList<String>>()
@@ -310,34 +311,33 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
     inner class ResultsAdapter(
             private val tests: Array<TestOptionDetails>
     ) : RecyclerView.Adapter<ResultsAdapter.ViewHolder>() {
-        inner class ViewHolder(val cardView: CardView) : RecyclerView.ViewHolder(cardView)
+        inner class ViewHolder(val cardView: MediaTestSuiteResultBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
                 parent: ViewGroup,
                 viewType: Int
         ): ResultsAdapter.ViewHolder {
-            val cardView = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.media_test_suite_result, parent, false) as CardView
+            val cardView = MediaTestSuiteResultBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val testID = positionToIDMap[position]!!
             val testCaseResults = iDToResultsMap[testID]!!
-            holder.cardView.card_header.text = tests[position].name
-            holder.cardView.card_text.text = tests[position].desc
-            holder.cardView.total_tests.text = testCaseResults.totalRuns.toString()
-            holder.cardView.tests_passing.text = testCaseResults.numPassing.toString()
+            holder.cardView.cardHeader.text = tests[position].name
+            holder.cardView.cardText.text = tests[position].desc
+            holder.cardView.totalTests.text = testCaseResults.totalRuns.toString()
+            holder.cardView.testsPassing.text = testCaseResults.numPassing.toString()
             if(testCaseResults.totalRuns == 0){
-                holder.cardView.setOnClickListener{}
-                holder.cardView.tests_passing_header.text = context.getString(R.string.test_suite_config_needed_header)
-                holder.cardView.setCardBackgroundColor(Color.GRAY)
+                holder.cardView.cardView.setOnClickListener{}
+                holder.cardView.testsPassingHeader.text = context.getString(R.string.test_suite_config_needed_header)
+                holder.cardView.cardView.setCardBackgroundColor(Color.GRAY)
                 return
             }
             val passPercentage = testCaseResults.numPassing.toFloat() / testCaseResults.totalRuns.toFloat()
-            holder.cardView.setCardBackgroundColor((argbEvaluator.evaluate(passPercentage, FAILING_COLOR, PASSING_COLOR )) as Int)
+            holder.cardView.cardView.setCardBackgroundColor((argbEvaluator.evaluate(passPercentage, FAILING_COLOR, PASSING_COLOR )) as Int)
             val onResultsClickedListener = OnResultsClickedListener(testID, tests[position].name, tests[position].desc, this@MediaAppTestSuite.context)
-            holder.cardView.setOnClickListener(onResultsClickedListener)
+            holder.cardView.cardView.setOnClickListener(onResultsClickedListener)
         }
 
         override fun getItemCount() = tests.size
@@ -352,7 +352,9 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
         override fun onClick(p0: View?) {
             var dialog = Dialog(context).apply {
                 requestWindowFeature(Window.FEATURE_NO_TITLE)
-                setContentView(R.layout.test_suite_results_dialog)
+
+                val binding = TestSuiteResultsDialogBinding.inflate(layoutInflater)
+                setContentView(binding.root)
                 findViewById<TextView>(R.id.results_title).text = name
                 findViewById<TextView>(R.id.results_subtitle).text = description
 
@@ -363,15 +365,15 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                     for (logsList in iDToResultsMap[testId]!!.passingLogs) {
                         passing_results_log.addView(TextView(context).apply {
                             text = resources.getString(R.string.test_iter_divider)
-                            setTextAppearance(context, R.style.SubHeader)
+                            TextViewCompat.setTextAppearance(this, R.style.SubHeader)
                             gravity = Gravity.CENTER
                             setTextColor(PASSING_COLOR)
                         })
                         for (line in logsList) {
-                            var logLine = TextView(context).apply {
+                            val logLine = TextView(context).apply {
                                 text = line
 
-                                setTextAppearance(context, R.style.SubText)
+                                TextViewCompat.setTextAppearance(this, R.style.SubText)
                             }
                             passing_results_log.addView(logLine)
                         }
@@ -387,14 +389,14 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                     for (logsList in iDToResultsMap[testId]!!.failingLogs) {
                         failing_results_log.addView(TextView(context).apply {
                             text = resources.getString(R.string.test_iter_divider)
-                            setTextAppearance(context, R.style.SubHeader)
+                            TextViewCompat.setTextAppearance(this, R.style.SubHeader)
                             gravity = Gravity.CENTER
                             setTextColor(FAILING_COLOR)
                         })
                         for (line in logsList) {
-                            var logLine = TextView(context).apply {
+                            val logLine = TextView(context).apply {
                                 text = line
-                                setTextAppearance(context, R.style.SubText)
+                                TextViewCompat.setTextAppearance(this, R.style.SubText)
                             }
                             failing_results_log.addView(logLine)
                         }
@@ -404,7 +406,7 @@ class MediaAppTestSuite(val testSuiteName: String, val testSuiteDescription: Str
                     findViewById<TextView>(R.id.failing_logs_header).visibility = View.GONE
                 }
                 findViewById<ScrollView>(R.id.results_scroll_view).layoutParams.height = (MediaAppTestingActivity.getScreenHeightPx(context) / 2).toInt()
-                findViewById<Button>(R.id.close_results_button).setOnClickListener(View.OnClickListener { dismiss() })
+                findViewById<Button>(R.id.close_results_button).setOnClickListener { dismiss() }
             }.show()
         }
     }
