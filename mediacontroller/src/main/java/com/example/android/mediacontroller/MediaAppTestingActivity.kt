@@ -15,27 +15,25 @@
  */
 package com.example.android.mediacontroller
 
+import android.animation.ArgbEvaluator
 import android.app.Activity
 import android.app.Dialog
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
-import android.os.Build
 import android.os.Bundle
-import android.os.RemoteException
-import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaControllerCompat
+import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.*
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
@@ -45,19 +43,33 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
+
 import com.example.android.mediacontroller.databinding.*
 
 class MediaAppTestingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMediaAppTestingBinding
+    private var mediaAppTestService: MediaAppTestService? = null
+    private var isBinding = false
+    private var resultsAdapter: ResultsAdapter? = null
 
-    private var mediaAppDetails: MediaAppDetails? = null
-    private var mediaController: MediaControllerCompat? = null
-    private var mediaBrowser: MediaBrowserCompat? = null
+    /**
+     * Map relating tests positioning in the adapter to the tests ID.
+     */
+    private var positionToIDMap = hashMapOf<Int, Int>()
 
-    private var printLogsFormatted: Boolean = true
+    /**
+     * Map relating the tests ID to the result struct.
+     */
+    private var iDToResultsMap = hashMapOf<Int, MediaAppTestSuite.TestCaseResults>()
+
+    /**
+     * Object that is used to generate colors for partly passing tests.
+     */
+    private var argbEvaluator = ArgbEvaluator()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         binding = ActivityMediaAppTestingBinding.inflate(layoutInflater)
         setContentView(binding.root)
         val toolbar: Toolbar = binding.toolbar
@@ -67,16 +79,6 @@ class MediaAppTestingActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { finish() }
 
         Test.androidResources = resources
-
-        handleIntent(intent)
-
-        val appDetails = mediaAppDetails
-        if (appDetails != null) {
-            setupMedia()
-            setupToolbar(appDetails.appName, appDetails.icon)
-        } else {
-            binding.viewPager.visibility = View.GONE
-        }
 
         // Set up page navigation
         val pages = arrayOf(
@@ -139,102 +141,149 @@ class MediaAppTestingActivity : AppCompatActivity() {
                 binding.bottomNavigationView.menu.getItem(position).isChecked = true
             }
         })
+
+        val intent = Intent(this, MediaAppTestService::class.java)
+        bindService(intent, connectionResult, Context.BIND_AUTO_CREATE)
     }
 
-
     override fun onDestroy() {
-        mediaController?.run {
-            unregisterCallback(controllerCallback)
-            currentTest?.endTest()
-        }
-        mediaController = null
-
-        mediaBrowser?.let {
-            if (it.isConnected) {
-                it.disconnect()
-            }
-        }
-        mediaBrowser = null
-
         super.onDestroy()
+
+        if (isBinding) {
+            unbindService(connectionResult)
+            isBinding = false
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        val originalDetails = mediaAppDetails
 
-        handleIntent(intent)
+        mediaAppTestService?.let {
+            val originalDetails = it.getMediaAppDetails()
+            it.handleIntent(intent)
 
-        // Redo setup for mediaBrowser and mediaController if mediaAppDetails is updated
-        val appDetails = mediaAppDetails
-        if (appDetails != null && appDetails != originalDetails) {
-            setupMedia()
-            setupToolbar(appDetails.appName, appDetails.icon)
-        } else {
-            binding.viewPager.visibility = View.GONE
-        }
-    }
-
-    /**
-     * This is the single point where the MediaBrowser and MediaController are setup. If there is
-     * previously a controller/browser, they are disconnected/unsubscribed.
-     */
-    private fun handleIntent(intent: Intent?) {
-        if (intent == null) {
-            return
-        }
-
-        mediaBrowser?.let {
-            if (it.isConnected) {
-                it.disconnect()
+            // Redo setup for mediaBrowser and mediaController if mediaAppDetails is updated
+            val mediaAppDetails = it.getMediaAppDetails()
+            if (mediaAppDetails != null && mediaAppDetails != originalDetails) {
+                if (mediaAppDetails.componentName != null || mediaAppDetails.sessionToken != null) {
+                    mediaAppTestService!!.setupMedia(mediaAppDetails)
+                } else {
+                    showError(getString(R.string.connection_failed_hint_setup, mediaAppDetails.appName))
+                }
+                setupToolbar(mediaAppDetails.appName, mediaAppDetails.icon)
+                binding.viewPager.visibility = View.VISIBLE
+            } else {
+                binding.viewPager.visibility = View.GONE
             }
         }
+    }
 
-        val data = intent.data
-        val appPackageName: String? = when {
-            data != null -> data.host
-            intent.hasExtra(PACKAGE_NAME_EXTRA) -> intent.getStringExtra(PACKAGE_NAME_EXTRA)
-            else -> null
+    private var connectionResult = object : ServiceConnection {
+        override fun onServiceDisconnected(name: ComponentName?) {
+            isBinding = false
         }
 
-        // Get new MediaAppDetails object from intent extras if present (otherwise keep current
-        // MediaAppDetails object)
-        val extras = intent.extras
-        val hasAppDetailsExtra = extras?.containsKey(APP_DETAILS_EXTRA) ?: false
-        if (hasAppDetailsExtra) {
-            mediaAppDetails = extras?.getParcelable(APP_DETAILS_EXTRA)
-        }
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            isBinding = true
+            val binder = service as MediaAppTestService.TestServiceBinder
+            mediaAppTestService = binder.getService()
+            mediaAppTestService!!.registerCallback(callback)
+            mediaAppTestService!!.handleIntent(intent)
 
-        // Update MediaAppDetails object if needed (the if clause after the || handles the case when
-        // the object has already been set up before, but the Intent contains details for a
-        // different app)
-        val appDetails = mediaAppDetails
-        if ((appDetails == null && appPackageName != null)
-                || (appDetails != null && appPackageName != appDetails.packageName)) {
-            val serviceInfo = MediaAppDetails.findServiceInfo(appPackageName, packageManager)
-            if (serviceInfo != null) {
-                mediaAppDetails = MediaAppDetails(serviceInfo, packageManager, resources)
+            val mediaAppDetails = mediaAppTestService!!.getMediaAppDetails()
+            if (mediaAppDetails != null) {
+                when {
+                    mediaAppDetails.componentName != null || mediaAppDetails.sessionToken != null -> {
+                        mediaAppTestService!!.setupMedia(mediaAppDetails)
+                    }
+                    else -> showError(getString(R.string.connection_failed_hint_setup, mediaAppDetails.appName))
+                }
+                setupToolbar(mediaAppDetails.appName, mediaAppDetails.icon)
+                binding.viewPager.visibility = View.VISIBLE
+            } else {
+                binding.viewPager.visibility = View.GONE
             }
-        } else {
-            Toast.makeText(
-                    this,
-                    getString(R.string.media_app_details_update_failed),
-                    Toast.LENGTH_SHORT
-            ).show()
         }
     }
 
-    override fun onSaveInstanceState(out: Bundle) {
-        super.onSaveInstanceState(out)
+    private val callback = object : MediaAppTestService.ICallback {
+        override fun onConnected() {
+            binding.mediaControllerInfoPage.connectionErrorText.visibility = View.GONE
+        }
 
-        out.putParcelable(STATE_APP_DETAILS_KEY, mediaAppDetails)
+        override fun onConnectionSuspended(appName: String) {
+            showError(getString(
+                R.string.connection_lost_msg,
+                appName
+            ))
+        }
+
+        override fun onConnectionFailed(appName: String, componentName: ComponentName) {
+            showError(getString(
+                R.string.connection_failed_hint_reject,
+                appName,
+                componentName.flattenToShortString()
+            ))
+        }
+
+        override fun onSetupMediaControllerError(message: String) {
+            showError(message)
+        }
+
+        override fun onTestsCreated(testList: List<TestOptionDetails>, testSuites: List<MediaAppTestSuite>) {
+            val iDToPositionMap = hashMapOf<Int, Int>()
+            for (i in testList.indices) {
+                iDToPositionMap[testList[i].id] = i
+            }
+            val testOptionAdapter = TestOptionAdapter(testList, iDToPositionMap)
+            val testOptionsList = binding.mediaControllerTestPage.testOptionsList
+            testOptionsList.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
+            testOptionsList.setHasFixedSize(true)
+            testOptionsList.adapter = testOptionAdapter
+
+            val testSuiteAdapter = TestSuiteAdapter(testSuites.toTypedArray())
+            val testSuiteList = binding.mediaControllerTestSuitePage.testSuiteOptionsList
+            testSuiteList.layoutManager = LinearLayoutManager(this@MediaAppTestingActivity)
+            testSuiteList.setHasFixedSize(true)
+            testSuiteList.adapter = testSuiteAdapter
+        }
+
+        override fun onControllerPlaybackStateChanged(playbackState: String) {
+            binding.mediaControllerInfoPage.playbackStateText.text = playbackState
+        }
+
+        override fun onControllerMetadataChanged(metadata: String) {
+            binding.mediaControllerInfoPage.metadataText.text = metadata
+        }
+
+        override fun onControllerRepeatModeChanged(repeatMode: String) {
+            binding.mediaControllerInfoPage.repeatModeText.text = repeatMode
+        }
+
+        override fun onControllerShuffleModeChanged(shuffleMode: String) {
+            binding.mediaControllerInfoPage.shuffleModeText.text = shuffleMode
+        }
+
+        override fun onControllerQueueTitleChanged(title: CharSequence?) {
+            binding.mediaControllerInfoPage.queueTitleText.text = title
+        }
+
+        override fun onControllerQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
+            binding.mediaControllerInfoPage.queueText.text = getString(R.string.queue_size, queue?.size ?: 0)
+            binding.mediaControllerInfoPage.queueText.setTextAppearance(applicationContext, R.style.SubText)
+            populateQueue(queue)
+        }
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-
-        mediaAppDetails = savedInstanceState.getParcelable(STATE_APP_DETAILS_KEY)
+    private fun populateQueue(_queue: MutableList<MediaSessionCompat.QueueItem>?) {
+        val queue = _queue ?: emptyList<MediaSessionCompat.QueueItem>().toMutableList()
+        val queueItemAdapter = QueueItemAdapter(queue)
+        val queueList = binding.mediaControllerInfoPage.queueItemList
+        queueList.layoutManager = object : LinearLayoutManager(this) {
+            override fun canScrollVertically(): Boolean = false
+        }
+        queueList.adapter = queueItemAdapter
     }
 
     private fun showToast(message: String) {
@@ -252,23 +301,29 @@ class MediaAppTestingActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.logs_toggle) {
-            if (printLogsFormatted) {
-                item.icon = ContextCompat.getDrawable(this, R.drawable.ic_parsable_logs_24dp)
-                Log.i(TAG, getString(R.string.logs_activate_parsable))
-                showToast(getString(R.string.logs_activate_parsable))
-                printLogsFormatted = false
-            } else {
-                item.icon = ContextCompat.getDrawable(this, R.drawable.ic_formatted_logs_24dp)
-                Log.i(TAG, getString(R.string.logs_activate_formatted))
-                showToast(getString(R.string.logs_activate_formatted))
-                printLogsFormatted = true
+
+        mediaAppTestService?.let {
+            if (item.itemId == R.id.logs_toggle) {
+                if (mediaAppTestService!!.getPrintLogsFormatted()) {
+                    item.icon = ContextCompat.getDrawable(this, R.drawable.ic_parsable_logs_24dp)
+                    Log.i(TAG, getString(R.string.logs_activate_parsable))
+                    showToast(getString(R.string.logs_activate_parsable))
+                    mediaAppTestService!!.setPrintLogsFormatted(false)
+                } else {
+                    item.icon = ContextCompat.getDrawable(this, R.drawable.ic_formatted_logs_24dp)
+                    Log.i(TAG, getString(R.string.logs_activate_formatted))
+                    showToast(getString(R.string.logs_activate_formatted))
+                    mediaAppTestService!!.setPrintLogsFormatted(true)
+                }
+            } else if (item.itemId == R.id.logs_trigger) {
+                mediaAppTestService!!.logCurrentController()
+                Log.i(TAG, getString(R.string.logs_triggered))
+                showToast(getString(R.string.logs_triggered))
             }
-        } else if (item.itemId == R.id.logs_trigger) {
-            logCurrentController()
-            Log.i(TAG, getString(R.string.logs_triggered))
-            showToast(getString(R.string.logs_triggered))
+            return true
         }
+        Log.i(TAG, getString(R.string.tests_service_not_bound))
+        showToast(getString(R.string.tests_service_not_bound))
 
         return true
     }
@@ -282,127 +337,22 @@ class MediaAppTestingActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupMedia() {
-        // setupMedia() is only called when mediaAppDetails is not null, so this should always
-        // skip the if function block
-        val appDetails = mediaAppDetails
-        if (appDetails == null) {
-            Log.e(TAG, getString(R.string.setup_media_error_msg))
-            showError(getString(R.string.connection_failed_msg, "!Unknown App Name!"))
-            return
-        }
-
-        when {
-            appDetails.componentName != null -> {
-                mediaBrowser = MediaBrowserCompat(this, appDetails.componentName,
-                        object : MediaBrowserCompat.ConnectionCallback() {
-                            override fun onConnected() {
-                                binding.mediaControllerInfoPage.connectionErrorText.visibility =
-                                    View.GONE
-                                setupMediaController(true)
-                            }
-
-                            override fun onConnectionSuspended() {
-                                showError(getString(
-                                        R.string.connection_lost_msg,
-                                        appDetails.appName
-                                ))
-                            }
-
-                            override fun onConnectionFailed() {
-                                showError(getString(
-                                        R.string.connection_failed_hint_reject,
-                                        appDetails.appName,
-                                        appDetails.componentName.flattenToShortString()
-                                ))
-                            }
-                        }, null).apply { connect() }
-            }
-            appDetails.sessionToken != null -> setupMediaController(false)
-            else -> showError(getString(R.string.connection_failed_hint_setup, appDetails.appName))
-        }
-    }
-
-    private fun setupMediaController(useTokenFromBrowser: Boolean) {
-        try {
-            val token: MediaSessionCompat.Token
-            // setupMediaController() is only called either immediately after the mediaBrowser is
-            // connected or if mediaAppDetails contains a sessionToken.
-            if (useTokenFromBrowser) {
-                val browser = mediaBrowser
-                if (browser != null) {
-                    token = browser.sessionToken
-                } else {
-                    Log.e(
-                        TAG, getString(
-                            R.string.setup_media_controller_error_msg,
-                            "MediaBrowser"
-                        )
-                    )
-                    showError(
-                        getString(
-                            R.string.setup_media_controller_error_hint,
-                            "MediaBrowser"
-                        )
-                    )
-                    return
-                }
-            } else {
-                val appDetails = mediaAppDetails
-                if (appDetails != null) {
-                    token = appDetails.sessionToken
-                } else {
-                    Log.e(
-                        TAG, getString(
-                            R.string.setup_media_controller_error_msg,
-                            "MediaAppDetails"
-                        )
-                    )
-                    showError(
-                        getString(
-                            R.string.setup_media_controller_error_hint,
-                            "MediaAppDetails"
-                        )
-                    )
-                    return
-                }
-            }
-
-            mediaController = MediaControllerCompat(this, token).also {
-                it.registerCallback(controllerCallback)
-
-                // Force update on connect
-                logCurrentController(it)
-            }
-
-            // Setup tests once media controller is connected
-            setupTests()
-
-            // Ensure views are visible
-            binding.viewPager.visibility = View.VISIBLE
-
-            Log.d(TAG, getString(R.string.media_controller_created))
-        } catch (remoteException: RemoteException) {
-            Log.e(TAG, getString(R.string.media_controller_failed_msg), remoteException)
-            showToast(getString(R.string.media_controller_failed_msg))
-        }
-    }
-
     // Adapter to display test suite details
     inner class TestSuiteAdapter(
-            private val testSuites: Array<MediaAppTestSuite>
+        private val testSuites: Array<MediaAppTestSuite>
     ) : RecyclerView.Adapter<TestSuiteAdapter.ViewHolder>() {
         inner class ViewHolder(val cardView: MediaTestOptionBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
-                parent: ViewGroup,
-                viewType: Int
+            parent: ViewGroup,
+            viewType: Int
         ): TestSuiteAdapter.ViewHolder {
             val cardView = MediaTestOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+
             val testSuite = testSuites[position]
             holder.cardView.cardHeader.text = testSuite.testSuiteName
             holder.cardView.cardText.text = testSuite.testSuiteDescription
@@ -449,39 +399,95 @@ class MediaAppTestingActivity : AppCompatActivity() {
             holder.cardView.cardButton.setOnClickListener {
                 val numIter = this@MediaAppTestingActivity.binding.mediaControllerTestSuitePage.testSuiteNumIter.text.toString().toIntOrNull()
                 if (numIter == null) {
-                    Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
-
+                    Toast.makeText(this@MediaAppTestingActivity,
+                        getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT)
+                        .show()
                 } else if (numIter > MAX_NUM_ITER || numIter < 1) {
-                    Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT).show()
-                } else if (isSuiteRunning()) {
-                    Toast.makeText(this@MediaAppTestingActivity, getText(R.string.test_suite_already_running), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MediaAppTestingActivity,
+                        getText(R.string.test_suite_error_invalid_iter), Toast.LENGTH_SHORT)
+                        .show()
                 } else {
-                    testSuites[position].runSuite(numIter)
+                    if (mediaAppTestService != null) {
+                        if (mediaAppTestService!!.isSuiteRunning()) {
+                            Toast.makeText(this@MediaAppTestingActivity,
+                                getText(R.string.test_suite_already_running),
+                                Toast.LENGTH_SHORT).show()
+                        } else {
+                            val testList: Array<TestOptionDetails> = testSuite.getTestList()
+                            resultsAdapter = ResultsAdapter(testList)
+                            positionToIDMap = hashMapOf<Int, Int>()
+
+                            for (i in testList.indices) {
+                                positionToIDMap[i] = testList[i].id
+                            }
+
+                            var progressBar : ProgressBar
+                            val dialog = Dialog(this@MediaAppTestingActivity)
+                            dialog.apply {
+                                setCancelable(false)
+                                requestWindowFeature(Window.FEATURE_NO_TITLE)
+                                setContentView(R.layout.run_suite_iter_dialog)
+                                progressBar =
+                                    findViewById<ProgressBar>(R.id.suite_iter_progress_bar)
+                                        .apply {
+                                            max = numIter * testList.size
+                                            progress = -1
+                                        }
+                                findViewById<Button>(R.id.quit_suite_iter_button)
+                                    .setOnClickListener{
+                                        testSuite.interrupt()
+                                        dismiss()
+                                    }
+                                window?.setLayout(LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT)
+                            }.show()
+
+                            testSuite.runSuite(
+                                numIter,
+                                convertSharedPrefToConfigMap(testSuite.getTestList()),
+                                onStartTest = {
+                                    progressBar.incrementProgressBy(1)
+                                },
+                                onFinishTestSuite = {
+                                    iDToResultsMap = it
+                                    dialog.dismiss()
+
+                                    binding.mediaControllerTestSuitePage.testSuiteResultsContainer.layoutManager =
+                                        LinearLayoutManager(this@MediaAppTestingActivity)
+                                    binding.mediaControllerTestSuitePage.testSuiteResultsContainer.setHasFixedSize(true)
+                                    binding.mediaControllerTestSuitePage.testSuiteResultsContainer.adapter = resultsAdapter
+                                })
+                        }
+                    } else {
+                        Toast.makeText(this@MediaAppTestingActivity,
+                            getText(R.string.tests_service_not_bound), Toast.LENGTH_SHORT)
+                            .show()
+                    }
                 }
             }
         }
 
         override fun getItemCount() = testSuites.size
+    }
 
-        private fun isSuiteRunning(): Boolean {
-            for (test in testSuites) {
-                if (test.suiteIsRunning()) {
-                    return true
-                }
-            }
-            return false
+    private fun convertSharedPrefToConfigMap(testList: Array<TestOptionDetails>): HashMap<String, String> {
+        val configMap = hashMapOf<String, String>()
+        val sharedPreferences = getSharedPreferences(SHARED_PREF_KEY_SUITE_CONFIG, Context.MODE_PRIVATE)
+        for (test in testList) {
+            configMap[test.name] = sharedPreferences.getString(test.name, NO_CONFIG)?: ""
         }
+        return configMap
     }
 
     // Adapter to display test suite details
     inner class ConfigurationAdapter(
-            private val tests: ArrayList<TestOptionDetails>
+        private val tests: ArrayList<TestOptionDetails>
     ) : RecyclerView.Adapter<ConfigurationAdapter.ViewHolder>() {
         inner class ViewHolder(val cardView: ConfigItemBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
-                parent: ViewGroup,
-                viewType: Int
+            parent: ViewGroup,
+            viewType: Int
         ): ConfigurationAdapter.ViewHolder {
             val cardView = ConfigItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
@@ -521,429 +527,16 @@ class MediaAppTestingActivity : AppCompatActivity() {
         override fun getItemCount() = tests.size
     }
 
-    private fun setupTests() {
-        // setupTests() should only be called after the mediaController is connected, so this
-        // should never enter the if block
-        val controller = mediaController
-        if (controller == null) {
-            Log.e(TAG, getString(R.string.setup_tests_error_msg))
-            showToast(getString(R.string.setup_tests_error_msg))
-            return
-        }
-
-        /**
-         * Tests the play() transport control. The test can start in any state, might enter a
-         * transition state, but must eventually end in STATE_PLAYING. The test will fail for
-         * any terminal state other than the starting state and STATE_PLAYING. The test
-         * will also fail if the metadata changes unless the test began with null metadata.
-         */
-        val playTest = TestOptionDetails(
-                0,
-                getString(R.string.play_test_title),
-                getString(R.string.play_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId -> runPlayTest(testId, controller, callback) }
-
-        /**
-         * Tests the playFromSearch() transport control. The test can start in any state, might
-         * enter a transition state, but must eventually end in STATE_PLAYING with playback
-         * position at 0. The test will fail for any terminal state other than the starting state
-         * and STATE_PLAYING. This test does not perform any metadata checks.
-         */
-        val playFromSearch = TestOptionDetails(
-                1,
-                getString(R.string.play_search_test_title),
-                getString(R.string.play_search_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { query, callback, testId ->
-            runPlayFromSearchTest(
-                    testId, query, controller, callback)
-        }
-
-        /**
-         * Tests the playFromMediaId() transport control. The test can start in any state, might
-         * enter a transition state, but must eventually end in STATE_PLAYING with playback
-         * position at 0. The test will fail for any terminal state other than the starting state
-         * and STATE_PLAYING. The test will also fail if query is empty/null. This test does not
-         * perform any metadata checks.
-         */
-        val playFromMediaId = TestOptionDetails(
-                2,
-                getString(R.string.play_media_id_test_title),
-                getString(R.string.play_media_id_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                true
-        ) { query, callback, testId ->
-            runPlayFromMediaIdTest(
-                    testId, query, controller, callback)
-        }
-
-        /**
-         * Tests the playFromUri() transport control. The test can start in any state, might
-         * enter a transition state, but must eventually end in STATE_PLAYING with playback
-         * position at 0. The test will fail for any terminal state other than the starting state
-         * and STATE_PLAYING. The test will also fail if query is empty/null. This test does not
-         * perform any metadata checks.
-         */
-        val playFromUri = TestOptionDetails(
-                3,
-                getString(R.string.play_uri_test_title),
-                getString(R.string.play_uri_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                true
-        ) { query, callback, testId ->
-            runPlayFromUriTest(
-                    testId, query, controller, callback)
-        }
-
-        /**
-         * Tests the pause() transport control. The test can start in any state, but must end in
-         * STATE_PAUSED (but STATE_STOPPED is also okay if that is the state the test started with).
-         * The test will fail for any terminal state other than the starting state, STATE_PAUSED,
-         * and STATE_STOPPED. The test will also fail if the metadata changes unless the test began
-         * with null metadata.
-         */
-        val pauseTest = TestOptionDetails(
-                4,
-                getString(R.string.pause_test_title),
-                getString(R.string.pause_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId -> runPauseTest(testId, controller, callback) }
-
-        /**
-         * Tests the stop() transport control. The test can start in any state, but must end in
-         * STATE_STOPPED or STATE_NONE. The test will fail for any terminal state other than the
-         * starting state, STATE_STOPPED, and STATE_NONE. The test will also fail if the metadata
-         * changes to a non-null media item different from the original media item.
-         */
-        val stopTest = TestOptionDetails(
-                5,
-                getString(R.string.stop_test_title),
-                getString(R.string.stop_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId -> runStopTest(testId, controller, callback) }
-
-        /**
-         * Tests the skipToNext() transport control. The test can start in any state, might
-         * enter a transition state, but must eventually end in STATE_PLAYING with the playback
-         * position at 0 if a new media item is started or in the starting state if the media item
-         * doesn't change. The test will fail for any terminal state other than the starting state
-         * and STATE_PLAYING. The metadata must change, but might just "change" to be the same as
-         * the original metadata (e.g. if the next media item is the same as the current one); the
-         * test will not pass if the metadata doesn't get updated at some point.
-         */
-        val skipToNextTest = TestOptionDetails(
-                6,
-                getString(R.string.skip_next_test_title),
-                getString(R.string.skip_next_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runSkipToNextTest(
-                    testId, controller, callback)
-        }
-
-        /**
-         * Tests the skipToPrevious() transport control. The test can start in any state, might
-         * enter a transition state, but must eventually end in STATE_PLAYING with the playback
-         * position at 0 if a new media item is started or in the starting state if the media item
-         * doesn't change. The test will fail for any terminal state other than the starting state
-         * and STATE_PLAYING. The metadata must change, but might just "change" to be the same as
-         * the original metadata (e.g. if the previous media item is the same as the current one);
-         * the test will not pass if the metadata doesn't get updated at some point.
-         */
-        val skipToPrevTest = TestOptionDetails(
-                7,
-                getString(R.string.skip_prev_test_title),
-                getString(R.string.skip_prev_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runSkipToPrevTest(
-                    testId, controller, callback)
-        }
-
-        /**
-         * Tests the skipToQueueItem() transport control. The test can start in any state, might
-         * enter a transition state, but must eventually end in STATE_PLAYING with the playback
-         * position at 0 if a new media item is started or in the starting state if the media item
-         * doesn't change. The test will fail for any terminal state other than the starting state
-         * and STATE_PLAYING. The metadata must change, but might just "change" to be the same as
-         * the original metadata (e.g. if the next media item is the same as the current one); the
-         * test will not pass if the metadata doesn't get updated at some point.
-         */
-        val skipToItemTest = TestOptionDetails(
-                8,
-                getString(R.string.skip_item_test_title),
-                getString(R.string.skip_item_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                true
-        ) { query, callback, testId ->
-            runSkipToItemTest(
-                    testId, query, controller, callback)
-        }
-
-        /**
-         * Tests the seekTo() transport control. The test can start in any state, might enter a
-         * transition state, but must eventually end in a terminal state with playback position at
-         * the requested timestamp. While not required, it is expected that the test will end in
-         * the same state as it started. Metadata might change for this test if the requested
-         * timestamp is outside the bounds of the current media item. The query should either be
-         * a position in seconds or a change in position (number of seconds prepended by '+' to go
-         * forward or '-' to go backwards). The test will fail if the query can't be parsed to a
-         * Long.
-         */
-        val seekToTest = TestOptionDetails(
-                9,
-                getString(R.string.seek_test_title),
-                getString(R.string.seek_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                true
-        ) { query, callback, testId ->
-            runSeekToTest(
-                    testId, query, controller, callback)
-        }
-
-        /**
-         * Automotive and Auto shared tests
-         */
-        val browseTreeDepthTest = TestOptionDetails(
-                10,
-                getString(R.string.browse_tree_depth_test_title),
-                getString(R.string.browse_tree_depth_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                runBrowseTreeDepthTest(
-                        testId, controller, mediaBrowser, callback)
-            } else {
-                Toast.makeText(
-                        applicationContext,
-                        "This test requires minSDK 24",
-                        Toast.LENGTH_SHORT)
-                        .show()
-            }
-        }
-
-        val mediaArtworkTest = TestOptionDetails(
-                11,
-                getString(R.string.media_artwork_test_title),
-                getString(R.string.media_artwork_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                runMediaArtworkTest(
-                        testId, controller, mediaBrowser, callback)
-            } else {
-                Toast.makeText(
-                        applicationContext,
-                        "This test requires minSDK 24",
-                        Toast.LENGTH_SHORT)
-                        .show()
-            }
-        }
-
-        val contentStyleTest = TestOptionDetails(
-                12,
-                getString(R.string.content_style_test_title),
-                getString(R.string.content_style_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runContentStyleTest(
-                    testId, controller, mediaBrowser, callback)
-        }
-
-        val customActionIconTypeTest = TestOptionDetails(
-                13,
-                getString(R.string.custom_actions_icon_test_title),
-                getString(R.string.custom_actions_icon_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runCustomActionIconTypeTest(
-                    testId, applicationContext, controller, mediaAppDetails!!, callback)
-        }
-
-        val supportsSearchTest = TestOptionDetails(
-                14,
-                getString(R.string.search_supported_test_title),
-                getString(R.string.search_supported_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runSearchTest(
-                    testId, controller, mediaBrowser, callback)
-        }
-
-        val initialPlaybackStateTest = TestOptionDetails(
-                15,
-                getString(R.string.playback_state_test_title),
-                getString(R.string.playback_state_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runInitialPlaybackStateTest(
-                    testId, controller, callback)
-        }
-
-        /**
-         * Automotive specific tests
-         */
-        val browseTreeStructureTest = TestOptionDetails(
-                16,
-                getString(R.string.browse_tree_structure_test_title),
-                getString(R.string.browse_tree_structure_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                runBrowseTreeStructureTest(
-                        testId, controller, mediaBrowser, callback)
-            } else {
-                Toast.makeText(
-                        applicationContext,
-                        getString(R.string.test_error_minsdk),
-                        Toast.LENGTH_SHORT)
-                        .show()
-            }
-        }
-
-        val preferenceTest = TestOptionDetails(
-                17,
-                getString(R.string.preference_activity_test_title),
-                getString(R.string.preference_activity_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runPreferenceTest(
-                    testId, controller, mediaAppDetails, packageManager, callback)
-        }
-
-        val errorResolutionDataTest = TestOptionDetails(
-                18,
-                getString(R.string.error_resolution_test_title),
-                getString(R.string.error_resolution_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runErrorResolutionDataTest(
-                    testId, controller, callback)
-        }
-
-        val launcherTest = TestOptionDetails(
-                19,
-                getString(R.string.launcher_intent_test_title),
-                getString(R.string.launcher_intent_test_desc),
-                TestResult.NONE,
-                Test.NO_LOGS,
-                false
-        ) { _, callback, testId ->
-            runLauncherTest(
-                    testId, controller, mediaAppDetails, packageManager, callback)
-        }
-
-        val basicTests = arrayOf(
-
-                playFromSearch,
-                playFromMediaId,
-                playFromUri,
-                playTest,
-                pauseTest,
-                stopTest,
-                skipToNextTest,
-                skipToPrevTest,
-                skipToItemTest,
-                seekToTest
-        )
-
-        val commonTests = arrayOf(
-                browseTreeDepthTest,
-                mediaArtworkTest,
-                //TODO FIX contentStyleTest,
-                customActionIconTypeTest,
-                //TODO: FIX supportsSearchTest,
-                initialPlaybackStateTest
-        )
-
-        val automotiveTests = arrayOf(
-                browseTreeStructureTest,
-                preferenceTest,
-                errorResolutionDataTest,
-                launcherTest
-        )
-
-        var testList = basicTests
-        val testSuites: ArrayList<MediaAppTestSuite> = ArrayList()
-        val testSuiteResults = this.binding.mediaControllerTestSuitePage.testSuiteResultsContainer
-
-        val basicTestSuite = MediaAppTestSuite("Basic Tests", "Basic media tests.", basicTests, testSuiteResults, this)
-        testSuites.add(basicTestSuite)
-        if (mediaAppDetails?.supportsAuto == true || mediaAppDetails?.supportsAutomotive == true) {
-            testList += commonTests
-            val autoTestSuite = MediaAppTestSuite("Auto Tests", "Includes support for android auto tests.", testList, testSuiteResults, this)
-            testSuites.add(autoTestSuite)
-        }
-        if (mediaAppDetails?.supportsAutomotive == true) {
-            testList += automotiveTests
-            val automotiveTestSuite = MediaAppTestSuite("Automotive Tests", "Includes support for Android automotive tests.", testList, testSuiteResults, this)
-            testSuites.add(automotiveTestSuite)
-        }
-        val iDToPositionMap = hashMapOf<Int, Int>()
-        for (i in testList.indices) {
-            iDToPositionMap[testList[i].id] = i
-        }
-
-        val testOptionAdapter = TestOptionAdapter(testList, iDToPositionMap)
-
-        val testOptionsList = this.binding.mediaControllerTestPage.testOptionsList
-        testOptionsList.layoutManager = LinearLayoutManager(this)
-        testOptionsList.setHasFixedSize(true)
-        testOptionsList.adapter = testOptionAdapter
-
-        // Set up test suites display.
-        val testSuiteAdapter = TestSuiteAdapter(testSuites.toTypedArray())
-        val testSuiteList = this.binding.mediaControllerTestSuitePage.testSuiteOptionsList
-        testSuiteList.layoutManager = LinearLayoutManager(this)
-        testSuiteList.setHasFixedSize(true)
-        testSuiteList.adapter = testSuiteAdapter
-    }
-
     // Adapter to display test details
     inner class TestOptionAdapter(
-            private val tests: Array<TestOptionDetails>,
-            private val iDToPositionMap: HashMap<Int, Int>
+        private val tests: List<TestOptionDetails>,
+        private val iDToPositionMap: HashMap<Int, Int>
     ) : RecyclerView.Adapter<TestOptionAdapter.ViewHolder>() {
         inner class ViewHolder(val cardView: MediaTestOptionBinding) : RecyclerView.ViewHolder(cardView.root)
 
         override fun onCreateViewHolder(
-                parent: ViewGroup,
-                viewType: Int
+            parent: ViewGroup,
+            viewType: Int
         ): TestOptionAdapter.ViewHolder {
             val cardView = MediaTestOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
@@ -959,17 +552,17 @@ class MediaAppTestingActivity : AppCompatActivity() {
             holder.cardView.cardHeader.text = tests[position].name
             holder.cardView.cardText.text = tests[position].desc
             holder.cardView.cardView.setCardBackgroundColor(
-                    when (tests[position].testResult) {
-                        TestResult.FAIL -> ResourcesCompat
-                                .getColor(resources, R.color.test_result_fail, null)
-                        TestResult.PASS -> ResourcesCompat
-                                .getColor(resources, R.color.test_result_pass, null)
-                        TestResult.OPTIONAL_FAIL -> ResourcesCompat
-                                .getColor(resources, R.color.test_result_optional_fail, null)
-                        else -> {
-                            Color.WHITE
-                        }
+                when (tests[position].testResult) {
+                    TestResult.FAIL -> ResourcesCompat
+                        .getColor(resources, R.color.test_result_fail, null)
+                    TestResult.PASS -> ResourcesCompat
+                        .getColor(resources, R.color.test_result_pass, null)
+                    TestResult.OPTIONAL_FAIL -> ResourcesCompat
+                        .getColor(resources, R.color.test_result_optional_fail, null)
+                    else -> {
+                        Color.WHITE
                     }
+                }
             )
             if (tests[position].testResult != TestResult.NONE) {
                 binding.mediaControllerTestPage.testResultsContainer.removeAllViews()
@@ -990,14 +583,14 @@ class MediaAppTestingActivity : AppCompatActivity() {
     }
 
     // Adapter to display Queue Item information
-    class QueueItemAdapter(
-            private val items: MutableList<MediaSessionCompat.QueueItem>
+    inner class QueueItemAdapter(
+        private val items: MutableList<MediaSessionCompat.QueueItem>
     ) : RecyclerView.Adapter<QueueItemAdapter.ViewHolder>() {
-        class ViewHolder(val linearLayout: MediaQueueItemBinding) : RecyclerView.ViewHolder(linearLayout.root)
+        inner class ViewHolder(val linearLayout: MediaQueueItemBinding) : RecyclerView.ViewHolder(linearLayout.root)
 
         override fun onCreateViewHolder(
-                parent: ViewGroup,
-                viewType: Int
+            parent: ViewGroup,
+            viewType: Int
         ): ViewHolder {
             val linearLayout = MediaQueueItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(linearLayout)
@@ -1005,203 +598,146 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             holder.linearLayout.queueId.text =
-                    holder.linearLayout.root.context.getString(
-                            R.string.queue_item_id,
-                            items[position].queueId
-                    )
+                holder.linearLayout.root.context.getString(
+                    R.string.queue_item_id,
+                    items[position].queueId
+                )
 
             val description = items[position].description
             holder.linearLayout.descriptionTitle.text =
-                    holder.linearLayout.root.context.getString(
-                            R.string.queue_item_title,
-                            description.title
-                    )
+                holder.linearLayout.root.context.getString(
+                    R.string.queue_item_title,
+                    description.title
+                )
             holder.linearLayout.descriptionSubtitle.text =
-                    holder.linearLayout.root.context.getString(
-                            R.string.queue_item_subtitle,
-                            description.subtitle
-                    )
+                holder.linearLayout.root.context.getString(
+                    R.string.queue_item_subtitle,
+                    description.subtitle
+                )
             holder.linearLayout.descriptionId.text =
-                    holder.linearLayout.root.context.getString(
-                            R.string.queue_item_media_id,
-                            description.mediaId
-                    )
+                holder.linearLayout.root.context.getString(
+                    R.string.queue_item_media_id,
+                    description.mediaId
+                )
             holder.linearLayout.descriptionUri.text =
-                    holder.linearLayout.root.context.getString(
-                            R.string.queue_item_media_uri,
-                            description.mediaUri.toString()
-                    )
+                holder.linearLayout.root.context.getString(
+                    R.string.queue_item_media_uri,
+                    description.mediaUri.toString()
+                )
         }
 
         override fun getItemCount() = items.size
     }
 
-    private fun populateQueue(_queue: MutableList<MediaSessionCompat.QueueItem>?) {
-        val queue = _queue ?: emptyList<MediaSessionCompat.QueueItem>().toMutableList()
-        val queueItemAdapter = QueueItemAdapter(queue)
-        val queueList = this.binding.mediaControllerInfoPage.queueItemList
-        queueList.layoutManager = object : LinearLayoutManager(this) {
-            override fun canScrollVertically(): Boolean = false
-        }
-        queueList.adapter = queueItemAdapter
-    }
+    /**
+     *  Adapter to display each test and the number of associated successes.
+     */
+    inner class ResultsAdapter(
+        private val tests: Array<TestOptionDetails>
+    ) : RecyclerView.Adapter<ResultsAdapter.ViewHolder>() {
+        inner class ViewHolder(val cardView: MediaTestSuiteResultBinding) : RecyclerView.ViewHolder(cardView.root)
 
-    private fun logCurrentController(controller: MediaControllerCompat? = mediaController) {
-        if (controller == null) {
-            showToast("Null MediaController")
-            return
+        override fun onCreateViewHolder(
+            parent: ViewGroup,
+            viewType: Int
+        ): ResultsAdapter.ViewHolder {
+            val cardView = MediaTestSuiteResultBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+
+            return ViewHolder(cardView)
         }
 
-        controllerCallback.run {
-            onPlaybackStateChanged(controller.playbackState)
-            onMetadataChanged(controller.metadata)
-            onRepeatModeChanged(controller.repeatMode)
-            onShuffleModeChanged(controller.shuffleMode)
-            onQueueTitleChanged(controller.queueTitle)
-            onQueueChanged(controller.queue)
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val testID = positionToIDMap[position]!!
+            val testCaseResults = iDToResultsMap[testID]!!
+            holder.cardView.cardHeader.text = tests[position].name
+            holder.cardView.cardText.text = tests[position].desc
+            holder.cardView.totalTests.text = testCaseResults.totalRuns.toString()
+            holder.cardView.testsPassing.text = testCaseResults.numPassing.toString()
+            if (testCaseResults.totalRuns == 0) {
+                holder.cardView.cardView.setOnClickListener{}
+                holder.cardView.testsPassingHeader.text = getString(R.string.test_suite_config_needed_header)
+                holder.cardView.cardView.setCardBackgroundColor(Color.GRAY)
+                return
+            }
+            val passPercentage = testCaseResults.numPassing.toFloat() / testCaseResults.totalRuns.toFloat()
+            holder.cardView.cardView.setCardBackgroundColor((argbEvaluator.evaluate(
+                passPercentage,
+                ResourcesCompat.getColor(resources, R.color.test_result_fail, null),
+                ResourcesCompat.getColor(resources, R.color.test_result_pass, null) )) as Int)
+            val onResultsClickedListener = OnResultsClickedListener(testID, tests[position].name, tests[position].desc, this@MediaAppTestingActivity)
+            holder.cardView.cardView.setOnClickListener(onResultsClickedListener)
         }
+
+        override fun getItemCount() = tests.size
     }
 
     /**
-     * This callback will log any changes in the playback state or metadata of the mediacontroller
+     *  Listener for when a specific test result is clicked from the results adapter. Shows logs
+     * for runs associated with the specific tests.
      */
-    private var controllerCallback: MediaControllerCompat.Callback =
-            object : MediaControllerCompat.Callback() {
-                override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                    val s = formatPlaybackState(state)
-                    if (printLogsFormatted) {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_formatted,
-                                getString(R.string.tests_info_state),
-                                s
-                            )
-                        )
-                    } else {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_parsable,
-                                getString(R.string.tests_info_state),
-                                formatPlaybackStateParsable(state)
-                            )
-                        )
-                    }
-                    binding.mediaControllerInfoPage.playbackStateText.text = s
-                }
+    inner class OnResultsClickedListener(private val testId: Int, private val name: String, private val description: String, val context: Context?) : View.OnClickListener {
 
-                override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-                    val s = formatMetadata(metadata)
-                    if (printLogsFormatted) {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_formatted,
-                                getString(R.string.tests_info_metadata),
-                                s
-                            )
-                        )
-                    } else {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_parsable,
-                                getString(R.string.tests_info_metadata),
-                                formatMetadataParsable(metadata)
-                            )
-                        )
-                    }
-                    binding.mediaControllerInfoPage.metadataText.text = s
-                }
+        override fun onClick(p0: View?) {
+            var dialog = context?.let {
+                Dialog(it).apply {
+                    //TODO: refactor it using viewbinding
+                    requestWindowFeature(Window.FEATURE_NO_TITLE)
+                    setContentView(R.layout.test_suite_results_dialog)
+                    findViewById<TextView>(R.id.results_title).text = name
+                    findViewById<TextView>(R.id.results_subtitle).text = description
 
-                override fun onRepeatModeChanged(repeatMode: Int) {
-                    val s = repeatModeToName(repeatMode)
-                    if (printLogsFormatted) {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_formatted,
-                                getString(R.string.tests_info_repeat),
-                                s
-                            )
-                        )
-                    } else {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_parsable,
-                                getString(R.string.tests_info_repeat),
-                                repeatMode.toString()
-                            )
-                        )
-                    }
-                    binding.mediaControllerInfoPage.repeatModeText.text = s
-                }
+                    // Add the passing text log section
+                    if(iDToResultsMap[testId]!!.passingLogs.isNotEmpty()) {
+                        val passing_results_log = findViewById<LinearLayout>(R.id.passing_results_log)
+                        passing_results_log.removeAllViews()
+                        for (logsList in iDToResultsMap[testId]!!.passingLogs) {
+                            passing_results_log.addView(TextView(context).apply {
+                                text = resources.getString(R.string.test_iter_divider)
+                                setTextAppearance(context, R.style.SubHeader)
+                                gravity = Gravity.CENTER
+                                setTextColor(ResourcesCompat.getColor(resources, R.color.test_result_pass, null))
+                            })
+                            for (line in logsList) {
+                                var logLine = TextView(context).apply {
+                                    text = line
 
-                override fun onShuffleModeChanged(shuffleMode: Int) {
-                    val s = shuffleModeToName(shuffleMode)
-                    if (printLogsFormatted) {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_formatted,
-                                getString(R.string.tests_info_shuffle),
-                                s
-                            )
-                        )
+                                    setTextAppearance(context, R.style.SubText)
+                                }
+                                passing_results_log.addView(logLine)
+                            }
+                        }
                     } else {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_parsable,
-                                getString(R.string.tests_info_shuffle),
-                                shuffleMode.toString()
-                            )
-                        )
+                        findViewById<TextView>(R.id.passing_logs_header).visibility = View.GONE
                     }
-                    binding.mediaControllerInfoPage.shuffleModeText.text = s
-                }
 
-                override fun onQueueTitleChanged(title: CharSequence?) {
-                    if (printLogsFormatted) {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_formatted,
-                                getString(R.string.tests_info_queue_title),
-                                title
-                            )
-                        )
+                    // Add the passing text log section
+                    if(iDToResultsMap[testId]!!.failingLogs.isNotEmpty()) {
+                        val failing_results_log = findViewById<LinearLayout>(R.id.failing_results_log)
+                        failing_results_log.removeAllViews()
+                        for (logsList in iDToResultsMap[testId]!!.failingLogs) {
+                            failing_results_log.addView(TextView(context).apply {
+                                text = resources.getString(R.string.test_iter_divider)
+                                setTextAppearance(context, R.style.SubHeader)
+                                gravity = Gravity.CENTER
+                                setTextColor(ResourcesCompat.getColor(resources, R.color.test_result_fail, null))
+                            })
+                            for (line in logsList) {
+                                var logLine = TextView(context).apply {
+                                    text = line
+                                    setTextAppearance(context, R.style.SubText)
+                                }
+                                failing_results_log.addView(logLine)
+                            }
+                        }
                     } else {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_parsable,
-                                getString(R.string.tests_info_queue_title),
-                                title
-                            )
-                        )
+                        findViewById<TextView>(R.id.failing_logs_header).visibility = View.GONE
                     }
-                    binding.mediaControllerInfoPage.queueTitleText.text = title
-                }
-
-                override fun onQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
-                    if (printLogsFormatted) {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_formatted,
-                                getString(R.string.tests_info_queue),
-                                queueToString(queue)
-                            )
-                        )
-                    } else {
-                        Log.i(
-                            TAG, getString(
-                                R.string.logs_controller_info_parsable,
-                                getString(R.string.tests_info_queue),
-                                queueToStringParsable(queue)
-                            )
-                        )
-                    }
-                    binding.mediaControllerInfoPage.queueText.text =
-                        getString(R.string.queue_size, queue?.size ?: 0)
-                    TextViewCompat.setTextAppearance(binding.mediaControllerInfoPage.queueText,
-                        R.style.SubText
-                    )
-                    populateQueue(queue)
-                }
+                    findViewById<ScrollView>(R.id.results_scroll_view).layoutParams.height = (MediaAppTestingActivity.getScreenHeightPx(context) / 2).toInt()
+                    findViewById<Button>(R.id.close_results_button).setOnClickListener(View.OnClickListener { dismiss() })
+                }.show()
             }
+        }
+    }
 
     companion object {
 
@@ -1212,14 +748,14 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         // Key name for Intent extras.
         private const val APP_DETAILS_EXTRA =
-                "com.example.android.mediacontroller.APP_DETAILS_EXTRA"
+            "com.example.android.mediacontroller.APP_DETAILS_EXTRA"
 
         // The max number of test suite iterations
         private const val MAX_NUM_ITER = 10
 
         // Key name used for saving/restoring instance state.
         private const val STATE_APP_DETAILS_KEY =
-                "com.example.android.mediacontroller.STATE_APP_DETAILS_KEY"
+            "com.example.android.mediacontroller.STATE_APP_DETAILS_KEY"
 
         // Shared pref key name for test suite config
         const val SHARED_PREF_KEY_SUITE_CONFIG = "mct-test-suite-config"
@@ -1235,8 +771,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
          * @return An Intent that can be used to start the Activity.
          */
         fun buildIntent(
-                activity: Activity,
-                appDetails: MediaAppDetails
+            activity: Activity,
+            appDetails: MediaAppDetails
         ): Intent {
             val intent = Intent(activity, MediaAppTestingActivity::class.java)
             intent.putExtra(APP_DETAILS_EXTRA, appDetails)

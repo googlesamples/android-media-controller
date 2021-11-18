@@ -18,7 +18,6 @@ package com.example.android.mediacontroller;
 import static androidx.media.MediaBrowserServiceCompat.BrowserRoot.EXTRA_SUGGESTED;
 import static java.util.Arrays.asList;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -48,7 +47,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -62,7 +60,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
@@ -71,7 +68,6 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
 import com.example.android.mediacontroller.databinding.ActivityMediaAppControllerBinding;
 import com.google.android.material.tabs.TabLayout;
@@ -155,7 +151,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
      * @return An Intent that can be used to start the Activity.
      */
     public static Intent buildIntent(final Activity activity,
-            final MediaAppDetails appDetails) {
+                                     final MediaAppDetails appDetails) {
         final Intent intent = new Intent(activity, MediaAppControllerActivity.class);
         intent.putExtra(APP_DETAILS_EXTRA, appDetails);
         return intent;
@@ -465,8 +461,6 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
             // Ensure views are visible.
             binding.viewPager.setVisibility(View.VISIBLE);
-
-            Log.d(TAG, "MediaControllerCompat created");
         } catch (RemoteException remoteException) {
             Log.e(TAG, "Failed to create MediaController from session token", remoteException);
             showToastAndFinish(getString(R.string.media_controller_failed_msg));
@@ -801,7 +795,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     }
 
     private boolean actionSupported(@PlaybackStateCompat.Actions long actions,
-            @PlaybackStateCompat.Actions long checkAction) {
+                                    @PlaybackStateCompat.Actions long checkAction) {
         return ((actions & checkAction) != 0);
     }
 
@@ -828,8 +822,8 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private final Spinner mFocusTypeSpinner;
 
         private AudioFocusHelper(@NonNull Context context,
-                @NonNull ToggleButton focusToggleButton,
-                @NonNull Spinner focusTypeSpinner) {
+                                 @NonNull ToggleButton focusToggleButton,
+                                 @NonNull Spinner focusTypeSpinner) {
 
             mAudioManager = (AudioManager) context.getSystemService(AUDIO_SERVICE);
             mToggleButton = focusToggleButton;
@@ -947,7 +941,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         }
 
         void setActions(MediaControllerCompat controller,
-                List<PlaybackStateCompat.CustomAction> actions) {
+                        List<PlaybackStateCompat.CustomAction> actions) {
             mControls = controller.getTransportControls();
             try {
                 mMediaAppResources = getPackageManager()
@@ -1009,9 +1003,9 @@ public class MediaAppControllerActivity extends AppCompatActivity {
         private final List<Integer> modes;
 
         ModeHelper(ViewGroup container,
-                @IdRes int stateSpinnerView,
-                @IdRes int iconImageView,
-                List<Integer> modes) {
+                   @IdRes int stateSpinnerView,
+                   @IdRes int iconImageView,
+                   List<Integer> modes) {
             this.context = container.getContext();
             this.spinner = container.findViewById(stateSpinnerView);
             this.icon = container.findViewById(iconImageView);
@@ -1123,7 +1117,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                 new MediaBrowserCompat.SubscriptionCallback() {
                     @Override
                     public void onChildrenLoaded(@NonNull String parentId,
-                            @NonNull List<MediaItem> children) {
+                                                 @NonNull List<MediaItem> children) {
                         updateItemsEmptyIfNull(children);
                     }
                 };
@@ -1333,19 +1327,19 @@ public class MediaAppControllerActivity extends AppCompatActivity {
             if (treeDepth() == 1) {
                 mBrowser.search(getCurrentNode(), null,
                         new MediaBrowserCompat.SearchCallback() {
-                    @Override
-                    public void onSearchResult(@NonNull String query, Bundle extras,
-                            @NonNull List<MediaBrowserCompat.MediaItem> items) {
-                        if (query.equals(getCurrentNode())) {
-                            updateItemsEmptyIfNull(items);
-                        }
-                    }
+                            @Override
+                            public void onSearchResult(@NonNull String query, Bundle extras,
+                                                       @NonNull List<MediaBrowserCompat.MediaItem> items) {
+                                if (query.equals(getCurrentNode())) {
+                                    updateItemsEmptyIfNull(items);
+                                }
+                            }
 
-                    @Override
-                    public void onError(@NonNull String query, Bundle extras) {
-                        super.onError(query, extras);
-                    }
-                });
+                            @Override
+                            public void onError(@NonNull String query, Bundle extras) {
+                                super.onError(query, extras);
+                            }
+                        });
             } else {
                 super.subscribe();
             }
