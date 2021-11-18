@@ -15,6 +15,9 @@
   -->
 
 <resources>
+    <!-- Test service -->
+    <string name="tests_service_not_bound">Currently not bound to test service.</string>
+
     <!-- MediaController Properties -->
     <string name="tests_info_state">Playback State</string>
     <string name="tests_info_metadata">Metadata</string>
@@ -49,7 +52,7 @@
     <string name="test_suite_open_paren">(</string>
     <string name="test_suite_close_paren">)</string>
     <string name="test_suite_divide">/</string>
-    <string name="test_suite_unknown">?</string>
+    <string name="test_suite_unknown">Unknown</string>
     <string name= "test_suite_error_invalid_iter">Invalid iteration number, must be between (1..10).</string>
     <string name= "test_suite_already_running">Please wait for current test suite to finish.</string>
     <string name="close_results_button">Close</string>

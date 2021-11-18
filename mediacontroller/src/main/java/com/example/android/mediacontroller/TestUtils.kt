@@ -290,24 +290,24 @@ fun getMetadataKey(metadata: MediaMetadataCompat?, key: String): String {
     }
 
     val longValues = arrayOf(
-            MediaMetadataCompat.METADATA_KEY_DISC_NUMBER,
-            MediaMetadataCompat.METADATA_KEY_DURATION,
-            MediaMetadataCompat.METADATA_KEY_NUM_TRACKS,
-            MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER,
-            MediaMetadataCompat.METADATA_KEY_DOWNLOAD_STATUS,
-            MediaMetadataCompat.METADATA_KEY_BT_FOLDER_TYPE,
-            MediaMetadataCompat.METADATA_KEY_ADVERTISEMENT,
-            MediaDescriptionCompat.EXTRA_DOWNLOAD_STATUS,
-            MediaDescriptionCompat.EXTRA_BT_FOLDER_TYPE
+        MediaMetadataCompat.METADATA_KEY_DISC_NUMBER,
+        MediaMetadataCompat.METADATA_KEY_DURATION,
+        MediaMetadataCompat.METADATA_KEY_NUM_TRACKS,
+        MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER,
+        MediaMetadataCompat.METADATA_KEY_DOWNLOAD_STATUS,
+        MediaMetadataCompat.METADATA_KEY_BT_FOLDER_TYPE,
+        MediaMetadataCompat.METADATA_KEY_ADVERTISEMENT,
+        MediaDescriptionCompat.EXTRA_DOWNLOAD_STATUS,
+        MediaDescriptionCompat.EXTRA_BT_FOLDER_TYPE
     )
     val bitmapValues = arrayOf(
-            MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
-            MediaMetadataCompat.METADATA_KEY_ART,
-            MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON
+        MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+        MediaMetadataCompat.METADATA_KEY_ART,
+        MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON
     )
     val ratingValues = arrayOf(
-            MediaMetadataCompat.METADATA_KEY_RATING,
-            MediaMetadataCompat.METADATA_KEY_USER_RATING
+        MediaMetadataCompat.METADATA_KEY_RATING,
+        MediaMetadataCompat.METADATA_KEY_USER_RATING
     )
 
     if (metadata.containsKey(key)) {
@@ -405,4 +405,3 @@ fun formatMillisToSeconds(value: Long?): String {
         "%.2fs".format(it / 1000f)
     } ?: "null"
 }
-
