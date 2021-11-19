@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.android.mediacontroller
+package com.example.android.mediacontroller.testing
 
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.example.android.mediacontroller.Test
+import com.example.android.mediacontroller.TestOptionDetails
+import com.example.android.mediacontroller.TestResult
 
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread

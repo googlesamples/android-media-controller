@@ -27,6 +27,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.util.TypedValue
 import androidx.annotation.RequiresApi
 import androidx.core.content.res.ResourcesCompat
@@ -70,6 +71,7 @@ class Test(
         val update = "[$date] <$logTag>:\n$message"
 
         //Log.i(logTag, "<$logTag> [$date] $message")
+        Log.d(TAG, update)
         testLogs.add(update)
     }
 

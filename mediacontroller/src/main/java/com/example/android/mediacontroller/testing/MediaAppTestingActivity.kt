@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.android.mediacontroller
+package com.example.android.mediacontroller.testing
 
 import android.animation.ArgbEvaluator
 import android.app.Activity
@@ -43,6 +43,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
+import com.example.android.mediacontroller.*
 
 import com.example.android.mediacontroller.databinding.*
 
@@ -271,7 +272,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
 
         override fun onControllerQueueChanged(queue: MutableList<MediaSessionCompat.QueueItem>?) {
             binding.mediaControllerInfoPage.queueText.text = getString(R.string.queue_size, queue?.size ?: 0)
-            binding.mediaControllerInfoPage.queueText.setTextAppearance(applicationContext, R.style.SubText)
+            binding.mediaControllerInfoPage.queueText.setTextAppearance(applicationContext,
+                R.style.SubText
+            )
             populateQueue(queue)
         }
     }
@@ -346,7 +349,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         override fun onCreateViewHolder(
             parent: ViewGroup,
             viewType: Int
-        ): TestSuiteAdapter.ViewHolder {
+        ): ViewHolder {
             val cardView = MediaTestOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
@@ -449,6 +452,9 @@ class MediaAppTestingActivity : AppCompatActivity() {
                                     progressBar.incrementProgressBy(1)
                                 },
                                 onFinishTestSuite = {
+                                    Toast.makeText(applicationContext,
+                                        getString(R.string.test_suite_completed),
+                                        Toast.LENGTH_SHORT).show()
                                     iDToResultsMap = it
                                     dialog.dismiss()
 
@@ -488,7 +494,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         override fun onCreateViewHolder(
             parent: ViewGroup,
             viewType: Int
-        ): ConfigurationAdapter.ViewHolder {
+        ): ViewHolder {
             val cardView = ConfigItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
@@ -537,7 +543,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         override fun onCreateViewHolder(
             parent: ViewGroup,
             viewType: Int
-        ): TestOptionAdapter.ViewHolder {
+        ): ViewHolder {
             val cardView = MediaTestOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolder(cardView)
         }
@@ -640,7 +646,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
         override fun onCreateViewHolder(
             parent: ViewGroup,
             viewType: Int
-        ): ResultsAdapter.ViewHolder {
+        ): ViewHolder {
             val cardView = MediaTestSuiteResultBinding.inflate(LayoutInflater.from(parent.context), parent, false)
 
             return ViewHolder(cardView)
@@ -695,7 +701,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                                 text = resources.getString(R.string.test_iter_divider)
                                 setTextAppearance(context, R.style.SubHeader)
                                 gravity = Gravity.CENTER
-                                setTextColor(ResourcesCompat.getColor(resources, R.color.test_result_pass, null))
+                                setTextColor(ResourcesCompat.getColor(resources,
+                                    R.color.test_result_pass, null))
                             })
                             for (line in logsList) {
                                 var logLine = TextView(context).apply {
@@ -719,7 +726,8 @@ class MediaAppTestingActivity : AppCompatActivity() {
                                 text = resources.getString(R.string.test_iter_divider)
                                 setTextAppearance(context, R.style.SubHeader)
                                 gravity = Gravity.CENTER
-                                setTextColor(ResourcesCompat.getColor(resources, R.color.test_result_fail, null))
+                                setTextColor(ResourcesCompat.getColor(resources,
+                                    R.color.test_result_fail, null))
                             })
                             for (line in logsList) {
                                 var logLine = TextView(context).apply {
@@ -732,7 +740,7 @@ class MediaAppTestingActivity : AppCompatActivity() {
                     } else {
                         findViewById<TextView>(R.id.failing_logs_header).visibility = View.GONE
                     }
-                    findViewById<ScrollView>(R.id.results_scroll_view).layoutParams.height = (MediaAppTestingActivity.getScreenHeightPx(context) / 2).toInt()
+                    findViewById<ScrollView>(R.id.results_scroll_view).layoutParams.height = (getScreenHeightPx(context) / 2).toInt()
                     findViewById<Button>(R.id.close_results_button).setOnClickListener(View.OnClickListener { dismiss() })
                 }.show()
             }
