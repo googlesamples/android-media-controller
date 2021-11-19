@@ -35,6 +35,7 @@ import com.example.android.mediacontroller.tasks.FindMediaAppsTask;
 import com.example.android.mediacontroller.tasks.FindMediaBrowserAppsTask;
 import com.example.android.mediacontroller.tasks.FindMediaSessionAppsTask;
 import com.example.android.mediacontroller.tasks.MediaAppControllerUtils;
+import com.example.android.mediacontroller.testing.MediaAppTestingActivity;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
@@ -42,7 +43,6 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 

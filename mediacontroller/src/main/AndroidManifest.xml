@@ -59,7 +59,7 @@
         </activity>
 
         <activity
-            android:name=".MediaAppTestingActivity"
+            android:name=".testing.MediaAppTestingActivity"
             android:exported="true"
             android:launchMode="singleTask">
 
@@ -105,7 +105,7 @@
         </service>
 
         <service
-            android:name=".MediaAppTestService"
+            android:name=".testing.MediaAppTestService"
             android:enabled="true"
             android:exported="true" />
     </application>
