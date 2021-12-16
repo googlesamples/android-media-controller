@@ -195,7 +195,7 @@
     <string name="test_playing_state">Current playback state is in a playing state</string>
     <string name="test_browsable_items">Tree root must have at most 4 browsable items</string>
     <string name="test_root_items_type">Items at tree root must be all browsable or playable</string>
-    <string name="test_artwork_type_invalid_schema">Artwork URI schema must be SCHEME_CONTENT or SCHEME_ANDROID_RESOURCE</string>
+    <string name="test_artwork_type_invalid_schema">Artwork URI schema must be SCHEME_CONTENT or SCHEME_ANDROID_RESOURCE or https</string>
     <string name="test_artwork_type_non_null_icon">Artwork must not be a bitmap</string>
     <string name="test_content_style">This app supports content styling</string>
     <string name="test_tree_depth">Tree maximum depth must be at most 3</string>

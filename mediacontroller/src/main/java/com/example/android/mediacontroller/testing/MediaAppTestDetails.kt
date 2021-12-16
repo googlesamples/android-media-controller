@@ -1196,7 +1196,7 @@ class CheckBrowseDepth(override val test: Test,
 
 /**
  * PASS: The artwork of each media item must be passed as a local URI and not a bitmap.
- *       The schema of the URI must be either SCHEME_CONTENT or SCHEME_ANDROID_RESOURCE.
+ *       The schema of the URI must be either SCHEME_CONTENT or SCHEME_ANDROID_RESOURCE or https.
  * FAIL: Otherwise
  */
 @RequiresApi(Build.VERSION_CODES.N)
@@ -1228,9 +1228,10 @@ class CheckMediaArtwork(override val test: Test,
                         future.complete(FAIL_ICONBITMAP_NON_NULL)
                     }
 
-                    // local URI schema must be content or android resource
+                    // URI schema must be content or android resource or https
                     if (it.description.iconUri?.scheme != ContentResolver.SCHEME_ANDROID_RESOURCE &&
-                            it.description.iconUri?.scheme != ContentResolver.SCHEME_CONTENT) {
+                        it.description.iconUri?.scheme != ContentResolver.SCHEME_CONTENT &&
+                        it.description.iconUri?.scheme != "https") {
                         future.complete(FAIL_INVALID_URI_SCHEMA)
                     }
                 }
