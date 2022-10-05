@@ -113,7 +113,7 @@ Array<TestOptionDetails>) {
             Looper.prepare()
             try {
                 for(i in 0 until numIter) {
-                    for (test in testList) {
+                    for (test in testList.sortedBy { it.id }) {
                         resetSingleResults()
                         onStartTest()
 
