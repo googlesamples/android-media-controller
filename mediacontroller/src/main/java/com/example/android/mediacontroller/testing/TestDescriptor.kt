@@ -296,7 +296,7 @@ class TestDescriptor {
         }
 
         val initialPlaybackStateTest = TestOptionDetails(
-            15,
+            -1,  // this test must be run first
             context.getString(R.string.playback_state_test_title),
             context.getString(R.string.playback_state_test_desc),
             TestResult.NONE,
