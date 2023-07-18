@@ -63,6 +63,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.util.Supplier;
 import androidx.media.MediaBrowserServiceCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -129,9 +130,28 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private AudioFocusHelper mAudioFocusHelper;
     private RatingUiHelper mRatingUiHelper;
     private final CustomControlsAdapter mCustomControlsAdapter = new CustomControlsAdapter();
-    private final BrowseMediaItemsAdapter mBrowseMediaItemsAdapter = new BrowseMediaItemsAdapter();
-    private final BrowseMediaItemsAdapter mBrowseMediaItemsExtraSuggestedAdapter = new BrowseMediaItemsAdapter();
-    private final SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter();
+    private BrowseMediaItemsAdapter mBrowseMediaItemsAdapter = new BrowseMediaItemsAdapter(
+        new Supplier<MediaBrowserCompat>() {
+            @Override
+            public MediaBrowserCompat get() {
+                return mBrowser;
+            }
+        });
+    @Nullable
+    private BrowseMediaItemsAdapter mBrowseMediaItemsExtraSuggestedAdapter = new BrowseMediaItemsAdapter(
+        new Supplier<MediaBrowserCompat>() {
+            @Override
+            public MediaBrowserCompat get() {
+                return mBrowserExtraSuggested;
+            }
+        });
+    private final SearchMediaItemsAdapter mSearchMediaItemsAdapter = new SearchMediaItemsAdapter(
+        new Supplier<MediaBrowserCompat>() {
+            @Override
+            public MediaBrowserCompat get() {
+                return mBrowser;
+            }
+        });
 
     private ModeHelper mShuffleToggle;
     private ModeHelper mRepeatToggle;
@@ -1110,8 +1130,13 @@ public class MediaAppControllerActivity extends AppCompatActivity {
     private class BrowseMediaItemsAdapter extends
             RecyclerView.Adapter<BrowseMediaItemsAdapter.ViewHolder> {
 
+        private final Supplier<MediaBrowserCompat> mBrowserSupplier;
         private List<MediaBrowserCompat.MediaItem> mItems;
         private final Stack<String> mNodes = new Stack<>();
+
+        public BrowseMediaItemsAdapter(Supplier<MediaBrowserCompat> browserSupplier) {
+            mBrowserSupplier = browserSupplier;
+        }
 
         MediaBrowserCompat.SubscriptionCallback callback =
                 new MediaBrowserCompat.SubscriptionCallback() {
@@ -1273,13 +1298,13 @@ public class MediaAppControllerActivity extends AppCompatActivity {
 
         protected void subscribe() {
             if (mNodes.size() > 0) {
-                mBrowser.subscribe(mNodes.peek(), callback);
+                mBrowserSupplier.get().subscribe(mNodes.peek(), callback);
             }
         }
 
         protected void unsubscribe() {
             if (mNodes.size() > 0) {
-                mBrowser.unsubscribe(mNodes.peek(), callback);
+                mBrowserSupplier.get().unsubscribe(mNodes.peek(), callback);
             }
             updateItems(null);
         }
@@ -1321,6 +1346,10 @@ public class MediaAppControllerActivity extends AppCompatActivity {
      * subscription function to perform search at the root node.
      */
     private class SearchMediaItemsAdapter extends BrowseMediaItemsAdapter {
+
+        public SearchMediaItemsAdapter(Supplier<MediaBrowserCompat> browserSupplier) {
+            super(browserSupplier);
+        }
 
         @Override
         protected void subscribe() {
