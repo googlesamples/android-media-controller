@@ -1210,7 +1210,7 @@ public class MediaAppControllerActivity extends AppCompatActivity {
                         }
                         if (item.isPlayable() && mController != null) {
                             mController.getTransportControls().playFromMediaId(item.getMediaId(),
-                                    null);
+                                    item.getDescription().getExtras());
                         }
                     });
         }
